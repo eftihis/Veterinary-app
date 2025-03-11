@@ -164,47 +164,61 @@ export default function VeterinaryForm() {
 
   // Handle form submission
   const onSubmit = async (data: FormValues) => {
-    // Create the payload
-    const payload = {
-      executionId: `exec-${Date.now().toString(36)}`,
-      timestamp: new Date().toISOString(),
-      documentNumber: data.documentNumber,
-      reference: data.reference,
-      animalName: data.animalName,
-      animalType: data.animalType,
-      checkInDate: format(data.checkInDate, "yyyy-MM-dd"),
-      checkOutDate: format(data.checkOutDate, "yyyy-MM-dd"),
-      lineItems: data.lineItems,
-      subtotal: subtotal.toFixed(2),
-      discountType: data.discountType,
-      discountValue: data.discountValue,
-      discountAmount: discountAmount.toFixed(2),
-      total: total.toFixed(2),
-      comment: data.comment || "",
-    };
-
     try {
+      // Show loading toast
+      const loadingToastId = toast.loading("Submitting form...");
+      
+      // Create payload from form data
+      const payload = {
+        executionId: `exec-${Date.now().toString(36)}`,
+        timestamp: new Date().toISOString(),
+        documentNumber: data.documentNumber,
+        animalName: data.animalName,
+        animalType: data.animalType,
+        checkInDate: data.checkInDate.toISOString(),
+        checkOutDate: data.checkOutDate.toISOString(),
+        lineItems: data.lineItems,
+        subtotal,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+        discountAmount,
+        total,
+        comment: data.comment,
+      };
+      
+      console.log("Form submitted:", payload);
+      
       // Send data to webhook
-      const webhookUrl = "https://hook.eu1.make.com/mksx5gdl3hemwrtkvxnp367ooxaf5478";
-      const response = await fetch(webhookUrl, {
+      const response = await fetch("https://hook.eu1.make.com/mksx5gdl3hemwrtkvxnp367ooxaf5478", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
-
+      
       if (!response.ok) {
-        throw new Error(`Network response was not ok: ${response.status}`);
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-
-      // Show success message
-      toast.success("Form submitted successfully!");
-
+      
+      // Update the loading toast with success message
+      toast.success("Form submitted successfully!", {
+        id: loadingToastId,
+        description: `Document ${data.documentNumber} has been processed.`,
+        duration: 5000,
+        action: {
+          label: "View",
+          onClick: () => console.log("View action clicked"),
+        },
+        style: {
+          backgroundColor: "#f0fdf4", // Light green background
+          borderColor: "#86efac", // Green border
+        },
+      });
+      
       // Reset form
       form.reset({
         documentNumber: "",
-        reference: "",
         animalName: "",
         animalType: "",
         checkInDate: new Date(),
@@ -216,7 +230,16 @@ export default function VeterinaryForm() {
       });
     } catch (error) {
       console.error("Error:", error);
-      toast.error("Error submitting form. Please try again.");
+      
+      // Show error toast with styling
+      toast.error("Error submitting form", {
+        description: "Please check your data and try again.",
+        duration: 5000,
+        style: {
+          backgroundColor: "#fef2f2", // Light red background
+          borderColor: "#fecaca", // Red border
+        },
+      });
     }
   };
 
