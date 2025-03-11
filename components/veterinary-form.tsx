@@ -122,36 +122,42 @@ export default function VeterinaryForm() {
     reauth: xeroReauth
   } = useXeroItems(animalType);
 
-  // Calculate totals whenever line items or discount changes
+  // Replace the current watch calls with:
   useEffect(() => {
-    const calculateTotals = () => {
-      // Calculate subtotal
-      const newSubtotal = lineItems.reduce(
-        (sum, item) => {
-          const price = typeof item.price === 'string' 
-            ? (item.price === "" ? 0 : parseFloat(item.price) || 0) 
-            : (Number(item.price) || 0);
-          return sum + price;
-        },
-        0
-      );
-      setSubtotal(newSubtotal);
+    const subscription = form.watch((value, { name, type }) => {
+      // This will run on ANY form value change
+      calculateTotals(value.lineItems, value.discountType, value.discountValue);
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
 
-      // Calculate discount
-      let newDiscountAmount = 0;
-      if (discountType === "percent") {
-        newDiscountAmount = newSubtotal * (Number(discountValue) / 100);
-      } else {
-        newDiscountAmount = Math.min(Number(discountValue), newSubtotal);
-      }
-      setDiscountAmount(newDiscountAmount);
+  // Define the calculation function outside useEffect
+  const calculateTotals = (items, type, value) => {
+    // Calculate subtotal
+    const newSubtotal = items.reduce(
+      (sum, item) => {
+        const price = typeof item.price === 'string' 
+          ? (item.price === "" ? 0 : parseFloat(item.price) || 0) 
+          : (Number(item.price) || 0);
+        return sum + price;
+      },
+      0
+    );
+    setSubtotal(newSubtotal);
 
-      // Calculate total
-      setTotal(newSubtotal - newDiscountAmount);
-    };
+    // Calculate discount
+    let newDiscountAmount = 0;
+    if (type === "percent") {
+      newDiscountAmount = newSubtotal * (Number(value) / 100);
+    } else {
+      newDiscountAmount = Math.min(Number(value), newSubtotal);
+    }
+    setDiscountAmount(newDiscountAmount);
 
-    calculateTotals();
-  }, [lineItems, discountType, discountValue]);
+    // Calculate total
+    setTotal(newSubtotal - newDiscountAmount);
+  };
 
   // Add a new line item
   const addLineItem = () => {
@@ -614,6 +620,10 @@ export default function VeterinaryForm() {
                                 onChange={(e) => {
                                   const value = e.target.value;
                                   field.onChange(value === "" ? "" : parseFloat(value) || 0);
+                                  
+                                  // Force recalculation of totals by creating a new array reference
+                                  const updatedItems = [...lineItems];
+                                  setValue("lineItems", updatedItems);
                                 }}
                                 onFocus={(e) => e.target.select()}
                               />
@@ -714,6 +724,10 @@ export default function VeterinaryForm() {
                                   onChange={(e) => {
                                     const value = e.target.value;
                                     field.onChange(value === "" ? "" : parseFloat(value) || 0);
+                                    
+                                    // Force recalculation of totals by creating a new array reference
+                                    const updatedItems = [...lineItems];
+                                    setValue("lineItems", updatedItems);
                                   }}
                                   onFocus={(e) => e.target.select()}
                                 />
