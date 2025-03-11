@@ -1,9 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -19,12 +19,19 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+export type Option = {
+  value: string
+  label: string
+}
+
 interface ComboboxProps {
-  options: { value: string; label: string }[]
+  options: Option[]
   value: string
   onChange: (value: string) => void
   placeholder?: string
   emptyMessage?: string
+  loading?: boolean
+  className?: string
 }
 
 export function Combobox({
@@ -33,6 +40,8 @@ export function Combobox({
   onChange,
   placeholder = "Select an option",
   emptyMessage = "No results found.",
+  loading = false,
+  className,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -43,39 +52,51 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between cursor-pointer"
+          className={cn("w-full justify-between", className)}
         >
           {value
-            ? options.find((option) => option.value === value)?.label || placeholder
+            ? options.find((option) => option.value === value)?.label
             : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          {loading ? (
+            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+          ) : (
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      <PopoverContent className="p-0" style={{ width: "var(--radix-popover-trigger-width)" }}>
         <Command>
-          <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
+          <CommandInput placeholder="Search..." className="h-9" />
           <CommandList>
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={() => {
-                    onChange(option.value)
-                    setOpen(false)
-                  }}
-                >
-                  {option.label}
-                  <Check
-                    className={cn(
-                      "ml-auto h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {loading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                <CommandEmpty>{emptyMessage}</CommandEmpty>
+                <CommandGroup>
+                  {options.map((option) => (
+                    <CommandItem
+                      key={option.value}
+                      value={option.label}
+                      onSelect={() => {
+                        onChange(option.value)
+                        setOpen(false)
+                      }}
+                    >
+                      {option.label}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          value === option.value ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
