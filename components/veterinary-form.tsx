@@ -372,9 +372,6 @@ export default function VeterinaryForm() {
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Select an animal type to see available items
-                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -487,21 +484,6 @@ export default function VeterinaryForm() {
           <Card>
             <CardContent className="pt-6">
               <h2 className="text-xl font-semibold mb-6">Services & Products</h2>
-              
-              {/* Show loading state if items are being fetched */}
-              {loadingXeroItems && (
-                <div className="text-center py-4">
-                  <p>Loading items from Xero...</p>
-                </div>
-              )}
-              
-              {/* Show error if there was a problem fetching items */}
-              {xeroItemsError && !xeroNeedsReauth && (
-                <div className="bg-red-50 text-red-700 p-4 rounded-md mb-4">
-                  <p>Error loading items: {xeroItemsError}</p>
-                </div>
-              )}
-              
               <div className="space-y-3">
                 {/* Headers - visible only on larger screens */}
                 <div className="hidden md:grid md:grid-cols-12 md:gap-4 mb-2">
@@ -549,28 +531,16 @@ export default function VeterinaryForm() {
                                 value={field.value}
                                 onChange={(value) => {
                                   field.onChange(value);
-                                  
-                                  // If we select a Xero item, auto-fill the description and price
-                                  const selectedItem = xeroItems.find(item => item.value === value);
-                                  if (selectedItem) {
-                                    // Update description if it's empty
-                                    const currentDesc = form.getValues(`lineItems.${index}.description`);
-                                    if (!currentDesc) {
-                                      form.setValue(`lineItems.${index}.description`, selectedItem.description || selectedItem.label);
-                                    }
-                                    
-                                    // You could also set a default price if available in your Xero data
-                                    // form.setValue(`lineItems.${index}.price`, selectedItem.price || "");
-                                  }
                                 }}
                                 placeholder={animalType ? "Select item" : "Select animal type first"}
                                 emptyMessage={
                                   !animalType 
-                                    ? "Please select an animal type first" 
+                                    ? "Select an animal type first" 
                                     : loadingXeroItems 
                                       ? "Loading items..." 
-                                      : "No items found for this animal type."
+                                      : "No items found."
                                 }
+                                loading={loadingXeroItems}
                               >
                                 {animalType && xeroItems.length === 0 && !loadingXeroItems && (
                                   <div className="text-sm text-amber-600 mt-1">
@@ -653,28 +623,16 @@ export default function VeterinaryForm() {
                                   value={field.value}
                                   onChange={(value) => {
                                     field.onChange(value);
-                                    
-                                    // If we select a Xero item, auto-fill the description and price
-                                    const selectedItem = xeroItems.find(item => item.value === value);
-                                    if (selectedItem) {
-                                      // Update description if it's empty
-                                      const currentDesc = form.getValues(`lineItems.${index}.description`);
-                                      if (!currentDesc) {
-                                        form.setValue(`lineItems.${index}.description`, selectedItem.description || selectedItem.label);
-                                      }
-                                      
-                                      // You could also set a default price if available in your Xero data
-                                      // form.setValue(`lineItems.${index}.price`, selectedItem.price || "");
-                                    }
                                   }}
                                   placeholder={animalType ? "Select item" : "Select animal type first"}
                                   emptyMessage={
                                     !animalType 
-                                      ? "Please select an animal type first" 
+                                      ? "Select an animal type first" 
                                       : loadingXeroItems 
                                         ? "Loading items..." 
-                                        : "No items found for this animal type."
+                                        : "No items found."
                                   }
+                                  loading={loadingXeroItems}
                                 >
                                   {animalType && xeroItems.length === 0 && !loadingXeroItems && (
                                     <div className="text-sm text-amber-600 mt-1">
