@@ -124,3 +124,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Add this to your globals.css */
+button, 
+[role="button"],
+[role="combobox"],
+select,
+.select-trigger,
+.clickable {
+  cursor: pointer !important;
+}
+
+input, textarea {
+  cursor: text;
+}

@@ -198,7 +198,10 @@ export default function VeterinaryForm() {
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form 
+          onSubmit={form.handleSubmit(onSubmit)} 
+          className="space-y-8 max-w-3xl mx-auto"
+        >
           {/* Patient Information Section */}
           <Card>
             <CardContent className="pt-6">
@@ -356,24 +359,27 @@ export default function VeterinaryForm() {
               <h2 className="text-xl font-semibold mb-4">Services & Products</h2>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-12 gap-4 mb-2">
-                  <div className="col-span-5 md:col-span-5">
+                {/* Headers - visible only on larger screens */}
+                <div className="hidden md:grid md:grid-cols-12 md:gap-4 mb-2">
+                  <div className="md:col-span-5">
                     <Label>Description</Label>
                   </div>
-                  <div className="col-span-4 md:col-span-3">
+                  <div className="md:col-span-3">
                     <Label>Category</Label>
                   </div>
-                  <div className="col-span-2 md:col-span-3">
+                  <div className="md:col-span-3">
                     <Label>Price (€)</Label>
                   </div>
-                  <div className="col-span-1 md:col-span-1">
+                  <div className="md:col-span-1">
                     {/* Empty header for remove button */}
                   </div>
                 </div>
-                
+
                 {lineItems.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-5 md:col-span-5">
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    {/* Mobile labels - only visible on small screens */}
+                    <div className="block md:hidden space-y-4">
+                      <Label>Description</Label>
                       <FormField
                         control={form.control}
                         name={`lineItems.${index}.description`}
@@ -386,9 +392,8 @@ export default function VeterinaryForm() {
                           </FormItem>
                         )}
                       />
-                    </div>
-                    
-                    <div className="col-span-4 md:col-span-3">
+                      
+                      <Label>Category</Label>
                       <FormField
                         control={form.control}
                         name={`lineItems.${index}.category`}
@@ -407,9 +412,8 @@ export default function VeterinaryForm() {
                           </FormItem>
                         )}
                       />
-                    </div>
-                    
-                    <div className="col-span-2 md:col-span-3">
+                      
+                      <Label>Price (€)</Label>
                       <FormField
                         control={form.control}
                         name={`lineItems.${index}.price`}
@@ -426,18 +430,91 @@ export default function VeterinaryForm() {
                           </FormItem>
                         )}
                       />
+                      
+                      <div className="flex justify-end mt-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeLineItem(index)}
+                          className="text-destructive"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
+                      
+                      {index < lineItems.length - 1 && <hr className="my-4" />}
                     </div>
-                    
-                    <div className="col-span-1 md:col-span-1 flex justify-center items-center">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeLineItem(index)}
-                        className="h-8 w-8"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+
+                    {/* Desktop layout - hidden on mobile */}
+                    <div className="hidden md:contents">
+                      <div className="md:col-span-5">
+                        <FormField
+                          control={form.control}
+                          name={`lineItems.${index}.description`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input placeholder="Description" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <FormField
+                          control={form.control}
+                          name={`lineItems.${index}.category`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Combobox
+                                  options={categoryOptions}
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  placeholder="Select category"
+                                  emptyMessage="No category found."
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <FormField
+                          control={form.control}
+                          name={`lineItems.${index}.price`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  placeholder="0.00"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="md:col-span-1 flex justify-center items-center">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeLineItem(index)}
+                          className="h-8 w-8"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -552,14 +629,16 @@ export default function VeterinaryForm() {
             </CardContent>
           </Card>
 
-          {/* Submit Button */}
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={!form.formState.isValid}
-          >
-            Submit Invoice
-          </Button>
+          {/* Submit Button - right aligned and not full width */}
+          <div className="flex justify-end">
+            <Button 
+              type="submit" 
+              className="px-8"
+              disabled={!form.formState.isValid}
+            >
+              Submit Invoice
+            </Button>
+          </div>
         </form>
       </Form>
     </>
