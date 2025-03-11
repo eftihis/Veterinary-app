@@ -58,8 +58,12 @@ const formSchema = z.object({
   reference: z.string().optional(),
   animalName: z.string().min(1, "Animal name is required"),
   animalType: z.string().min(1, "Animal type is required"),
-  checkInDate: z.date(),
-  checkOutDate: z.date(),
+  checkInDate: z.date().optional().refine(date => !!date, { 
+    message: "Check-in date is required" 
+  }),
+  checkOutDate: z.date().optional().refine(date => !!date, { 
+    message: "Check-out date is required" 
+  }),
   lineItems: z.array(lineItemSchema).min(1, "At least one line item is required"),
   discountType: z.enum(["percent", "amount"]),
   discountValue: z.coerce.number().min(0),
@@ -98,8 +102,8 @@ export default function VeterinaryForm() {
       reference: "",
       animalName: "",
       animalType: "",
-      checkInDate: new Date(),
-      checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
+      checkInDate: undefined,
+      checkOutDate: undefined,
       lineItems: [{ description: "", itemId: "", itemName: "", price: "" }],
       discountType: "percent",
       discountValue: 0,
@@ -161,7 +165,7 @@ export default function VeterinaryForm() {
     setTotal(newTotal);
     
     // Check if discount makes total zero or negative
-    setIsDiscountTooHigh(newTotal <= 0);
+    setIsDiscountTooHigh(newTotal < 0);
   };
 
   // Add a new line item
@@ -206,8 +210,8 @@ export default function VeterinaryForm() {
         documentNumber: data.documentNumber,
         animalName: data.animalName,
         animalType: data.animalType,
-        checkInDate: data.checkInDate.toISOString(),
-        checkOutDate: data.checkOutDate.toISOString(),
+        checkInDate: data.checkInDate ? data.checkInDate.toISOString() : null,
+        checkOutDate: data.checkOutDate ? data.checkOutDate.toISOString() : null,
         lineItems: enhancedLineItems,
         subtotal,
         discountType: data.discountType,
@@ -245,8 +249,8 @@ export default function VeterinaryForm() {
         reference: "",
         animalName: "",
         animalType: "",
-        checkInDate: new Date(),
-        checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
+        checkInDate: undefined,
+        checkOutDate: undefined,
         lineItems: [{ description: "", itemId: "", itemName: "", price: "" }],
         discountType: "percent",
         discountValue: 0,
@@ -442,7 +446,7 @@ export default function VeterinaryForm() {
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
-                              selected={field.value}
+                              selected={field.value || undefined}
                               onSelect={(date) => {
                                 field.onChange(date);
                                 // Close the popover when a date is selected
@@ -493,7 +497,7 @@ export default function VeterinaryForm() {
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
-                              selected={field.value}
+                              selected={field.value || undefined}
                               onSelect={(date) => {
                                 field.onChange(date);
                                 // Close the popover when a date is selected
