@@ -37,6 +37,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { Combobox } from "@/components/ui/combobox";
+import { useXeroItems } from '@/hooks/useXeroItems';
 
 // Define the schema for line items
 const lineItemSchema = z.object({
@@ -113,6 +114,9 @@ export default function VeterinaryForm() {
   const lineItems = watch("lineItems");
   const discountType = watch("discountType");
   const discountValue = watch("discountValue");
+
+  // Fetch Xero items
+  const { items: xeroItems, loading: loadingXeroItems, error: xeroItemsError } = useXeroItems();
 
   // Calculate totals whenever line items or discount changes
   useEffect(() => {
@@ -459,6 +463,20 @@ export default function VeterinaryForm() {
             <CardContent className="pt-6">
               <h2 className="text-xl font-semibold mb-6">Services & Products</h2>
               
+              {/* Show loading state if items are being fetched */}
+              {loadingXeroItems && (
+                <div className="text-center py-4">
+                  <p>Loading items from Xero...</p>
+                </div>
+              )}
+              
+              {/* Show error if there was a problem fetching items */}
+              {xeroItemsError && (
+                <div className="bg-red-50 text-red-700 p-4 rounded-md mb-4">
+                  <p>Error loading items: {xeroItemsError}</p>
+                </div>
+              )}
+              
               <div className="space-y-3">
                 {/* Headers - visible only on larger screens */}
                 <div className="hidden md:grid md:grid-cols-12 md:gap-4 mb-2">
@@ -502,11 +520,26 @@ export default function VeterinaryForm() {
                           <FormItem>
                             <FormControl>
                               <Combobox
-                                options={categoryOptions}
+                                options={xeroItems.length > 0 ? xeroItems : categoryOptions}
                                 value={field.value}
-                                onChange={field.onChange}
-                                placeholder="Select category"
-                                emptyMessage="No category found."
+                                onChange={(value) => {
+                                  field.onChange(value);
+                                  
+                                  // If we select a Xero item, auto-fill the description and price
+                                  const selectedItem = xeroItems.find(item => item.value === value);
+                                  if (selectedItem) {
+                                    // Update description if it's empty
+                                    const currentDesc = form.getValues(`lineItems.${index}.description`);
+                                    if (!currentDesc) {
+                                      form.setValue(`lineItems.${index}.description`, selectedItem.description || selectedItem.label);
+                                    }
+                                    
+                                    // You could also set a default price if available in your Xero data
+                                    // form.setValue(`lineItems.${index}.price`, selectedItem.price || "");
+                                  }
+                                }}
+                                placeholder="Select item"
+                                emptyMessage={loadingXeroItems ? "Loading items..." : "No items found."}
                               />
                             </FormControl>
                             <FormMessage />
@@ -579,11 +612,26 @@ export default function VeterinaryForm() {
                             <FormItem>
                               <FormControl>
                                 <Combobox
-                                  options={categoryOptions}
+                                  options={xeroItems.length > 0 ? xeroItems : categoryOptions}
                                   value={field.value}
-                                  onChange={field.onChange}
-                                  placeholder="Select category"
-                                  emptyMessage="No category found."
+                                  onChange={(value) => {
+                                    field.onChange(value);
+                                    
+                                    // If we select a Xero item, auto-fill the description and price
+                                    const selectedItem = xeroItems.find(item => item.value === value);
+                                    if (selectedItem) {
+                                      // Update description if it's empty
+                                      const currentDesc = form.getValues(`lineItems.${index}.description`);
+                                      if (!currentDesc) {
+                                        form.setValue(`lineItems.${index}.description`, selectedItem.description || selectedItem.label);
+                                      }
+                                      
+                                      // You could also set a default price if available in your Xero data
+                                      // form.setValue(`lineItems.${index}.price`, selectedItem.price || "");
+                                    }
+                                  }}
+                                  placeholder="Select item"
+                                  emptyMessage={loadingXeroItems ? "Loading items..." : "No items found."}
                                 />
                               </FormControl>
                               <FormMessage />
