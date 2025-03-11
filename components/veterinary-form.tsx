@@ -71,9 +71,9 @@ const categoryOptions = [
 
 export default function VeterinaryForm() {
   const [showComment, setShowComment] = useState(false);
-  const [subtotal, setSubtotal] = useState(0);
-  const [discountAmount, setDiscountAmount] = useState(0);
-  const [total, setTotal] = useState(0);
+  const [subtotal, setSubtotal] = useState<number>(0);
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [total, setTotal] = useState<number>(0);
 
   // Initialize form with default values
   const form = useForm<FormValues>({
@@ -101,7 +101,7 @@ export default function VeterinaryForm() {
     const calculateTotals = () => {
       // Calculate subtotal
       const newSubtotal = lineItems.reduce(
-        (sum, item) => sum + (item.price || 0),
+        (sum, item) => sum + (Number(item.price) || 0),
         0
       );
       setSubtotal(newSubtotal);
@@ -109,9 +109,9 @@ export default function VeterinaryForm() {
       // Calculate discount
       let newDiscountAmount = 0;
       if (discountType === "percent") {
-        newDiscountAmount = newSubtotal * (discountValue / 100);
+        newDiscountAmount = newSubtotal * (Number(discountValue) / 100);
       } else {
-        newDiscountAmount = Math.min(discountValue, newSubtotal);
+        newDiscountAmount = Math.min(Number(discountValue), newSubtotal);
       }
       setDiscountAmount(newDiscountAmount);
 
@@ -577,6 +577,7 @@ export default function VeterinaryForm() {
                               onChange={(e) => {
                                 field.onChange(e.target.valueAsNumber || 0);
                               }}
+                              onFocus={(e) => e.target.select()}
                             />
                           </FormControl>
                         </FormItem>
