@@ -42,7 +42,8 @@ import { useXeroItems } from '@/hooks/useXeroItems';
 // Define the schema for line items
 const lineItemSchema = z.object({
   description: z.string().min(1, "Description is required"),
-  category: z.string().min(1, "Category is required"),
+  itemId: z.string().min(1, "Item is required"),
+  itemName: z.string().optional(),
   price: z.union([
     z.coerce.number().min(0, "Price must be a positive number"),
     z.string().transform(val => val === "" ? 0 : parseFloat(val) || 0)
@@ -68,7 +69,8 @@ const formSchema = z.object({
 // Define the type for line items that allows string for price
 type LineItem = {
   description: string;
-  category: string;
+  itemId: string;
+  itemName?: string;
   price: string | number;
 };
 
@@ -97,11 +99,12 @@ export default function VeterinaryForm() {
       animalType: "",
       checkInDate: new Date(),
       checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-      lineItems: [{ description: "", category: "", price: "" }],
+      lineItems: [{ description: "", itemId: "", itemName: "", price: "" }],
       discountType: "percent",
       discountValue: 0,
       comment: "",
     },
+    mode: "onBlur",
   });
 
   const { watch, setValue } = form;
@@ -154,7 +157,7 @@ export default function VeterinaryForm() {
   const addLineItem = () => {
     setValue("lineItems", [
       ...lineItems,
-      { description: "", category: "", price: "" },
+      { description: "", itemId: "", itemName: "", price: "" },
     ]);
   };
 
@@ -173,7 +176,19 @@ export default function VeterinaryForm() {
       // Show loading toast
       const loadingToastId = toast.loading("Submitting form...");
       
-      // Create payload from form data
+      // Create payload from form data with enhanced line items
+      const enhancedLineItems = data.lineItems.map(item => {
+        // Find the corresponding Xero item to get its name
+        const xeroItem = xeroItems.find(xeroItem => xeroItem.value === item.itemId);
+        
+        return {
+          description: item.description,
+          itemId: item.itemId,
+          itemName: xeroItem?.label || "Unknown Item",
+          price: item.price,
+        };
+      });
+      
       const payload = {
         executionId: `exec-${Date.now().toString(36)}`,
         timestamp: new Date().toISOString(),
@@ -182,7 +197,7 @@ export default function VeterinaryForm() {
         animalType: data.animalType,
         checkInDate: data.checkInDate.toISOString(),
         checkOutDate: data.checkOutDate.toISOString(),
-        lineItems: data.lineItems,
+        lineItems: enhancedLineItems,
         subtotal,
         discountType: data.discountType,
         discountValue: data.discountValue,
@@ -193,58 +208,42 @@ export default function VeterinaryForm() {
       
       console.log("Form submitted:", payload);
       
-      // Send data to webhook
-      const response = await fetch("https://hook.eu1.make.com/mksx5gdl3hemwrtkvxnp367ooxaf5478", {
-        method: "POST",
+      // Send data to the Make.com webhook
+      const webhookUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL || "https://hook.eu1.make.com/mksx5gdl3hemwrtkvxnp367ooxaf5478";
+      
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
       }
       
-      // Update the loading toast with success message
-      toast.success("Form submitted successfully!", {
-        id: loadingToastId,
-        description: `Document ${data.documentNumber} has been processed.`,
-        duration: 5000,
-        action: {
-          label: "View",
-          onClick: () => console.log("View action clicked"),
-        },
-        style: {
-          backgroundColor: "#f0fdf4", // Light green background
-          borderColor: "#86efac", // Green border
-        },
-      });
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToastId);
+      toast.success("Form submitted successfully!");
       
       // Reset form
       form.reset({
         documentNumber: "",
+        reference: "",
         animalName: "",
         animalType: "",
         checkInDate: new Date(),
         checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-        lineItems: [{ description: "", category: "", price: "" }],
+        lineItems: [{ description: "", itemId: "", itemName: "", price: "" }],
         discountType: "percent",
         discountValue: 0,
         comment: "",
       });
     } catch (error) {
-      console.error("Error:", error);
-      
-      // Show error toast with styling
-      toast.error("Error submitting form", {
-        description: "Please check your data and try again.",
-        duration: 5000,
-        style: {
-          backgroundColor: "#fef2f2", // Light red background
-          borderColor: "#fecaca", // Red border
-        },
-      });
+      console.error("Error submitting form:", error);
+      toast.error(`Failed to submit form: ${error.message}`);
     }
   };
 
@@ -272,49 +271,64 @@ export default function VeterinaryForm() {
                   <FormField
                     control={form.control}
                     name="documentNumber"
-                    render={({ field }) => {
+                    render={({ field, fieldState }) => {
+                      // Track validation error separately from the formatting logic
                       const [validationError, setValidationError] = useState<string | null>(null);
                       
                       return (
                         <FormItem>
-                          <FormLabel>Document Number</FormLabel>
+                          <FormLabel className={fieldState.invalid && fieldState.isTouched ? "text-destructive" : ""}>
+                            Document Number
+                          </FormLabel>
                           <FormControl>
                             <Input 
-                              {...field} 
+                              {...field}
                               placeholder="XX-0000"
+                              className={cn(
+                                fieldState.invalid && fieldState.isTouched && "border-destructive ring-destructive focus-visible:ring-destructive"
+                              )}
+                              value={field.value}
                               onChange={(e) => {
-                                let value = e.target.value.toUpperCase();
+                                // Get the current value
+                                let value = e.target.value;
                                 
-                                // Format as user types
-                                if (value.length > 0) {
-                                  // Handle letters part (first 2 characters)
-                                  const letters = value.replace(/[^A-Za-z]/g, '').substring(0, 2);
-                                  
-                                  // Handle numbers part (up to 4 digits)
-                                  const numbers = value.replace(/[^0-9]/g, '').substring(0, 4);
-                                  
-                                  // Combine with hyphen if we have letters
-                                  if (letters.length > 0) {
-                                    value = letters;
-                                    if (numbers.length > 0) {
-                                      value += '-' + numbers;
-                                    } else if (value.length >= 2) {
-                                      // Add hyphen automatically after 2 letters
-                                      value += '-';
-                                    }
-                                  }
+                                // Always apply formatting regardless of validation state
+                                
+                                // Convert to uppercase
+                                value = value.toUpperCase();
+                                
+                                // Handle hyphen insertion
+                                if (value.length === 2 && !value.includes('-')) {
+                                  // If we have exactly 2 characters and no hyphen, add it
+                                  value += '-';
+                                } else if (value.length > 2 && !value.includes('-')) {
+                                  // If we have more than 2 characters but no hyphen, insert it
+                                  value = value.substring(0, 2) + '-' + value.substring(2);
                                 }
                                 
+                                // Limit to 7 characters (XX-YYYY format)
+                                if (value.length > 7) {
+                                  value = value.substring(0, 7);
+                                }
+                                
+                                // Update the field value
                                 field.onChange(value);
+                              }}
+                              onBlur={(e) => {
+                                // Call the original onBlur to trigger validation
+                                field.onBlur();
+                                
+                                // Check if the format is correct
+                                const regex = /^[A-Za-z]{2}-\d{4}$/;
+                                if (!regex.test(field.value)) {
+                                  setValidationError("Document number must be in format XX-0000");
+                                } else {
+                                  setValidationError(null);
+                                }
                               }}
                             />
                           </FormControl>
-                          {validationError && (
-                            <div className="text-sm font-medium text-destructive mt-1">
-                              {validationError}
-                            </div>
-                          )}
-                          <FormMessage />
+                          {fieldState.invalid && fieldState.isTouched && <FormMessage />}
                         </FormItem>
                       );
                     }}
@@ -354,15 +368,21 @@ export default function VeterinaryForm() {
                 <FormField
                   control={form.control}
                   name="animalType"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
-                      <FormLabel>Animal Type</FormLabel>
+                      <FormLabel className={fieldState.invalid ? "text-destructive" : ""}>
+                        Animal Type
+                      </FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger 
+                            className={cn(
+                              fieldState.invalid && "border-destructive ring-destructive focus-visible:ring-destructive"
+                            )}
+                          >
                             <SelectValue placeholder="Select..." />
                           </SelectTrigger>
                         </FormControl>
@@ -522,7 +542,7 @@ export default function VeterinaryForm() {
                       <Label>Category</Label>
                       <FormField
                         control={form.control}
-                        name={`lineItems.${index}.category`}
+                        name={`lineItems.${index}.itemId`}
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
@@ -531,6 +551,13 @@ export default function VeterinaryForm() {
                                 value={field.value}
                                 onChange={(value) => {
                                   field.onChange(value);
+                                  
+                                  // Find the selected item to get its name
+                                  const selectedItem = xeroItems.find(item => item.value === value);
+                                  if (selectedItem) {
+                                    // Set the item name in a separate field
+                                    form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
+                                  }
                                 }}
                                 placeholder={animalType ? "Select item" : "Select animal type first"}
                                 emptyMessage={
@@ -614,7 +641,7 @@ export default function VeterinaryForm() {
                       <div className="md:col-span-4">
                         <FormField
                           control={form.control}
-                          name={`lineItems.${index}.category`}
+                          name={`lineItems.${index}.itemId`}
                           render={({ field }) => (
                             <FormItem>
                               <FormControl>
@@ -623,6 +650,13 @@ export default function VeterinaryForm() {
                                   value={field.value}
                                   onChange={(value) => {
                                     field.onChange(value);
+                                    
+                                    // Find the selected item to get its name
+                                    const selectedItem = xeroItems.find(item => item.value === value);
+                                    if (selectedItem) {
+                                      // Set the item name in a separate field
+                                      form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
+                                    }
                                   }}
                                   placeholder={animalType ? "Select item" : "Select animal type first"}
                                   emptyMessage={
