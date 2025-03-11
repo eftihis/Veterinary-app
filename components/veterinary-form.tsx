@@ -88,6 +88,7 @@ export default function VeterinaryForm() {
   const [subtotal, setSubtotal] = useState<number>(0);
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
+  const [isDiscountTooHigh, setIsDiscountTooHigh] = useState(false);
 
   // Initialize form with default values
   const form = useForm<FormValues>({
@@ -151,12 +152,16 @@ export default function VeterinaryForm() {
     if (type === "percent") {
       newDiscountAmount = newSubtotal * (Number(value) / 100);
     } else {
-      newDiscountAmount = Math.min(Number(value), newSubtotal);
+      newDiscountAmount = Number(value);
     }
     setDiscountAmount(newDiscountAmount);
 
     // Calculate total
-    setTotal(newSubtotal - newDiscountAmount);
+    const newTotal = newSubtotal - newDiscountAmount;
+    setTotal(newTotal);
+    
+    // Check if discount makes total zero or negative
+    setIsDiscountTooHigh(newTotal <= 0);
   };
 
   // Add a new line item
@@ -812,6 +817,7 @@ export default function VeterinaryForm() {
                                 field.onChange(e.target.valueAsNumber || 0);
                               }}
                               onFocus={(e) => e.target.select()}
+                              className={isDiscountTooHigh ? "border-red-500" : ""}
                             />
                           </FormControl>
                         </FormItem>
@@ -821,9 +827,18 @@ export default function VeterinaryForm() {
                   </div>
                 </div>
                 
+                {/* Display warning message when discount is too high */}
+                {isDiscountTooHigh && (
+                  <div className="text-red-500 text-sm mt-1">
+                    Warning: Discount amount results in a zero or negative total. Please reduce the discount.
+                  </div>
+                )}
+                
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
                   <span>Total:</span>
-                  <span>€{total.toFixed(2)}</span>
+                  <span className={isDiscountTooHigh ? "text-red-500" : ""}>
+                    €{total.toFixed(2)}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -869,7 +884,7 @@ export default function VeterinaryForm() {
             <Button 
               type="submit" 
               className="px-8"
-              disabled={!form.formState.isValid}
+              disabled={!form.formState.isValid || isDiscountTooHigh}
             >
               Submit Invoice
             </Button>
