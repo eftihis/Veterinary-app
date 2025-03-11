@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
+    console.log("Callback endpoint called");
+    
     const searchParams = req.nextUrl.searchParams;
     const code = searchParams.get('code');
     const state = searchParams.get('state');
@@ -9,8 +11,11 @@ export async function GET(req: NextRequest) {
 
     // Verify state
     if (!state || !storedState || state !== storedState) {
+      console.error("State verification failed");
       return NextResponse.json({ error: 'Invalid state' }, { status: 400 });
     }
+
+    console.log("State verified, exchanging code for tokens");
 
     // Exchange code for tokens
     const tokenResponse = await fetch('https://identity.xero.com/connect/token', {
@@ -31,19 +36,32 @@ export async function GET(req: NextRequest) {
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
       console.error('Token exchange failed:', errorData);
-      throw new Error(`Token exchange failed: ${errorData}`);
+      return NextResponse.json({ 
+        error: 'Token exchange failed', 
+        details: errorData 
+      }, { status: tokenResponse.status });
     }
 
     const tokens = await tokenResponse.json();
-    console.log('Tokens received:', tokens);
+    console.log('Tokens received successfully');
 
+    // Calculate expiry time
+    const expiryTime = Date.now() + tokens.expires_in * 1000;
+    
     // Create response with redirect
     const response = NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/xero-test`);
 
     // Set tokens in cookies
-    const tokenExpiry = new Date(Date.now() + tokens.expires_in * 1000);
     response.cookies.set('xero_access_token', tokens.access_token, {
-      expires: tokenExpiry,
+      expires: new Date(expiryTime),
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax'
+    });
+    
+    // Store the expiry timestamp
+    response.cookies.set('xero_token_expiry', expiryTime.toString(), {
+      expires: new Date(expiryTime),
       httpOnly: true,
       secure: true,
       sameSite: 'lax'
@@ -58,31 +76,38 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Get the tenant ID
-    const tenantsResponse = await fetch('https://api.xero.com/connections', {
-      headers: {
-        Authorization: `Bearer ${tokens.access_token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Get tenant ID and store it
+    try {
+      const tenantsResponse = await fetch('https://api.xero.com/connections', {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-    if (tenantsResponse.ok) {
-      const tenants = await tenantsResponse.json();
-      if (tenants && tenants.length > 0) {
-        // Store the first tenant ID in a cookie
-        response.cookies.set('xero_tenant_id', tenants[0].tenantId, {
-          expires: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
-          httpOnly: true,
-          secure: true,
-          sameSite: 'lax'
-        });
-        console.log("Tenant ID stored:", tenants[0].tenantId);
+      if (tenantsResponse.ok) {
+        const tenants = await tenantsResponse.json();
+        if (tenants && tenants.length > 0) {
+          response.cookies.set('xero_tenant_id', tenants[0].tenantId, {
+            expires: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax'
+          });
+          console.log("Tenant ID stored:", tenants[0].tenantId);
+        }
       }
+    } catch (error) {
+      console.error("Error fetching tenants:", error);
+      // Continue anyway, as we have the tokens
     }
 
     return response;
   } catch (error) {
     console.error('Callback error:', error);
-    return NextResponse.json({ error: 'Callback failed' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Callback failed', 
+      details: error.message 
+    }, { status: 500 });
   }
 }

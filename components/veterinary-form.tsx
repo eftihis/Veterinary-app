@@ -115,8 +115,14 @@ export default function VeterinaryForm() {
   const discountType = watch("discountType");
   const discountValue = watch("discountValue");
 
-  // Fetch Xero items
-  const { items: xeroItems, loading: loadingXeroItems, error: xeroItemsError } = useXeroItems();
+  // Fetch Xero items with automatic token management
+  const { 
+    items: xeroItems, 
+    loading: loadingXeroItems, 
+    error: xeroItemsError,
+    needsReauth: xeroNeedsReauth,
+    reauth: xeroReauth
+  } = useXeroItems();
 
   // Calculate totals whenever line items or discount changes
   useEffect(() => {
@@ -458,6 +464,20 @@ export default function VeterinaryForm() {
             </CardContent>
           </Card>
 
+          {/* Show re-authentication prompt if needed */}
+          {xeroNeedsReauth && (
+            <div className="bg-yellow-50 text-yellow-700 p-4 rounded-md mb-4">
+              <p>Your Xero session has expired.</p>
+              <button 
+                type="button"
+                onClick={xeroReauth}
+                className="mt-2 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+              >
+                Reconnect to Xero
+              </button>
+            </div>
+          )}
+
           {/* Services & Products Section */}
           <Card>
             <CardContent className="pt-6">
@@ -471,7 +491,7 @@ export default function VeterinaryForm() {
               )}
               
               {/* Show error if there was a problem fetching items */}
-              {xeroItemsError && (
+              {xeroItemsError && !xeroNeedsReauth && (
                 <div className="bg-red-50 text-red-700 p-4 rounded-md mb-4">
                   <p>Error loading items: {xeroItemsError}</p>
                 </div>

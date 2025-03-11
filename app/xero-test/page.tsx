@@ -28,6 +28,11 @@ export default function XeroTest() {
     }
   };
 
+  const expireToken = async () => {
+    await fetch('/api/xero/expire-token');
+    alert('Token expired for testing');
+  };
+
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
       <h1 style={{ marginBottom: '20px' }}>Xero Connection Test</h1>
@@ -60,6 +65,20 @@ export default function XeroTest() {
           }}
         >
           Test Connection
+        </button>
+
+        <button 
+          onClick={expireToken}
+          style={{ 
+            padding: '10px 15px', 
+            backgroundColor: '#dc3545', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '4px',
+            marginRight: '10px'
+          }}
+        >
+          Expire Token (Test)
         </button>
 
         {error && (

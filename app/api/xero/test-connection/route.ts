@@ -1,54 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { callXeroApi } from '@/lib/xero-auth';
 
 export async function GET(req: NextRequest) {
   try {
     console.log("Test connection endpoint called");
     
-    const accessToken = req.cookies.get('xero_access_token')?.value;
-    console.log("Access token exists:", !!accessToken);
-
-    if (!accessToken) {
-      console.log("No access token found in cookies");
-      return NextResponse.json({ error: 'No access token found' }, { status: 401 });
-    }
-
-    const tenantId = req.cookies.get('xero_tenant_id')?.value;
-    if (!tenantId) {
-      return NextResponse.json({ error: 'No tenant ID found' }, { status: 401 });
-    }
-
-    // Test the connection by fetching organisations
-    console.log("Attempting to fetch from Xero API...");
-    
     try {
-      const response = await fetch('https://api.xero.com/api.xro/2.0/Organisations', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Xero-Tenant-Id': tenantId
-        },
-      });
+      // Use the callXeroApi utility which handles token refresh
+      const result = await callXeroApi('Organisations');
       
-      console.log("Xero API response status:", response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API request failed:', response.status, errorText);
-        return NextResponse.json({ 
-          error: `API request failed: ${response.status}`, 
-          details: errorText 
-        }, { status: response.status });
-      }
-
-      const data = await response.json();
       console.log('Connection successful');
-      return NextResponse.json(data);
-    } catch (fetchError) {
-      console.error("Fetch error:", fetchError);
+      
+      // Create response with the data
+      const response = NextResponse.json(result.data);
+      
+      // Set any cookies returned from token refresh
+      if (result.cookies && result.cookies.length > 0) {
+        console.log('Setting new cookies from token refresh');
+        result.cookies.forEach(cookie => {
+          response.cookies.set(cookie.name, cookie.value, cookie.options);
+        });
+      }
+      
+      return response;
+    } catch (apiError) {
+      console.error("API error:", apiError);
+      
+      // Check if it's an authentication error
+      if (apiError.message && apiError.message.includes('Authentication error')) {
+        return NextResponse.json({ 
+          error: 'Authentication failed', 
+          details: apiError.message 
+        }, { status: 401 });
+      }
+      
       return NextResponse.json({ 
         error: 'Error fetching from Xero API', 
-        details: fetchError.message 
+        details: apiError.message 
       }, { status: 500 });
     }
   } catch (error) {
