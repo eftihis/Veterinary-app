@@ -79,12 +79,6 @@ type FormValues = Omit<z.infer<typeof formSchema>, 'lineItems'> & {
 
 // Define category options
 const categoryOptions = [
-  { value: "Medication", label: "Medication" },
-  { value: "Consultation", label: "Consultation" },
-  { value: "Surgery", label: "Surgery" },
-  { value: "Grooming", label: "Grooming" },
-  { value: "Boarding", label: "Boarding" },
-  { value: "Other", label: "Other" },
 ];
 
 export default function VeterinaryForm() {
@@ -261,6 +255,13 @@ export default function VeterinaryForm() {
           onSubmit={form.handleSubmit(onSubmit)} 
           className="space-y-8 max-w-3xl mx-auto"
         >
+          {/* Show loading state if items are being fetched */}
+          {loadingXeroItems && (
+            <div className="bg-blue-50 text-blue-700 p-4 rounded-md mb-4">
+              <p>Loading items from Xero...</p>
+            </div>
+          )}
+
           {/* Patient Information Section */}
           <Card>
             <CardContent className="pt-6">
@@ -357,10 +358,7 @@ export default function VeterinaryForm() {
                     <FormItem>
                       <FormLabel>Animal Type</FormLabel>
                       <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          // The useXeroItems hook will automatically filter items based on the new value
-                        }}
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -374,6 +372,9 @@ export default function VeterinaryForm() {
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Select an animal type to see available items
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -544,7 +545,7 @@ export default function VeterinaryForm() {
                           <FormItem>
                             <FormControl>
                               <Combobox
-                                options={xeroItems.length > 0 ? xeroItems : categoryOptions}
+                                options={animalType ? xeroItems : []}
                                 value={field.value}
                                 onChange={(value) => {
                                   field.onChange(value);
@@ -562,8 +563,14 @@ export default function VeterinaryForm() {
                                     // form.setValue(`lineItems.${index}.price`, selectedItem.price || "");
                                   }
                                 }}
-                                placeholder="Select item"
-                                emptyMessage={loadingXeroItems ? "Loading items..." : "No items found."}
+                                placeholder={animalType ? "Select item" : "Select animal type first"}
+                                emptyMessage={
+                                  !animalType 
+                                    ? "Please select an animal type first" 
+                                    : loadingXeroItems 
+                                      ? "Loading items..." 
+                                      : "No items found for this animal type."
+                                }
                               >
                                 {animalType && xeroItems.length === 0 && !loadingXeroItems && (
                                   <div className="text-sm text-amber-600 mt-1">
@@ -642,7 +649,7 @@ export default function VeterinaryForm() {
                             <FormItem>
                               <FormControl>
                                 <Combobox
-                                  options={xeroItems.length > 0 ? xeroItems : categoryOptions}
+                                  options={animalType ? xeroItems : []}
                                   value={field.value}
                                   onChange={(value) => {
                                     field.onChange(value);
@@ -660,8 +667,14 @@ export default function VeterinaryForm() {
                                       // form.setValue(`lineItems.${index}.price`, selectedItem.price || "");
                                     }
                                   }}
-                                  placeholder="Select item"
-                                  emptyMessage={loadingXeroItems ? "Loading items..." : "No items found."}
+                                  placeholder={animalType ? "Select item" : "Select animal type first"}
+                                  emptyMessage={
+                                    !animalType 
+                                      ? "Please select an animal type first" 
+                                      : loadingXeroItems 
+                                        ? "Loading items..." 
+                                        : "No items found for this animal type."
+                                  }
                                 >
                                   {animalType && xeroItems.length === 0 && !loadingXeroItems && (
                                     <div className="text-sm text-amber-600 mt-1">

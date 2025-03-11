@@ -37,11 +37,12 @@ export function useXeroItems(animalType?: string) {
       // Store all items
       setAllItems(data.items || []);
       
-      // Filter items based on animal type if provided
+      // Only set items if animal type is provided
       if (animalType) {
         filterItemsByAnimalType(data.items || [], animalType);
       } else {
-        setItems(data.items || []);
+        // Set empty array if no animal type is selected
+        setItems([]);
       }
     } catch (err) {
       console.error('Error fetching Xero items:', err);
@@ -62,7 +63,8 @@ export function useXeroItems(animalType?: string) {
     } else if (type === 'other') {
       filteredItems = itemsToFilter.filter(item => item.accountCode === '432');
     } else {
-      filteredItems = itemsToFilter;
+      // If animal type is not recognized, return empty array
+      filteredItems = [];
     }
     
     setItems(filteredItems);
@@ -72,8 +74,9 @@ export function useXeroItems(animalType?: string) {
   useEffect(() => {
     if (allItems.length > 0 && animalType) {
       filterItemsByAnimalType(allItems, animalType);
-    } else if (allItems.length > 0) {
-      setItems(allItems);
+    } else {
+      // Set empty array if no animal type is selected
+      setItems([]);
     }
   }, [animalType, allItems]);
 
