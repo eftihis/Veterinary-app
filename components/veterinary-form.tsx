@@ -782,7 +782,7 @@ export default function VeterinaryForm() {
                       <Button
                         type="button"
                         variant={discountType === "percent" ? "default" : "outline"}
-                        className="rounded-none px-3 py-1 h-9"
+                        className="rounded-none px-3 py-1 h-9 min-w-10"
                         onClick={() => setValue("discountType", "percent")}
                       >
                         %
@@ -790,7 +790,7 @@ export default function VeterinaryForm() {
                       <Button
                         type="button"
                         variant={discountType === "amount" ? "default" : "outline"}
-                        className="rounded-none px-3 py-1 h-9"
+                        className="rounded-none px-3 py-1 h-9 min-w-10"
                         onClick={() => setValue("discountType", "amount")}
                       >
                         €
