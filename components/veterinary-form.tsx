@@ -41,12 +41,17 @@ import { Combobox } from "@/components/ui/combobox";
 const lineItemSchema = z.object({
   description: z.string().min(1, "Description is required"),
   category: z.string().min(1, "Category is required"),
-  price: z.coerce.number().min(0, "Price must be a positive number"),
+  price: z.union([
+    z.coerce.number().min(0, "Price must be a positive number"),
+    z.string().transform(val => val === "" ? 0 : parseFloat(val) || 0)
+  ]),
 });
 
 // Define the schema for the form
 const formSchema = z.object({
-  documentNumber: z.string().min(1, "Document number is required"),
+  documentNumber: z.string()
+    .min(1, "Document number is required")
+    .regex(/^[A-Za-z]{2}-\d{4}$/, "Document number must be in format XX-0000"),
   animalName: z.string().min(1, "Animal name is required"),
   animalType: z.string().min(1, "Animal type is required"),
   checkInDate: z.date(),
@@ -57,7 +62,17 @@ const formSchema = z.object({
   comment: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+// Define the type for line items that allows string for price
+type LineItem = {
+  description: string;
+  category: string;
+  price: string | number;
+};
+
+// Update the FormValues type
+type FormValues = Omit<z.infer<typeof formSchema>, 'lineItems'> & {
+  lineItems: LineItem[];
+};
 
 // Define category options
 const categoryOptions = [
@@ -84,7 +99,7 @@ export default function VeterinaryForm() {
       animalType: "",
       checkInDate: new Date(),
       checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-      lineItems: [{ description: "", category: "", price: 0 }],
+      lineItems: [{ description: "", category: "", price: "" }],
       discountType: "percent",
       discountValue: 0,
       comment: "",
@@ -101,7 +116,12 @@ export default function VeterinaryForm() {
     const calculateTotals = () => {
       // Calculate subtotal
       const newSubtotal = lineItems.reduce(
-        (sum, item) => sum + (Number(item.price) || 0),
+        (sum, item) => {
+          const price = typeof item.price === 'string' 
+            ? (item.price === "" ? 0 : parseFloat(item.price) || 0) 
+            : (Number(item.price) || 0);
+          return sum + price;
+        },
         0
       );
       setSubtotal(newSubtotal);
@@ -126,7 +146,7 @@ export default function VeterinaryForm() {
   const addLineItem = () => {
     setValue("lineItems", [
       ...lineItems,
-      { description: "", category: "", price: 0 },
+      { description: "", category: "", price: "" },
     ]);
   };
 
@@ -184,7 +204,7 @@ export default function VeterinaryForm() {
         animalType: "",
         checkInDate: new Date(),
         checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-        lineItems: [{ description: "", category: "", price: 0 }],
+        lineItems: [{ description: "", category: "", price: "" }],
         discountType: "percent",
         discountValue: 0,
         comment: "",
@@ -215,7 +235,35 @@ export default function VeterinaryForm() {
                     <FormItem>
                       <FormLabel>Document Number</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input 
+                          {...field} 
+                          placeholder="XX-0000"
+                          onChange={(e) => {
+                            let value = e.target.value.toUpperCase();
+                            
+                            // Format as user types
+                            if (value.length > 0) {
+                              // Handle letters part (first 2 characters)
+                              const letters = value.replace(/[^A-Za-z]/g, '').substring(0, 2);
+                              
+                              // Handle numbers part (up to 4 digits)
+                              const numbers = value.replace(/[^0-9]/g, '').substring(0, 4);
+                              
+                              // Combine with hyphen if we have letters
+                              if (letters.length > 0) {
+                                value = letters;
+                                if (numbers.length > 0) {
+                                  value += '-' + numbers;
+                                } else if (value.length >= 2) {
+                                  // Add hyphen automatically after 2 letters
+                                  value += '-';
+                                }
+                              }
+                            }
+                            
+                            field.onChange(value);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -424,6 +472,12 @@ export default function VeterinaryForm() {
                                 type="number"
                                 placeholder="0.00"
                                 {...field}
+                                value={field.value === undefined || field.value === null ? "" : field.value}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  field.onChange(value === "" ? "" : parseFloat(value) || 0);
+                                }}
+                                onFocus={(e) => e.target.select()}
                               />
                             </FormControl>
                             <FormMessage />
@@ -496,6 +550,12 @@ export default function VeterinaryForm() {
                                   type="number"
                                   placeholder="0.00"
                                   {...field}
+                                  value={field.value === undefined || field.value === null ? "" : field.value}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    field.onChange(value === "" ? "" : parseFloat(value) || 0);
+                                  }}
+                                  onFocus={(e) => e.target.select()}
                                 />
                               </FormControl>
                               <FormMessage />
