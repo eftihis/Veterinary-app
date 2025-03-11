@@ -225,9 +225,9 @@ export default function VeterinaryForm() {
           {/* Patient Information Section */}
           <Card>
             <CardContent className="pt-6">
-              <h2 className="text-xl font-semibold mb-4">Patient Information</h2>
+              <h2 className="text-xl font-semibold mb-6">Patient Information</h2>
               
-              <div className="mb-4">
+              <div className="mb-6">
                 <FormField
                   control={form.control}
                   name="documentNumber"
@@ -271,7 +271,7 @@ export default function VeterinaryForm() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <FormField
                   control={form.control}
                   name="animalName"
@@ -404,18 +404,18 @@ export default function VeterinaryForm() {
           {/* Services & Products Section */}
           <Card>
             <CardContent className="pt-6">
-              <h2 className="text-xl font-semibold mb-4">Services & Products</h2>
+              <h2 className="text-xl font-semibold mb-6">Services & Products</h2>
               
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Headers - visible only on larger screens */}
                 <div className="hidden md:grid md:grid-cols-12 md:gap-4 mb-2">
                   <div className="md:col-span-5">
                     <Label>Description</Label>
                   </div>
-                  <div className="md:col-span-3">
+                  <div className="md:col-span-4">
                     <Label>Category</Label>
                   </div>
-                  <div className="md:col-span-3">
+                  <div className="md:col-span-2">
                     <Label>Price (€)</Label>
                   </div>
                   <div className="md:col-span-1">
@@ -518,7 +518,7 @@ export default function VeterinaryForm() {
                         />
                       </div>
 
-                      <div className="md:col-span-3">
+                      <div className="md:col-span-4">
                         <FormField
                           control={form.control}
                           name={`lineItems.${index}.category`}
@@ -539,7 +539,7 @@ export default function VeterinaryForm() {
                         />
                       </div>
 
-                      <div className="md:col-span-3">
+                      <div className="md:col-span-2">
                         <FormField
                           control={form.control}
                           name={`lineItems.${index}.price`}
@@ -658,7 +658,7 @@ export default function VeterinaryForm() {
           {/* Comment Section */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-center mb-6">
                 <Button
                   type="button"
                   variant="ghost"
