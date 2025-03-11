@@ -114,15 +114,16 @@ export default function VeterinaryForm() {
   const lineItems = watch("lineItems");
   const discountType = watch("discountType");
   const discountValue = watch("discountValue");
+  const animalType = watch("animalType");
 
-  // Fetch Xero items with automatic token management
+  // Fetch Xero items with automatic token management and filtering by animal type
   const { 
     items: xeroItems, 
     loading: loadingXeroItems, 
     error: xeroItemsError,
     needsReauth: xeroNeedsReauth,
     reauth: xeroReauth
-  } = useXeroItems();
+  } = useXeroItems(animalType);
 
   // Calculate totals whenever line items or discount changes
   useEffect(() => {
@@ -356,7 +357,10 @@ export default function VeterinaryForm() {
                     <FormItem>
                       <FormLabel>Animal Type</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // The useXeroItems hook will automatically filter items based on the new value
+                        }}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -560,7 +564,13 @@ export default function VeterinaryForm() {
                                 }}
                                 placeholder="Select item"
                                 emptyMessage={loadingXeroItems ? "Loading items..." : "No items found."}
-                              />
+                              >
+                                {animalType && xeroItems.length === 0 && !loadingXeroItems && (
+                                  <div className="text-sm text-amber-600 mt-1">
+                                    No items available for {animalType}. Please select a different animal type.
+                                  </div>
+                                )}
+                              </Combobox>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -652,7 +662,13 @@ export default function VeterinaryForm() {
                                   }}
                                   placeholder="Select item"
                                   emptyMessage={loadingXeroItems ? "Loading items..." : "No items found."}
-                                />
+                                >
+                                  {animalType && xeroItems.length === 0 && !loadingXeroItems && (
+                                    <div className="text-sm text-amber-600 mt-1">
+                                      No items available for {animalType}. Please select a different animal type.
+                                    </div>
+                                  )}
+                                </Combobox>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
