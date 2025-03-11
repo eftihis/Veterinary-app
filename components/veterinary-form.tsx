@@ -1,4 +1,5 @@
 "use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -52,6 +53,7 @@ const formSchema = z.object({
   documentNumber: z.string()
     .min(1, "Document number is required")
     .regex(/^[A-Za-z]{2}-\d{4}$/, "Document number must be in format XX-0000"),
+  reference: z.string().optional(),
   animalName: z.string().min(1, "Animal name is required"),
   animalType: z.string().min(1, "Animal type is required"),
   checkInDate: z.date(),
@@ -95,6 +97,7 @@ export default function VeterinaryForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       documentNumber: "",
+      reference: "",
       animalName: "",
       animalType: "",
       checkInDate: new Date(),
@@ -166,6 +169,7 @@ export default function VeterinaryForm() {
       executionId: `exec-${Date.now().toString(36)}`,
       timestamp: new Date().toISOString(),
       documentNumber: data.documentNumber,
+      reference: data.reference,
       animalName: data.animalName,
       animalType: data.animalType,
       checkInDate: format(data.checkInDate, "yyyy-MM-dd"),
@@ -200,6 +204,7 @@ export default function VeterinaryForm() {
       // Reset form
       form.reset({
         documentNumber: "",
+        reference: "",
         animalName: "",
         animalType: "",
         checkInDate: new Date(),
@@ -228,47 +233,72 @@ export default function VeterinaryForm() {
               <h2 className="text-xl font-semibold mb-6">Patient Information</h2>
               
               <div className="mb-6">
-                <FormField
-                  control={form.control}
-                  name="documentNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Document Number</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          placeholder="XX-0000"
-                          onChange={(e) => {
-                            let value = e.target.value.toUpperCase();
-                            
-                            // Format as user types
-                            if (value.length > 0) {
-                              // Handle letters part (first 2 characters)
-                              const letters = value.replace(/[^A-Za-z]/g, '').substring(0, 2);
-                              
-                              // Handle numbers part (up to 4 digits)
-                              const numbers = value.replace(/[^0-9]/g, '').substring(0, 4);
-                              
-                              // Combine with hyphen if we have letters
-                              if (letters.length > 0) {
-                                value = letters;
-                                if (numbers.length > 0) {
-                                  value += '-' + numbers;
-                                } else if (value.length >= 2) {
-                                  // Add hyphen automatically after 2 letters
-                                  value += '-';
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="documentNumber"
+                    render={({ field }) => {
+                      const [validationError, setValidationError] = useState<string | null>(null);
+                      
+                      return (
+                        <FormItem>
+                          <FormLabel>Document Number</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              placeholder="XX-0000"
+                              onChange={(e) => {
+                                let value = e.target.value.toUpperCase();
+                                
+                                // Format as user types
+                                if (value.length > 0) {
+                                  // Handle letters part (first 2 characters)
+                                  const letters = value.replace(/[^A-Za-z]/g, '').substring(0, 2);
+                                  
+                                  // Handle numbers part (up to 4 digits)
+                                  const numbers = value.replace(/[^0-9]/g, '').substring(0, 4);
+                                  
+                                  // Combine with hyphen if we have letters
+                                  if (letters.length > 0) {
+                                    value = letters;
+                                    if (numbers.length > 0) {
+                                      value += '-' + numbers;
+                                    } else if (value.length >= 2) {
+                                      // Add hyphen automatically after 2 letters
+                                      value += '-';
+                                    }
+                                  }
                                 }
-                              }
-                            }
-                            
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                                
+                                field.onChange(value);
+                              }}
+                            />
+                          </FormControl>
+                          {validationError && (
+                            <div className="text-sm font-medium text-destructive mt-1">
+                              {validationError}
+                            </div>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="reference"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reference (Optional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter reference" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
