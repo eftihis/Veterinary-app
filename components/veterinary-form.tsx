@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
+import { Combobox } from "@/components/ui/combobox";
 
 // Define the schema for line items
 const lineItemSchema = z.object({
@@ -57,6 +58,16 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+// Define category options
+const categoryOptions = [
+  { value: "Medication", label: "Medication" },
+  { value: "Consultation", label: "Consultation" },
+  { value: "Surgery", label: "Surgery" },
+  { value: "Grooming", label: "Grooming" },
+  { value: "Boarding", label: "Boarding" },
+  { value: "Other", label: "Other" },
+];
 
 export default function VeterinaryForm() {
   const [showComment, setShowComment] = useState(false);
@@ -345,26 +356,29 @@ export default function VeterinaryForm() {
               <h2 className="text-xl font-semibold mb-4">Services & Products</h2>
               
               <div className="space-y-4">
-                {/* Table Header */}
-                <div className="hidden md:grid md:grid-cols-12 gap-4 font-medium text-sm border-b pb-2">
-                  <div className="md:col-span-5">Description</div>
-                  <div className="md:col-span-3">Category</div>
-                  <div className="md:col-span-3">Price (€)</div>
-                  <div className="md:col-span-1"></div>
+                <div className="grid grid-cols-12 gap-4 mb-2">
+                  <div className="col-span-5 md:col-span-5">
+                    <Label>Description</Label>
+                  </div>
+                  <div className="col-span-4 md:col-span-3">
+                    <Label>Category</Label>
+                  </div>
+                  <div className="col-span-2 md:col-span-3">
+                    <Label>Price (€)</Label>
+                  </div>
+                  <div className="col-span-1 md:col-span-1">
+                    {/* Empty header for remove button */}
+                  </div>
                 </div>
                 
-                {/* Line Items */}
                 {lineItems.map((item, index) => (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4" key={index}>
-                    <div className="md:col-span-5">
+                  <div key={index} className="grid grid-cols-12 gap-4 items-center">
+                    <div className="col-span-5 md:col-span-5">
                       <FormField
                         control={form.control}
                         name={`lineItems.${index}.description`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className={index !== 0 ? "sr-only" : undefined}>
-                              Description
-                            </FormLabel>
                             <FormControl>
                               <Input placeholder="Description" {...field} />
                             </FormControl>
@@ -374,58 +388,19 @@ export default function VeterinaryForm() {
                       />
                     </div>
                     
-                    <div className="md:col-span-3">
+                    <div className="col-span-4 md:col-span-3">
                       <FormField
                         control={form.control}
                         name={`lineItems.${index}.category`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className={index !== 0 ? "sr-only" : undefined}>
-                              Category
-                            </FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Medication">Medication</SelectItem>
-                                <SelectItem value="Consultation">Consultation</SelectItem>
-                                <SelectItem value="Surgery">Surgery</SelectItem>
-                                <SelectItem value="Grooming">Grooming</SelectItem>
-                                <SelectItem value="Boarding">Boarding</SelectItem>
-                                <SelectItem value="Other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-3">
-                      <FormField
-                        control={form.control}
-                        name={`lineItems.${index}.price`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className={index !== 0 ? "sr-only" : undefined}>
-                              Price (€)
-                            </FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="0.00"
-                                {...field}
-                                onChange={(e) => {
-                                  field.onChange(e.target.valueAsNumber || 0);
-                                }}
+                              <Combobox
+                                options={categoryOptions}
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="Select category"
+                                emptyMessage="No category found."
                               />
                             </FormControl>
                             <FormMessage />
@@ -434,14 +409,32 @@ export default function VeterinaryForm() {
                       />
                     </div>
                     
-                    <div className="md:col-span-1 flex items-end justify-end">
+                    <div className="col-span-2 md:col-span-3">
+                      <FormField
+                        control={form.control}
+                        name={`lineItems.${index}.price`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="0.00"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <div className="col-span-1 md:col-span-1 flex justify-center items-center">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => removeLineItem(index)}
-                        disabled={lineItems.length <= 1}
-                        className="mb-2"
+                        className="h-8 w-8"
                       >
                         <X className="h-4 w-4" />
                       </Button>
