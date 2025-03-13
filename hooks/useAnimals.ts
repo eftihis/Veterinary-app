@@ -60,7 +60,7 @@ export function useAnimals(animalType?: string) {
           breed: animal.breed,
           isDeceased: animal.is_deceased,
           gender: animal.gender
-        }));
+        })).sort((a, b) => a.label.localeCompare(b.label));
         
         setAllAnimals(options);
         

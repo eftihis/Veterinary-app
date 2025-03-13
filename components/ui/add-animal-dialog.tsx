@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
+import { NewAnimalData } from "@/hooks/useAnimals"
 
 // Define the schema for the animal form
 const animalFormSchema = z.object({
@@ -62,8 +63,9 @@ export type AnimalFormValues = z.infer<typeof animalFormSchema>
 interface AddAnimalDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onAnimalAdded: (animal: any) => void
+  onAnimalAdded: (animal: NewAnimalData) => void
   defaultAnimalType?: string
+  defaultAnimalName?: string | null
 }
 
 export function AddAnimalDialog({
@@ -71,11 +73,12 @@ export function AddAnimalDialog({
   onOpenChange,
   onAnimalAdded,
   defaultAnimalType,
+  defaultAnimalName,
 }: AddAnimalDialogProps) {
   const form = useForm<AnimalFormValues>({
     resolver: zodResolver(animalFormSchema),
     defaultValues: {
-      name: "",
+      name: defaultAnimalName || "",
       type: defaultAnimalType || "",
       gender: "",
       breed: "",
@@ -90,7 +93,7 @@ export function AddAnimalDialog({
   React.useEffect(() => {
     if (open) {
       form.reset({
-        name: "",
+        name: defaultAnimalName || "",
         type: defaultAnimalType || "",
         gender: "",
         breed: "",
@@ -98,7 +101,7 @@ export function AddAnimalDialog({
         microchip_number: "",
       })
     }
-  }, [open, form, defaultAnimalType])
+  }, [open, form, defaultAnimalType, defaultAnimalName])
 
   async function onSubmit(data: AnimalFormValues) {
     try {

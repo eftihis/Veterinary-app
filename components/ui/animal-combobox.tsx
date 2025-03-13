@@ -49,6 +49,7 @@ export function AnimalCombobox({
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
   const [showAddDialog, setShowAddDialog] = React.useState(false)
+  const [quickCreateName, setQuickCreateName] = React.useState<string | null>(null)
   
   // Find the selected animal
   const selectedAnimal = React.useMemo(() => 
@@ -73,12 +74,24 @@ export function AnimalCombobox({
     return null;
   };
 
+  // Handle quick create from input
+  const handleQuickCreate = () => {
+    if (inputValue && onAddAnimal) {
+      // Store the name and open the dialog
+      setQuickCreateName(inputValue);
+      setShowAddDialog(true);
+      setOpen(false);
+    }
+  };
+
   // Filter options based on input value
   const filteredOptions = React.useMemo(() => {
-    if (!inputValue) return options;
-    return options.filter(animal => 
-      animal.label.toLowerCase().includes(inputValue.toLowerCase())
-    );
+    if (!inputValue) return options.sort((a, b) => a.label.localeCompare(b.label));
+    return options
+      .filter(animal => 
+        animal.label.toLowerCase().includes(inputValue.toLowerCase())
+      )
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [options, inputValue]);
 
   return (
@@ -127,23 +140,13 @@ export function AnimalCombobox({
                   {filteredOptions.length === 0 && (
                     <div className="py-6 text-center text-sm text-muted-foreground">
                       {emptyMessage}
-                      {inputValue && (
+                      {inputValue && onAddAnimal && (
                         <Button
                           variant="ghost"
                           className="mt-2 w-full justify-start"
-                          onClick={() => {
-                            onSelect({
-                              value: "",
-                              label: inputValue,
-                              type: "",
-                              breed: "",
-                              isDeceased: false
-                            });
-                            setOpen(false);
-                            setInputValue("");
-                          }}
+                          onClick={handleQuickCreate}
                         >
-                          Create "{inputValue}"
+                          Create &quot;{inputValue}&quot;
                         </Button>
                       )}
                     </div>
@@ -169,7 +172,7 @@ export function AnimalCombobox({
                           <div className="flex flex-col">
                             <span>{animal.label}</span>
                             <span className="text-xs text-muted-foreground">
-                              {animal.type.charAt(0).toUpperCase() + animal.type.slice(1)} • {animal.breed} {animal.isDeceased && "• Deceased"}
+                              {animal.type.charAt(0).toUpperCase() + animal.type.slice(1)} • {animal.breed} {animal.gender && `• ${animal.gender.charAt(0).toUpperCase() + animal.gender.slice(1)}`}
                             </span>
                           </div>
                           <Check
@@ -215,6 +218,7 @@ export function AnimalCombobox({
           onOpenChange={setShowAddDialog}
           onAnimalAdded={handleAddAnimal}
           defaultAnimalType={currentAnimalType}
+          defaultAnimalName={quickCreateName}
         />
       )}
     </>
