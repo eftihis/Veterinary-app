@@ -110,7 +110,7 @@ export default function VeterinaryForm() {
       checkOutDate: undefined,
       lineItems: [{ description: "", itemId: "", itemName: "", price: "" }],
       discountType: "percent",
-      discountValue: "",
+      discountValue: 0,
       comment: "",
     },
     mode: "onBlur",
@@ -854,20 +854,25 @@ export default function VeterinaryForm() {
                       control={form.control}
                       name="discountValue"
                       render={({ field }) => (
-                        <FormItem className="w-24 m-0">
+                        <FormItem className="w-24 m-0 relative">
                           <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              step={discountType === "percent" ? "1" : "0.01"}
-                              max={discountType === "percent" ? "100" : undefined}
-                              {...field}
-                              onChange={(e) => {
-                                field.onChange(e.target.valueAsNumber || 0);
-                              }}
-                              onFocus={(e) => e.target.select()}
-                              className={isDiscountTooHigh ? "border-red-500" : ""}
-                            />
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                step={discountType === "percent" ? "1" : "0.01"}
+                                max={discountType === "percent" ? "100" : undefined}
+                                {...field}
+                                onChange={(e) => {
+                                  field.onChange(e.target.valueAsNumber || 0);
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                className={`${isDiscountTooHigh ? "border-red-500" : ""} pr-7`}
+                              />
+                              <div className="absolute inset-y-0 right-0 flex items-center pointer-events-none px-3 text-muted-foreground">
+                                {discountType === "percent" ? "%" : "€"}
+                              </div>
+                            </div>
                           </FormControl>
                         </FormItem>
                       )}
