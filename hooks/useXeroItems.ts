@@ -41,7 +41,6 @@ export function useXeroItems(animalType?: string) {
       if (animalType) {
         filterItemsByAnimalType(data.items || [], animalType);
       } else {
-        // Set empty array if no animal type is selected
         setItems([]);
       }
     } catch (err) {

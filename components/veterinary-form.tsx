@@ -1,5 +1,4 @@
 "use client";
-"use client";
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -9,7 +8,6 @@ import { format } from "date-fns";
 import { CalendarIcon, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -61,9 +59,19 @@ const formSchema = z.object({
   checkInDate: z.date().optional().refine(date => !!date, { 
     message: "Check-in date is required" 
   }),
-  checkOutDate: z.date().optional().refine(date => !!date, { 
-    message: "Check-out date is required" 
-  }),
+  checkOutDate: z.date().optional()
+    .refine(date => !!date, { 
+      message: "Check-out date is required" 
+    })
+    .refine(
+      date => {
+        // We can't access ctx.data here due to type constraints
+        // Instead, we'll validate this at the form level
+        return true;
+      }, {
+        message: "Check-out date must be after check-in date"
+      }
+    ),
   lineItems: z.array(lineItemSchema).min(1, "At least one line item is required"),
   discountType: z.enum(["percent", "amount"]),
   discountValue: z.coerce.number().min(0),
@@ -82,10 +90,6 @@ type LineItem = {
 type FormValues = Omit<z.infer<typeof formSchema>, 'lineItems'> & {
   lineItems: LineItem[];
 };
-
-// Define category options
-const categoryOptions = [
-];
 
 export default function VeterinaryForm() {
   const [showComment, setShowComment] = useState(false);
@@ -112,6 +116,20 @@ export default function VeterinaryForm() {
     mode: "onBlur",
   });
 
+  // Add custom validation for check-out date
+  useEffect(() => {
+    const { checkInDate, checkOutDate } = form.watch();
+    
+    if (checkInDate && checkOutDate && checkOutDate < checkInDate) {
+      form.setError("checkOutDate", {
+        type: "manual",
+        message: "Check-out date must be after check-in date"
+      });
+    } else {
+      form.clearErrors("checkOutDate");
+    }
+  }, [form.watch("checkInDate"), form.watch("checkOutDate")]);
+
   const { watch, setValue } = form;
   const lineItems = watch("lineItems");
   const discountType = watch("discountType");
@@ -131,14 +149,24 @@ export default function VeterinaryForm() {
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
       // This will run on ANY form value change
-      calculateTotals(value.lineItems, value.discountType, value.discountValue);
+      if (value.lineItems) {
+        calculateTotals(
+          value.lineItems as LineItem[], 
+          value.discountType as "percent" | "amount", 
+          value.discountValue as number
+        );
+      }
     });
     
     return () => subscription.unsubscribe();
   }, [form.watch]);
 
-  // Define the calculation function outside useEffect
-  const calculateTotals = (items, type, value) => {
+  // Define the calculation function outside useEffect with proper type annotations
+  const calculateTotals = (
+    items: LineItem[], 
+    type: "percent" | "amount", 
+    value: number
+  ) => {
     // Calculate subtotal
     const newSubtotal = items.reduce(
       (sum, item) => {
@@ -223,8 +251,12 @@ export default function VeterinaryForm() {
       
       console.log("Form submitted:", payload);
       
-      // Send data to the Make.com webhook
-      const webhookUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL || "https://hook.eu1.make.com/mksx5gdl3hemwrtkvxnp367ooxaf5478";
+      // Send data to the Make.com webhook - Use environment variable only, remove hardcoded fallback
+      const webhookUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL;
+      
+      if (!webhookUrl) {
+        throw new Error("Webhook URL is not configured. Please check your environment variables.");
+      }
       
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -258,7 +290,8 @@ export default function VeterinaryForm() {
       });
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error(`Failed to submit form: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(`Failed to submit form: ${errorMessage}`);
     }
   };
 
@@ -273,6 +306,13 @@ export default function VeterinaryForm() {
           {loadingXeroItems && (
             <div className="bg-blue-50 text-blue-700 p-4 rounded-md mb-4">
               <p>Loading items from Xero...</p>
+            </div>
+          )}
+
+          {/* Display Xero API errors if any */}
+          {xeroItemsError && (
+            <div className="bg-red-50 text-red-700 p-4 rounded-md mb-4">
+              <p>Error loading items from Xero: {xeroItemsError}</p>
             </div>
           )}
 
@@ -300,7 +340,9 @@ export default function VeterinaryForm() {
                               {...field}
                               placeholder="XX-0000"
                               className={cn(
-                                fieldState.invalid && fieldState.isTouched && "border-destructive ring-destructive focus-visible:ring-destructive"
+                                (fieldState.invalid && fieldState.isTouched) || validationError 
+                                  ? "border-destructive ring-destructive focus-visible:ring-destructive" 
+                                  : ""
                               )}
                               value={field.value}
                               onChange={(e) => {
@@ -344,6 +386,9 @@ export default function VeterinaryForm() {
                             />
                           </FormControl>
                           {fieldState.invalid && fieldState.isTouched && <FormMessage />}
+                          {!fieldState.invalid && validationError && (
+                            <p className="text-sm font-medium text-destructive">{validationError}</p>
+                          )}
                         </FormItem>
                       );
                     }}
