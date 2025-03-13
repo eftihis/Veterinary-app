@@ -670,7 +670,7 @@ export default function VeterinaryForm() {
               <h2 className="text-xl font-semibold mb-6">Services & Products</h2>
               <div className="space-y-3">
                 {/* Headers - visible only on larger screens */}
-                <div className="hidden md:grid md:grid-cols-12 md:gap-4 mb-2">
+                <div className="hidden md:grid md:grid-cols-12 md:gap-0 mb-2">
                   <div className="md:col-span-5">
                     <Label>Description</Label>
                   </div>
@@ -686,7 +686,7 @@ export default function VeterinaryForm() {
                 </div>
 
                 {lineItems.map((item, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-12 md:gap-0 gap-4">
                     {/* Mobile labels - only visible on small screens */}
                     <div className="block md:hidden space-y-4">
                       <Label>Description</Label>
@@ -790,14 +790,18 @@ export default function VeterinaryForm() {
 
                     {/* Desktop layout - hidden on mobile */}
                     <div className="hidden md:contents">
-                      <div className="md:col-span-5">
+                      <div className="md:col-span-5 relative">
                         <FormField
                           control={form.control}
                           name={`lineItems.${index}.description`}
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="[&:has(:focus)]:z-30 relative">
                               <FormControl>
-                                <Input placeholder="Description" {...field} />
+                                <Input 
+                                  placeholder="Description" 
+                                  {...field} 
+                                  className="rounded-none rounded-l-md relative"
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -805,12 +809,12 @@ export default function VeterinaryForm() {
                         />
                       </div>
 
-                      <div className="md:col-span-4">
+                      <div className="md:col-span-4 relative -ml-[1px]">
                         <FormField
                           control={form.control}
                           name={`lineItems.${index}.itemId`}
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="[&:has(:focus)]:z-30 relative">
                               <FormControl>
                                 <Combobox
                                   options={allXeroItems || []}
@@ -832,6 +836,7 @@ export default function VeterinaryForm() {
                                       : "No items found."
                                   }
                                   loading={loadingXeroItems}
+                                  className="rounded-none relative"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -845,12 +850,12 @@ export default function VeterinaryForm() {
                         />
                       </div>
 
-                      <div className="md:col-span-2">
+                      <div className="md:col-span-2 relative -ml-[1px]">
                         <FormField
                           control={form.control}
                           name={`lineItems.${index}.price`}
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="[&:has(:focus)]:z-30 relative">
                               <FormControl>
                                 <Input
                                   type="number"
@@ -866,6 +871,7 @@ export default function VeterinaryForm() {
                                     setValue("lineItems", updatedItems);
                                   }}
                                   onFocus={(e) => e.target.select()}
+                                  className="rounded-none rounded-r-md relative"
                                 />
                               </FormControl>
                               <FormMessage />
