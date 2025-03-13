@@ -135,6 +135,13 @@ select,
   cursor: pointer !important;
 }
 
+/* Add pointer cursor to dropdown items */
+[data-slot="command-item"],
+[data-slot="select-item"],
+[cmdk-item] {
+  cursor: pointer;
+}
+
 input, textarea {
   cursor: text;
 }
