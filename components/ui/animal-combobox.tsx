@@ -55,6 +55,13 @@ export function AnimalCombobox({
     [options, selectedId]
   )
 
+  // Reset input value when options change (e.g., when animal type changes)
+  React.useEffect(() => {
+    if (!selectedId) {
+      setInputValue("");
+    }
+  }, [options, selectedId]);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -63,6 +70,7 @@ export function AnimalCombobox({
           role="combobox"
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
+          onClick={() => setOpen(true)}
         >
           {selectedAnimal
             ? selectedAnimal.label
@@ -104,6 +112,7 @@ export function AnimalCombobox({
                           isDeceased: false
                         });
                         setOpen(false);
+                        setInputValue("");
                       }}
                     >
                       Create "{inputValue}"

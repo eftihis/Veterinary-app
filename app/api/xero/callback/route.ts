@@ -3,11 +3,16 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(req: NextRequest) {
   try {
     console.log("Callback endpoint called");
+    console.log("Request URL:", req.url);
     
     const searchParams = req.nextUrl.searchParams;
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const storedState = req.cookies.get('xero_state')?.value;
+
+    console.log("Code present:", !!code);
+    console.log("State from URL:", state);
+    console.log("State from cookie:", storedState);
 
     // Verify state
     if (!state || !storedState || state !== storedState) {
@@ -16,6 +21,7 @@ export async function GET(req: NextRequest) {
     }
 
     console.log("State verified, exchanging code for tokens");
+    console.log("Base URL for redirect:", process.env.NEXT_PUBLIC_BASE_URL);
 
     // Exchange code for tokens
     const tokenResponse = await fetch('https://identity.xero.com/connect/token', {
@@ -49,7 +55,9 @@ export async function GET(req: NextRequest) {
     const expiryTime = Date.now() + tokens.expires_in * 1000;
     
     // Create response with redirect
-    const response = NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/xero-test`);
+    const redirectUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/xero-test`;
+    console.log("Redirecting to:", redirectUrl);
+    const response = NextResponse.redirect(redirectUrl);
 
     // Set tokens in cookies
     response.cookies.set('xero_access_token', tokens.access_token, {
@@ -97,13 +105,13 @@ export async function GET(req: NextRequest) {
           console.log("Tenant ID stored:", tenants[0].tenantId);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching tenants:", error);
       // Continue anyway, as we have the tokens
     }
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Callback error:', error);
     return NextResponse.json({ 
       error: 'Callback failed', 

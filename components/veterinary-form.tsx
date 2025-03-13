@@ -157,7 +157,8 @@ export default function VeterinaryForm() {
     animals: filteredAnimals,
     allAnimals: animalOptions, 
     loading: loadingAnimals, 
-    error: animalsError 
+    error: animalsError,
+    filterAnimalsByType
   } = useAnimals(animalType);
   
   // Update Xero items when animal type changes via animal selection
@@ -175,6 +176,19 @@ export default function VeterinaryForm() {
     
     return () => clearTimeout(timeoutId);
   }, [animalType, filterItemsByAnimalType, allXeroItems]);
+
+  // Update filtered animals when animal type changes
+  useEffect(() => {
+    // Skip if no animal type or no filter function
+    if (!filterAnimalsByType) return;
+    
+    // Use setTimeout to break potential update cycles
+    const timeoutId = setTimeout(() => {
+      filterAnimalsByType(animalType);
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
+  }, [animalType, filterAnimalsByType]);
 
   // Replace the current watch calls with:
   useEffect(() => {
@@ -466,7 +480,7 @@ export default function VeterinaryForm() {
                       <FormLabel>Animal Name</FormLabel>
                       <FormControl>
                         <AnimalCombobox
-                          options={animalOptions}
+                          options={animalType ? filteredAnimals : animalOptions}
                           selectedId={form.watch("animalId") || ""}
                           onSelect={(animal) => {
                             if (animal) {
@@ -478,8 +492,8 @@ export default function VeterinaryForm() {
                                 // Store the animal ID in a separate field
                                 form.setValue("animalId", animal.value, { shouldValidate: true });
                                 
-                                // Auto-populate the animal type
-                                if (animal.type) {
+                                // Auto-populate the animal type if it's provided and different from current
+                                if (animal.type && animal.type !== form.getValues("animalType")) {
                                   form.setValue("animalType", animal.type, { shouldValidate: true });
                                 }
                               }, 0);
@@ -489,7 +503,9 @@ export default function VeterinaryForm() {
                           emptyMessage={
                             loadingAnimals 
                               ? "Loading animals..." 
-                              : "No animals found. Type to create new."
+                              : animalType 
+                                ? `No ${animalType}s found. Type to create new.`
+                                : "No animals found. Type to create new."
                           }
                           loading={loadingAnimals}
                         />
@@ -511,8 +527,18 @@ export default function VeterinaryForm() {
                         Animal Type
                       </FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        onValueChange={(value) => {
+                          // Update the field value
+                          field.onChange(value);
+                          
+                          // Clear the animal name and ID if the type changes
+                          // This ensures consistency between animal type and selected animal
+                          if (form.getValues("animalType") !== value) {
+                            form.setValue("animalName", "", { shouldValidate: true });
+                            form.setValue("animalId", "", { shouldValidate: true });
+                          }
+                        }}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger 

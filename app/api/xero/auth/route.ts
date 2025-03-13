@@ -11,6 +11,11 @@ export async function GET(req: NextRequest) {
     const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/xero/callback`;
     const scope = 'offline_access accounting.transactions accounting.settings';
     
+    // Debug logging
+    console.log("Auth endpoint called");
+    console.log("Base URL:", process.env.NEXT_PUBLIC_BASE_URL);
+    console.log("Redirect URI:", redirectUri);
+    
     const authUrl = new URL('https://login.xero.com/identity/connect/authorize');
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('client_id', clientId!);
@@ -18,6 +23,9 @@ export async function GET(req: NextRequest) {
     authUrl.searchParams.append('scope', scope);
     authUrl.searchParams.append('state', state);
 
+    // Debug logging
+    console.log("Auth URL:", authUrl.toString());
+    
     // Create response with redirect
     const response = NextResponse.redirect(authUrl.toString());
     

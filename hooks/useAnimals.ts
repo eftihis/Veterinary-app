@@ -68,7 +68,7 @@ export function useAnimals(animalType?: string) {
     fetchAllAnimals();
   }, []); // Only run on mount, not when animalType changes
   
-  // Filter animals when animalType changes
+  // Filter animals when animalType changes - this is the key part for bidirectional functionality
   useEffect(() => {
     // Skip if no animals to filter
     if (allAnimals.length === 0) return;
@@ -76,9 +76,11 @@ export function useAnimals(animalType?: string) {
     // Use setTimeout to break potential update cycles
     const timeoutId = setTimeout(() => {
       if (animalType) {
+        console.log(`Filtering animals by type: ${animalType}`);
         const filtered = allAnimals.filter(animal => animal.type === animalType);
         setAnimals(filtered);
       } else {
+        console.log('No animal type selected, showing all animals');
         setAnimals(allAnimals);
       }
     }, 0);
@@ -86,5 +88,22 @@ export function useAnimals(animalType?: string) {
     return () => clearTimeout(timeoutId);
   }, [animalType, allAnimals]);
   
-  return { animals, allAnimals, loading, error };
+  // Add a function to manually filter animals by type
+  const filterAnimalsByType = (type: string | undefined) => {
+    if (!type) {
+      setAnimals(allAnimals);
+      return;
+    }
+    
+    const filtered = allAnimals.filter(animal => animal.type === type);
+    setAnimals(filtered);
+  };
+  
+  return { 
+    animals, 
+    allAnimals, 
+    loading, 
+    error,
+    filterAnimalsByType
+  };
 } 
