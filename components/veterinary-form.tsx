@@ -38,6 +38,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { AnimalCombobox } from "@/components/ui/animal-combobox";
 import { useXeroItems } from '@/hooks/useXeroItems';
 import { useAnimals } from '@/hooks/useAnimals';
+import { useAuth } from '@/lib/auth-context';
 
 // Define the schema for line items
 const lineItemSchema = z.object({
@@ -101,6 +102,7 @@ export default function VeterinaryForm() {
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
   const [isDiscountTooHigh, setIsDiscountTooHigh] = useState(false);
+  const { user } = useAuth(); // Get the authenticated user
 
   // Initialize form with default values
   const form = useForm<FormValues>({
@@ -260,9 +262,19 @@ export default function VeterinaryForm() {
         };
       });
       
+      // Extract user information for the sender section
+      const sender = user ? {
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email,
+        role: user.user_metadata?.role || 'user',
+        lastSignIn: user.last_sign_in_at
+      } : null;
+      
       const payload = {
         executionId: `exec-${Date.now().toString(36)}`,
         timestamp: new Date().toISOString(),
+        sender, // Add sender information to the payload
         documentNumber: data.documentNumber,
         animalId: data.animalId || null,
         animalName: data.animalName,
