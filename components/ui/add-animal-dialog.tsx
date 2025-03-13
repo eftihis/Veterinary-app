@@ -125,26 +125,26 @@ export function AddAnimalDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] p-4 sm:p-6">
+        <DialogHeader className="mb-2">
           <DialogTitle>Add New Animal</DialogTitle>
           <DialogDescription>
             Enter the details of the new animal to add to your records.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name*</FormLabel>
+                    <FormLabel className="text-sm">Name*</FormLabel>
                     <FormControl>
                       <Input placeholder="Animal name" {...field} />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
@@ -153,7 +153,7 @@ export function AddAnimalDialog({
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Type*</FormLabel>
+                    <FormLabel className="text-sm">Type*</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
@@ -169,19 +169,19 @@ export function AddAnimalDialog({
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <FormField
                 control={form.control}
                 name="gender"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gender*</FormLabel>
+                    <FormLabel className="text-sm">Gender*</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
@@ -197,7 +197,7 @@ export function AddAnimalDialog({
                         <SelectItem value="unknown">Unknown</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
@@ -206,23 +206,23 @@ export function AddAnimalDialog({
                 name="breed"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Breed</FormLabel>
+                    <FormLabel className="text-sm">Breed</FormLabel>
                     <FormControl>
                       <Input placeholder="Breed (optional)" {...field} />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <FormField
                 control={form.control}
                 name="date_of_birth"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Date of Birth</FormLabel>
+                    <FormLabel className="text-sm">Date of Birth</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -254,7 +254,7 @@ export function AddAnimalDialog({
                         />
                       </PopoverContent>
                     </Popover>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
@@ -263,7 +263,7 @@ export function AddAnimalDialog({
                 name="weight"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Weight (kg)</FormLabel>
+                    <FormLabel className="text-sm">Weight (kg)</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
@@ -277,7 +277,7 @@ export function AddAnimalDialog({
                         value={field.value === undefined ? "" : field.value}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
@@ -288,11 +288,11 @@ export function AddAnimalDialog({
               name="microchip_number"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Microchip Number</FormLabel>
+                  <FormLabel className="text-sm">Microchip Number</FormLabel>
                   <FormControl>
                     <Input placeholder="Microchip number (optional)" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
@@ -302,24 +302,29 @@ export function AddAnimalDialog({
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes</FormLabel>
+                  <FormLabel className="text-sm">Notes</FormLabel>
                   <FormControl>
                     <Input placeholder="Additional notes (optional)" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="mt-5 gap-3 sm:gap-2">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full sm:w-auto"
+              >
                 {isSubmitting ? "Adding..." : "Add Animal"}
               </Button>
             </DialogFooter>
