@@ -646,15 +646,14 @@ export default function VeterinaryForm() {
                                       : "No items found."
                                 }
                                 loading={loadingXeroItems}
-                              >
-                                {animalType && xeroItems.length === 0 && !loadingXeroItems && (
-                                  <div className="text-sm text-amber-600 mt-1">
-                                    No items available for {animalType}. Please select a different animal type.
-                                  </div>
-                                )}
-                              </Combobox>
+                              />
                             </FormControl>
                             <FormMessage />
+                            {animalType && xeroItems.length === 0 && !loadingXeroItems && (
+                              <div className="text-sm text-amber-600 mt-1">
+                                No items available for {animalType}. Please select a different animal type.
+                              </div>
+                            )}
                           </FormItem>
                         )}
                       />
@@ -751,15 +750,14 @@ export default function VeterinaryForm() {
                                         : "No items found."
                                   }
                                   loading={loadingXeroItems}
-                                >
-                                  {animalType && xeroItems.length === 0 && !loadingXeroItems && (
-                                    <div className="text-sm text-amber-600 mt-1">
-                                      No items available for {animalType}. Please select a different animal type.
-                                    </div>
-                                  )}
-                                </Combobox>
+                                />
                               </FormControl>
                               <FormMessage />
+                              {animalType && xeroItems.length === 0 && !loadingXeroItems && (
+                                <div className="text-sm text-amber-600 mt-1">
+                                  No items available for {animalType}. Please select a different animal type.
+                                </div>
+                              )}
                             </FormItem>
                           )}
                         />
