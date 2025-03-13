@@ -159,7 +159,8 @@ export default function VeterinaryForm() {
     allAnimals: animalOptions, 
     loading: loadingAnimals, 
     error: animalsError,
-    filterAnimalsByType
+    filterAnimalsByType,
+    addAnimal
   } = useAnimals(animalType);
   
   // Update filtered animals when animal type changes
@@ -503,6 +504,8 @@ export default function VeterinaryForm() {
                                 : "No animals found. Type to create new."
                           }
                           loading={loadingAnimals}
+                          onAddAnimal={addAnimal}
+                          currentAnimalType={animalType}
                         />
                       </FormControl>
                       <FormMessage />
