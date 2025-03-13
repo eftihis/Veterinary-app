@@ -39,7 +39,7 @@ import { useXeroItems } from '@/hooks/useXeroItems';
 
 // Define the schema for line items
 const lineItemSchema = z.object({
-  description: z.string().min(1, "Description is required"),
+  description: z.string().optional(),
   itemId: z.string().min(1, "Item is required"),
   itemName: z.string().optional(),
   price: z.union([
@@ -110,7 +110,7 @@ export default function VeterinaryForm() {
       checkOutDate: undefined,
       lineItems: [{ description: "", itemId: "", itemName: "", price: "" }],
       discountType: "percent",
-      discountValue: 0,
+      discountValue: "",
       comment: "",
     },
     mode: "onBlur",
