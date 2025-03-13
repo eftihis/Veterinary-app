@@ -688,16 +688,18 @@ export default function VeterinaryForm() {
                       />
                       
                       <div className="flex justify-end mt-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeLineItem(index)}
-                          className="text-destructive"
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Remove
-                        </Button>
+                        {lineItems.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeLineItem(index)}
+                            className="text-destructive"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Remove
+                          </Button>
+                        )}
                       </div>
                       
                       {index < lineItems.length - 1 && <hr className="my-4" />}
@@ -793,15 +795,17 @@ export default function VeterinaryForm() {
                       </div>
 
                       <div className="md:col-span-1 flex justify-center items-center">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeLineItem(index)}
-                          className="h-8 w-8"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        {lineItems.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeLineItem(index)}
+                            className="h-8 w-8"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -907,7 +911,7 @@ export default function VeterinaryForm() {
                   variant="ghost"
                   onClick={() => setShowComment(!showComment)}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className={`h-4 w-4 mr-2 transition-transform duration-200 ${showComment ? "rotate-45" : ""}`} />
                   {showComment ? "Hide Comment" : "Add Comment"}
                 </Button>
               </div>
