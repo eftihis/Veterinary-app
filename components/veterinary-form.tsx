@@ -35,7 +35,9 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { Combobox } from "@/components/ui/combobox";
+import { AnimalCombobox } from "@/components/ui/animal-combobox";
 import { useXeroItems } from '@/hooks/useXeroItems';
+import { useAnimals } from '@/hooks/useAnimals';
 
 // Define the schema for line items
 const lineItemSchema = z.object({
@@ -55,6 +57,7 @@ const formSchema = z.object({
     .regex(/^[A-Za-z]{2}-\d{4}$/, "Document number must be in format XX-0000"),
   reference: z.string().optional(),
   animalName: z.string().min(1, "Animal name is required"),
+  animalId: z.string().optional(),
   animalType: z.string().min(1, "Animal type is required"),
   checkInDate: z.date().optional().refine(date => !!date, { 
     message: "Check-in date is required" 
@@ -89,6 +92,7 @@ type LineItem = {
 // Update the FormValues type
 type FormValues = Omit<z.infer<typeof formSchema>, 'lineItems'> & {
   lineItems: LineItem[];
+  animalId?: string;
 };
 
 export default function VeterinaryForm() {
@@ -105,6 +109,7 @@ export default function VeterinaryForm() {
       documentNumber: "",
       reference: "",
       animalName: "",
+      animalId: "",
       animalType: "",
       checkInDate: undefined,
       checkOutDate: undefined,
@@ -142,8 +147,34 @@ export default function VeterinaryForm() {
     loading: loadingXeroItems, 
     error: xeroItemsError,
     needsReauth: xeroNeedsReauth,
-    reauth: xeroReauth
+    reauth: xeroReauth,
+    allItems: allXeroItems,
+    filterItemsByAnimalType
   } = useXeroItems(animalType);
+  
+  // Fetch all animals and optionally filter by animal type
+  const { 
+    animals: filteredAnimals,
+    allAnimals: animalOptions, 
+    loading: loadingAnimals, 
+    error: animalsError 
+  } = useAnimals(animalType);
+  
+  // Update Xero items when animal type changes via animal selection
+  useEffect(() => {
+    // Skip if no animal type or no filter function
+    if (!animalType || !filterItemsByAnimalType) return;
+    
+    // Skip if no items to filter
+    if (!allXeroItems || allXeroItems.length === 0) return;
+    
+    // Use a ref to track if this is the first run
+    const timeoutId = setTimeout(() => {
+      filterItemsByAnimalType(allXeroItems, animalType);
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
+  }, [animalType, filterItemsByAnimalType, allXeroItems]);
 
   // Replace the current watch calls with:
   useEffect(() => {
@@ -236,6 +267,7 @@ export default function VeterinaryForm() {
         executionId: `exec-${Date.now().toString(36)}`,
         timestamp: new Date().toISOString(),
         documentNumber: data.documentNumber,
+        animalId: data.animalId || null,
         animalName: data.animalName,
         animalType: data.animalType,
         checkInDate: data.checkInDate ? data.checkInDate.toISOString() : null,
@@ -280,6 +312,7 @@ export default function VeterinaryForm() {
         documentNumber: "",
         reference: "",
         animalName: "",
+        animalId: "",
         animalType: "",
         checkInDate: undefined,
         checkOutDate: undefined,
@@ -313,6 +346,20 @@ export default function VeterinaryForm() {
           {xeroItemsError && (
             <div className="bg-red-50 text-red-700 p-4 rounded-md mb-4">
               <p>Error loading items from Xero: {xeroItemsError}</p>
+            </div>
+          )}
+          
+          {/* Show loading state if animals are being fetched */}
+          {loadingAnimals && (
+            <div className="bg-blue-50 text-blue-700 p-4 rounded-md mb-4">
+              <p>Loading animals from database...</p>
+            </div>
+          )}
+
+          {/* Display animal API errors if any */}
+          {animalsError && (
+            <div className="bg-red-50 text-red-700 p-4 rounded-md mb-4">
+              <p>Error loading animals: {animalsError}</p>
             </div>
           )}
 
@@ -418,9 +465,39 @@ export default function VeterinaryForm() {
                     <FormItem>
                       <FormLabel>Animal Name</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <AnimalCombobox
+                          options={animalOptions}
+                          selectedId={form.watch("animalId") || ""}
+                          onSelect={(animal) => {
+                            if (animal) {
+                              // Use setTimeout to break the update cycle
+                              setTimeout(() => {
+                                // Set the animal name
+                                field.onChange(animal.label);
+                                
+                                // Store the animal ID in a separate field
+                                form.setValue("animalId", animal.value, { shouldValidate: true });
+                                
+                                // Auto-populate the animal type
+                                if (animal.type) {
+                                  form.setValue("animalType", animal.type, { shouldValidate: true });
+                                }
+                              }, 0);
+                            }
+                          }}
+                          placeholder="Select or type animal name"
+                          emptyMessage={
+                            loadingAnimals 
+                              ? "Loading animals..." 
+                              : "No animals found. Type to create new."
+                          }
+                          loading={loadingAnimals}
+                        />
                       </FormControl>
                       <FormMessage />
+                      {animalsError && (
+                        <p className="text-sm text-red-500 mt-1">{animalsError}</p>
+                      )}
                     </FormItem>
                   )}
                 />

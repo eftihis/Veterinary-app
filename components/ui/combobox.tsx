@@ -22,6 +22,7 @@ import {
 export type Option = {
   value: string
   label: string
+  [key: string]: any // Allow additional properties
 }
 
 interface ComboboxProps {
@@ -32,6 +33,7 @@ interface ComboboxProps {
   emptyMessage?: string
   loading?: boolean
   className?: string
+  renderOption?: (option: Option) => React.ReactNode
 }
 
 export function Combobox({
@@ -42,6 +44,7 @@ export function Combobox({
   emptyMessage = "No results found.",
   loading = false,
   className,
+  renderOption,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -85,7 +88,7 @@ export function Combobox({
                         setOpen(false)
                       }}
                     >
-                      {option.label}
+                      {renderOption ? renderOption(option) : option.label}
                       <Check
                         className={cn(
                           "ml-auto h-4 w-4",

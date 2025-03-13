@@ -45,7 +45,7 @@ export function useXeroItems(animalType?: string) {
       }
     } catch (err) {
       console.error('Error fetching Xero items:', err);
-      setError(err.message || 'Failed to fetch items');
+      setError(err instanceof Error ? err.message : 'Failed to fetch items');
     } finally {
       setLoading(false);
     }
@@ -71,12 +71,21 @@ export function useXeroItems(animalType?: string) {
 
   // Update filtered items when animal type changes
   useEffect(() => {
-    if (allItems.length > 0 && animalType) {
-      filterItemsByAnimalType(allItems, animalType);
-    } else {
-      // Set empty array if no animal type is selected
+    // If no animal type is selected, set empty array
+    if (!animalType) {
       setItems([]);
+      return;
     }
+    
+    // Skip if no items to filter
+    if (!allItems.length) return;
+    
+    // Use setTimeout to break potential update cycles
+    const timeoutId = setTimeout(() => {
+      filterItemsByAnimalType(allItems, animalType);
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
   }, [animalType, allItems]);
 
   const handleReauth = () => {
@@ -89,10 +98,12 @@ export function useXeroItems(animalType?: string) {
 
   return { 
     items, 
+    allItems,
     loading, 
     error, 
     needsReauth, 
     refetch: fetchItems, 
-    reauth: handleReauth 
+    reauth: handleReauth,
+    filterItemsByAnimalType
   };
 }

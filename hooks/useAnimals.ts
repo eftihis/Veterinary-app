@@ -19,24 +19,20 @@ type AnimalOption = {
 
 export function useAnimals(animalType?: string) {
   const [animals, setAnimals] = useState<AnimalOption[]>([]);
+  const [allAnimals, setAllAnimals] = useState<AnimalOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch all animals on component mount
   useEffect(() => {
-    async function fetchAnimals() {
+    async function fetchAllAnimals() {
       try {
         setLoading(true);
+        setError(null);
         
-        let query = supabase
+        const { data, error } = await supabase
           .from('animals')
           .select('id, name, type, breed, is_deceased');
-        
-        // Filter by animal type if provided
-        if (animalType) {
-          query = query.eq('type', animalType);
-        }
-        
-        const { data, error } = await query;
         
         if (error) {
           throw error;
@@ -51,7 +47,16 @@ export function useAnimals(animalType?: string) {
           isDeceased: animal.is_deceased
         }));
         
-        setAnimals(options);
+        setAllAnimals(options);
+        
+        // If animalType is provided, filter the animals
+        if (animalType) {
+          const filtered = options.filter(animal => animal.type === animalType);
+          setAnimals(filtered);
+        } else {
+          // Otherwise, show all animals
+          setAnimals(options);
+        }
       } catch (err) {
         console.error('Error fetching animals:', err);
         setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -60,8 +65,26 @@ export function useAnimals(animalType?: string) {
       }
     }
     
-    fetchAnimals();
-  }, [animalType]);
+    fetchAllAnimals();
+  }, []); // Only run on mount, not when animalType changes
   
-  return { animals, loading, error };
+  // Filter animals when animalType changes
+  useEffect(() => {
+    // Skip if no animals to filter
+    if (allAnimals.length === 0) return;
+    
+    // Use setTimeout to break potential update cycles
+    const timeoutId = setTimeout(() => {
+      if (animalType) {
+        const filtered = allAnimals.filter(animal => animal.type === animalType);
+        setAnimals(filtered);
+      } else {
+        setAnimals(allAnimals);
+      }
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
+  }, [animalType, allAnimals]);
+  
+  return { animals, allAnimals, loading, error };
 } 
