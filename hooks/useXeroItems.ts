@@ -8,7 +8,12 @@ type XeroItem = {
   accountCode?: string;
 };
 
-export function useXeroItems(animalType?: string) {
+// Client-side cache
+let clientCache: XeroItem[] | null = null;
+let clientCacheTimestamp = 0;
+const CLIENT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+export function useXeroItems() {
   const [items, setItems] = useState<XeroItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +22,15 @@ export function useXeroItems(animalType?: string) {
 
   const fetchItems = async () => {
     try {
+      // Check client-side cache first
+      const currentTime = Date.now();
+      if (clientCache && (currentTime - clientCacheTimestamp) < CLIENT_CACHE_TTL) {
+        console.log("Using client-side cached Xero items");
+        setAllItems(clientCache);
+        setItems(clientCache);
+        return;
+      }
+      
       setLoading(true);
       setError(null);
       setNeedsReauth(false);
@@ -34,15 +48,14 @@ export function useXeroItems(animalType?: string) {
         throw new Error(data.error || `Failed to fetch items: ${response.status}`);
       }
       
-      // Store all items
-      setAllItems(data.items || []);
+      // Update client-side cache
+      clientCache = data.items || [];
+      clientCacheTimestamp = currentTime;
       
-      // Only set items if animal type is provided
-      if (animalType) {
-        filterItemsByAnimalType(data.items || [], animalType);
-      } else {
-        setItems([]);
-      }
+      // Store all items
+      const fetchedItems = data.items || [];
+      setAllItems(fetchedItems);
+      setItems(fetchedItems);
     } catch (err) {
       console.error('Error fetching Xero items:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch items');
@@ -50,43 +63,6 @@ export function useXeroItems(animalType?: string) {
       setLoading(false);
     }
   };
-
-  // Filter items based on animal type
-  const filterItemsByAnimalType = (itemsToFilter: XeroItem[], type: string) => {
-    let filteredItems: XeroItem[] = [];
-    
-    if (type === 'dog') {
-      filteredItems = itemsToFilter.filter(item => item.accountCode === '430');
-    } else if (type === 'cat') {
-      filteredItems = itemsToFilter.filter(item => item.accountCode === '431');
-    } else if (type === 'other') {
-      filteredItems = itemsToFilter.filter(item => item.accountCode === '432');
-    } else {
-      // If animal type is not recognized, return empty array
-      filteredItems = [];
-    }
-    
-    setItems(filteredItems);
-  };
-
-  // Update filtered items when animal type changes
-  useEffect(() => {
-    // If no animal type is selected, set empty array
-    if (!animalType) {
-      setItems([]);
-      return;
-    }
-    
-    // Skip if no items to filter
-    if (!allItems.length) return;
-    
-    // Use setTimeout to break potential update cycles
-    const timeoutId = setTimeout(() => {
-      filterItemsByAnimalType(allItems, animalType);
-    }, 0);
-    
-    return () => clearTimeout(timeoutId);
-  }, [animalType, allItems]);
 
   const handleReauth = () => {
     window.location.href = '/api/xero/auth';
@@ -103,7 +79,6 @@ export function useXeroItems(animalType?: string) {
     error, 
     needsReauth, 
     refetch: fetchItems, 
-    reauth: handleReauth,
-    filterItemsByAnimalType
+    reauth: handleReauth
   };
 }

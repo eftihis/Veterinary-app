@@ -148,9 +148,8 @@ export default function VeterinaryForm() {
     error: xeroItemsError,
     needsReauth: xeroNeedsReauth,
     reauth: xeroReauth,
-    allItems: allXeroItems,
-    filterItemsByAnimalType
-  } = useXeroItems(animalType);
+    allItems: allXeroItems
+  } = useXeroItems();
   
   // Fetch all animals and optionally filter by animal type
   const { 
@@ -161,22 +160,6 @@ export default function VeterinaryForm() {
     filterAnimalsByType
   } = useAnimals(animalType);
   
-  // Update Xero items when animal type changes via animal selection
-  useEffect(() => {
-    // Skip if no animal type or no filter function
-    if (!animalType || !filterItemsByAnimalType) return;
-    
-    // Skip if no items to filter
-    if (!allXeroItems || allXeroItems.length === 0) return;
-    
-    // Use a ref to track if this is the first run
-    const timeoutId = setTimeout(() => {
-      filterItemsByAnimalType(allXeroItems, animalType);
-    }, 0);
-    
-    return () => clearTimeout(timeoutId);
-  }, [animalType, filterItemsByAnimalType, allXeroItems]);
-
   // Update filtered animals when animal type changes
   useEffect(() => {
     // Skip if no animal type or no filter function
@@ -728,33 +711,31 @@ export default function VeterinaryForm() {
                           <FormItem>
                             <FormControl>
                               <Combobox
-                                options={animalType ? xeroItems : []}
+                                options={allXeroItems || []}
                                 value={field.value}
                                 onChange={(value) => {
                                   field.onChange(value);
                                   
                                   // Find the selected item to get its name
-                                  const selectedItem = xeroItems.find(item => item.value === value);
+                                  const selectedItem = allXeroItems.find(item => item.value === value);
                                   if (selectedItem) {
                                     // Set the item name in a separate field
                                     form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
                                   }
                                 }}
-                                placeholder={animalType ? "Select item" : "Select animal type first"}
+                                placeholder="Select item"
                                 emptyMessage={
-                                  !animalType 
-                                    ? "Select an animal type first" 
-                                    : loadingXeroItems 
-                                      ? "Loading items..." 
-                                      : "No items found."
+                                  loadingXeroItems 
+                                    ? "Loading items..." 
+                                    : "No items found."
                                 }
                                 loading={loadingXeroItems}
                               />
                             </FormControl>
                             <FormMessage />
-                            {animalType && xeroItems.length === 0 && !loadingXeroItems && (
+                            {allXeroItems.length === 0 && !loadingXeroItems && (
                               <div className="text-sm text-amber-600 mt-1">
-                                No items available for {animalType}. Please select a different animal type.
+                                No items available. Please check your Xero connection.
                               </div>
                             )}
                           </FormItem>
@@ -832,33 +813,31 @@ export default function VeterinaryForm() {
                             <FormItem>
                               <FormControl>
                                 <Combobox
-                                  options={animalType ? xeroItems : []}
+                                  options={allXeroItems || []}
                                   value={field.value}
                                   onChange={(value) => {
                                     field.onChange(value);
                                     
                                     // Find the selected item to get its name
-                                    const selectedItem = xeroItems.find(item => item.value === value);
+                                    const selectedItem = allXeroItems.find(item => item.value === value);
                                     if (selectedItem) {
                                       // Set the item name in a separate field
                                       form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
                                     }
                                   }}
-                                  placeholder={animalType ? "Select item" : "Select animal type first"}
+                                  placeholder="Select item"
                                   emptyMessage={
-                                    !animalType 
-                                      ? "Select an animal type first" 
-                                      : loadingXeroItems 
-                                        ? "Loading items..." 
-                                        : "No items found."
+                                    loadingXeroItems 
+                                      ? "Loading items..." 
+                                      : "No items found."
                                   }
                                   loading={loadingXeroItems}
                                 />
                               </FormControl>
                               <FormMessage />
-                              {animalType && xeroItems.length === 0 && !loadingXeroItems && (
+                              {allXeroItems.length === 0 && !loadingXeroItems && (
                                 <div className="text-sm text-amber-600 mt-1">
-                                  No items available for {animalType}. Please select a different animal type.
+                                  No items available. Please check your Xero connection.
                                 </div>
                               )}
                             </FormItem>
