@@ -921,7 +921,7 @@ export default function VeterinaryForm() {
                 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <span>Discount:</span>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
                     <div className="flex border rounded-md overflow-hidden">
                       <Button
                         type="button"
@@ -967,7 +967,7 @@ export default function VeterinaryForm() {
                         </FormItem>
                       )}
                     />
-                    <span>€{discountAmount.toFixed(2)}</span>
+                    <span className="ml-auto sm:ml-0">€{discountAmount.toFixed(2)}</span>
                   </div>
                 </div>
                 
