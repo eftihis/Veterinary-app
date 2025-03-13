@@ -7,6 +7,7 @@ import * as z from "zod"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { toast } from "sonner"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -220,43 +221,57 @@ export function AddAnimalDialog({
               <FormField
                 control={form.control}
                 name="date_of_birth"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel className="text-sm">Date of Birth</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date()
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  // Add state to control popover open/close
+                  const [open, setOpen] = useState(false);
+                  
+                  return (
+                    <FormItem className="flex flex-col">
+                      <FormLabel className="text-sm">Date of Birth</FormLabel>
+                      <Popover open={open} onOpenChange={setOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent 
+                          className="w-auto p-0 touch-manipulation" 
+                          align="start"
+                          sideOffset={8}
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                              if (date) {
+                                field.onChange(date);
+                                // Close the popover when a date is selected
+                                setOpen(false);
+                              }
+                            }}
+                            disabled={(date) =>
+                              date > new Date()
+                            }
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  );
+                }}
               />
               <FormField
                 control={form.control}
