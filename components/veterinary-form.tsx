@@ -46,7 +46,7 @@ const lineItemSchema = z.object({
   itemId: z.string().min(1, "Item is required"),
   itemName: z.string().optional(),
   price: z.union([
-    z.coerce.number().min(0, "Price must be a positive number"),
+    z.coerce.number(),
     z.string().transform(val => val === "" ? 0 : parseFloat(val) || 0)
   ]),
 });
@@ -998,7 +998,7 @@ export default function VeterinaryForm() {
                 {/* Display warning message when discount is too high */}
                 {isDiscountTooHigh && (
                   <div className="text-red-500 text-sm mt-1">
-                    Warning: Discount amount results in a zero or negative total. Please reduce the discount.
+                    Warning: Total cannot be less than 0.
                   </div>
                 )}
                 
