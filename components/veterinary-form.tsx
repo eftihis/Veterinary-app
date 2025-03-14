@@ -983,7 +983,7 @@ export default function VeterinaryForm() {
                     variant="outline"
                     size="sm"
                     onClick={addLineItem}
-                    className="rounded-r-none border-r-0"
+                    className="rounded-r-none border-r-0 focus:border-r-1 focus:z-30 relative"
                   >
                     Add Row
                   </Button>
@@ -994,7 +994,7 @@ export default function VeterinaryForm() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="px-2 rounded-l-none"
+                        className="px-2 rounded-l-none &:has(:focus)]:z-30 relative"
                       >
                         <ChevronDown className="h-4 w-4" />
                       </Button>
