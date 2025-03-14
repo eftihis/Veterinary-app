@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, X } from "lucide-react";
+import { CalendarIcon, Plus, X, MoreHorizontal, Copy, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { Combobox } from "@/components/ui/combobox";
@@ -242,6 +250,15 @@ export default function VeterinaryForm() {
       updatedItems.splice(index, 1);
       setValue("lineItems", updatedItems);
     }
+  };
+
+  // Duplicate a line item
+  const duplicateLineItem = (index: number) => {
+    const itemToDuplicate = lineItems[index];
+    const duplicatedItem = { ...itemToDuplicate };
+    const updatedItems = [...lineItems];
+    updatedItems.splice(index + 1, 0, duplicatedItem);
+    setValue("lineItems", updatedItems);
   };
 
   // Handle form submission
@@ -792,18 +809,37 @@ export default function VeterinaryForm() {
                       />
                       
                       <div className="flex justify-end mt-2">
-                        {lineItems.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeLineItem(index)}
-                            className="text-destructive"
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Remove
-                          </Button>
-                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="flex items-center"
+                            >
+                              <MoreHorizontal className="h-4 w-4 mr-1" />
+                              Actions
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                              onClick={() => duplicateLineItem(index)}
+                            >
+                              <Copy className="h-4 w-4 mr-2" />
+                              Duplicate
+                            </DropdownMenuItem>
+                            {lineItems.length > 1 && (
+                              <DropdownMenuItem
+                                onClick={() => removeLineItem(index)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                       
                       {index < lineItems.length - 1 && <hr className="my-4" />}
@@ -903,17 +939,37 @@ export default function VeterinaryForm() {
 
                       <div className="md:col-span-1 relative -ml-[1px]">
                         <div className={`h-full border flex items-center justify-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
-                          {lineItems.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeLineItem(index)}
-                              className="h-7 w-7 min-w-0 p-0 rounded-md hover:bg-gray-100"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 min-w-0 p-0 rounded-md hover:bg-gray-100"
+                              >
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem
+                                onClick={() => duplicateLineItem(index)}
+                              >
+                                <Copy className="h-4 w-4 mr-2" />
+                                Duplicate
+                              </DropdownMenuItem>
+                              {lineItems.length > 1 && (
+                                <DropdownMenuItem
+                                  onClick={() => removeLineItem(index)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
@@ -1025,7 +1081,6 @@ export default function VeterinaryForm() {
                   {showComment ? "Hide Comment" : "Add Comment"}
                 </Button>
               </div>
-              
               {showComment && (
                 <FormField
                   control={form.control}
@@ -1061,4 +1116,4 @@ export default function VeterinaryForm() {
       </Form>
     </>
   );
-} 
+}
