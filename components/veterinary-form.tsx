@@ -711,10 +711,10 @@ export default function VeterinaryForm() {
                   <div className="md:col-span-7 bg-gray-50 px-4 py-3 border border-r-0 rounded-tl-md">
                     <Label className="font-medium text-gray-700">Description</Label>
                   </div>
-                  <div className="md:col-span-6 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
+                  <div className="md:col-span-5 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
                     <Label className="font-medium text-gray-700">Category</Label>
                   </div>
-                  <div className="md:col-span-2 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
+                  <div className="md:col-span-3 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
                     <Label className="font-medium text-gray-700">Price (€)</Label>
                   </div>
                   <div className="md:col-span-1 bg-gray-50 px-2 py-3 border border-l-0 rounded-tr-md flex justify-center">
@@ -866,7 +866,7 @@ export default function VeterinaryForm() {
                         />
                       </div>
 
-                      <div className="md:col-span-6 relative -ml-[1px]">
+                      <div className="md:col-span-5 relative -ml-[1px]">
                         <FormField
                           control={form.control}
                           name={`lineItems.${index}.itemId`}
@@ -907,7 +907,7 @@ export default function VeterinaryForm() {
                         />
                       </div>
 
-                      <div className="md:col-span-2 relative -ml-[1px]">
+                      <div className="md:col-span-3 relative -ml-[1px]">
                         <FormField
                           control={form.control}
                           name={`lineItems.${index}.price`}
