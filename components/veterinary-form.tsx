@@ -744,7 +744,7 @@ export default function VeterinaryForm() {
                   <div className="md:col-span-1 bg-gray-50 px-2 py-3 border border-r-0 rounded-tl-md flex justify-center">
                     <Label className="font-medium text-gray-700 sr-only">Drag</Label>
                   </div>
-                  <div className="md:col-span-6 bg-gray-50 px-4 py-3 border border-r-0">
+                  <div className="md:col-span-6 bg-gray-50 px-4 py-3 border border-l-0 border-r-0">
                     <Label className="font-medium text-gray-700">Description</Label>
                   </div>
                   <div className="md:col-span-5 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
