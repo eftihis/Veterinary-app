@@ -705,8 +705,9 @@ export default function VeterinaryForm() {
                   </div>
                 </div>
 
+                <div className="mt-[-1px]">
                 {lineItems.map((item, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-16 md:gap-0 gap-4">
+                  <div key={index} className={`grid grid-cols-1 md:grid-cols-16 md:gap-0 gap-4 ${index > 0 ? "mt-[-1px]" : ""}`}>
                     {/* Mobile labels - only visible on small screens */}
                     <div className="block md:hidden space-y-4">
                       <Label>Description</Label>
@@ -820,7 +821,7 @@ export default function VeterinaryForm() {
                                 <Input 
                                   placeholder="Description" 
                                   {...field} 
-                                  className={`rounded-none ${index === lineItems.length - 1 ? "rounded-bl-md" : ""} relative border-t-0 ${index !== 0 ? "border-t-0" : ""}`}
+                                  className={`rounded-none ${index === lineItems.length - 1 ? "rounded-bl-md" : ""} relative`}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -856,7 +857,7 @@ export default function VeterinaryForm() {
                                       : "No items found."
                                   }
                                   loading={loadingXeroItems}
-                                  className="rounded-none relative border-t-0"
+                                  className="rounded-none relative"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -891,7 +892,7 @@ export default function VeterinaryForm() {
                                     setValue("lineItems", updatedItems);
                                   }}
                                   onFocus={(e) => e.target.select()}
-                                  className="rounded-none relative border-t-0"
+                                  className="rounded-none relative"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -901,7 +902,7 @@ export default function VeterinaryForm() {
                       </div>
 
                       <div className="md:col-span-1 relative -ml-[1px]">
-                        <div className={`h-full border border-t-0 flex items-center justify-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
+                        <div className={`h-full border flex items-center justify-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
                           {lineItems.length > 1 && (
                             <Button
                               type="button"
@@ -918,6 +919,7 @@ export default function VeterinaryForm() {
                     </div>
                   </div>
                 ))}
+                </div>
                 
                 <Button
                   type="button"
