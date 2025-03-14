@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, X, MoreHorizontal, Copy, Trash2 } from "lucide-react";
+import { CalendarIcon, Plus, X, MoreHorizontal, Copy, Trash2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -977,15 +977,74 @@ export default function VeterinaryForm() {
                 ))}
                 </div>
                 
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-6"
-                  onClick={addLineItem}
-                >
-                  <Plus className="h-4 w-4 mr-2" /> Add Item
-                </Button>
+                <div className="flex items-center mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addLineItem}
+                    className="rounded-r-none border-r-0"
+                  >
+                    Add Row
+                  </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="px-2 rounded-l-none"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          // Add 5 items
+                          const newItems = Array(5).fill(null).map(() => ({ 
+                            description: "", 
+                            itemId: "", 
+                            itemName: "", 
+                            price: "" 
+                          }));
+                          setValue("lineItems", [...lineItems, ...newItems]);
+                        }}
+                      >
+                        Add 5 Rows
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          // Add 10 items
+                          const newItems = Array(10).fill(null).map(() => ({ 
+                            description: "", 
+                            itemId: "", 
+                            itemName: "", 
+                            price: "" 
+                          }));
+                          setValue("lineItems", [...lineItems, ...newItems]);
+                        }}
+                      >
+                        Add 10 Rows
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          // Add 20 items
+                          const newItems = Array(20).fill(null).map(() => ({ 
+                            description: "", 
+                            itemId: "", 
+                            itemName: "", 
+                            price: "" 
+                          }));
+                          setValue("lineItems", [...lineItems, ...newItems]);
+                        }}
+                      >
+                        Add 20 Rows
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </CardContent>
           </Card>
