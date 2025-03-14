@@ -708,13 +708,13 @@ export default function VeterinaryForm() {
               <div className="space-y-0">
                 {/* Headers - visible only on larger screens */}
                 <div className="hidden md:grid md:grid-cols-16 md:gap-0">
-                  <div className="md:col-span-7 bg-gray-50 px-4 py-3 border rounded-tl-md">
+                  <div className="md:col-span-7 bg-gray-50 px-4 py-3 border border-r-0 rounded-tl-md">
                     <Label className="font-medium text-gray-700">Description</Label>
                   </div>
-                  <div className="md:col-span-6 bg-gray-50 px-4 py-3 border border-l-0">
+                  <div className="md:col-span-6 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
                     <Label className="font-medium text-gray-700">Category</Label>
                   </div>
-                  <div className="md:col-span-2 bg-gray-50 px-4 py-3 border border-l-0">
+                  <div className="md:col-span-2 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
                     <Label className="font-medium text-gray-700">Price (€)</Label>
                   </div>
                   <div className="md:col-span-1 bg-gray-50 px-2 py-3 border border-l-0 rounded-tr-md flex justify-center">
