@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, X, MoreHorizontal, Copy, Trash2, ChevronDown } from "lucide-react";
+import { CalendarIcon, Plus, X, MoreHorizontal, Copy, Trash2, ChevronDown, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ import { useAuth } from '@/lib/auth-context';
 
 // Define the schema for line items
 const lineItemSchema = z.object({
+  id: z.string().optional(),
   description: z.string().optional(),
   itemId: z.string().min(1, "Item is required"),
   itemName: z.string().optional(),
@@ -92,6 +94,7 @@ const formSchema = z.object({
 
 // Define the type for line items that allows string for price
 type LineItem = {
+  id?: string;
   description: string;
   itemId: string;
   itemName?: string;
@@ -123,7 +126,7 @@ export default function VeterinaryForm() {
       animalType: "",
       checkInDate: undefined,
       checkOutDate: undefined,
-      lineItems: [{ description: "", itemId: "", itemName: "", price: "" }],
+      lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", price: "" }],
       discountType: "percent",
       discountValue: 0,
       comment: "",
@@ -237,9 +240,10 @@ export default function VeterinaryForm() {
 
   // Add a new line item
   const addLineItem = () => {
+    const newId = `item-${Date.now()}-${lineItems.length}`;
     setValue("lineItems", [
       ...lineItems,
-      { description: "", itemId: "", itemName: "", price: "" },
+      { id: newId, description: "", itemId: "", itemName: "", price: "" },
     ]);
   };
 
@@ -255,10 +259,39 @@ export default function VeterinaryForm() {
   // Duplicate a line item
   const duplicateLineItem = (index: number) => {
     const itemToDuplicate = lineItems[index];
-    const duplicatedItem = { ...itemToDuplicate };
+    const newId = `item-${Date.now()}-${lineItems.length}`;
+    const duplicatedItem = { ...itemToDuplicate, id: newId };
     const updatedItems = [...lineItems];
     updatedItems.splice(index + 1, 0, duplicatedItem);
     setValue("lineItems", updatedItems);
+  };
+
+  // Reorder line items after drag and drop
+  const reorderLineItems = (result: DropResult) => {
+    // Dropped outside the list
+    if (!result.destination) {
+      return;
+    }
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    // If the item was dropped in the same position, do nothing
+    if (sourceIndex === destinationIndex) {
+      return;
+    }
+
+    // Create a copy of the current line items
+    const items = Array.from(lineItems);
+    
+    // Remove the dragged item from its original position
+    const [removed] = items.splice(sourceIndex, 1);
+    
+    // Insert the dragged item at its new position
+    items.splice(destinationIndex, 0, removed);
+    
+    // Update the form state with the new order
+    setValue("lineItems", items);
   };
 
   // Handle form submission
@@ -343,7 +376,7 @@ export default function VeterinaryForm() {
         animalType: "",
         checkInDate: undefined,
         checkOutDate: undefined,
-        lineItems: [{ description: "", itemId: "", itemName: "", price: "" }],
+        lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", price: "" }],
         discountType: "percent",
         discountValue: 0,
         comment: "",
@@ -708,7 +741,10 @@ export default function VeterinaryForm() {
               <div className="space-y-0">
                 {/* Headers - visible only on larger screens */}
                 <div className="hidden md:grid md:grid-cols-16 md:gap-0">
-                  <div className="md:col-span-7 bg-gray-50 px-4 py-3 border border-r-0 rounded-tl-md">
+                  <div className="md:col-span-1 bg-gray-50 px-2 py-3 border border-r-0 rounded-tl-md flex justify-center">
+                    <Label className="font-medium text-gray-700 sr-only">Drag</Label>
+                  </div>
+                  <div className="md:col-span-6 bg-gray-50 px-4 py-3 border border-r-0">
                     <Label className="font-medium text-gray-700">Description</Label>
                   </div>
                   <div className="md:col-span-5 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
@@ -722,260 +758,300 @@ export default function VeterinaryForm() {
                   </div>
                 </div>
 
-                <div className="mt-[-1px]">
-                {lineItems.map((item, index) => (
-                  <div key={index} className={`grid grid-cols-1 md:grid-cols-16 md:gap-0 gap-4 ${index > 0 ? "mt-[-1px]" : ""}`}>
-                    {/* Mobile labels - only visible on small screens */}
-                    <div className="block md:hidden space-y-4">
-                      <Label>Description</Label>
-                      <FormField
-                        control={form.control}
-                        name={`lineItems.${index}.description`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input placeholder="Description" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Label>Category</Label>
-                      <FormField
-                        control={form.control}
-                        name={`lineItems.${index}.itemId`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Combobox
-                                options={allXeroItems || []}
-                                value={field.value}
-                                onChange={(value) => {
-                                  field.onChange(value);
+                <DragDropContext onDragEnd={reorderLineItems}>
+                  <Droppable droppableId="line-items">
+                    {(provided) => (
+                      <div 
+                        className="mt-[-1px]"
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                      >
+                        {lineItems.map((item, index) => (
+                          <Draggable 
+                            key={item.id || `item-${index}`} 
+                            draggableId={item.id || `item-${index}`} 
+                            index={index}
+                          >
+                            {(provided, snapshot) => (
+                              <div 
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`grid grid-cols-1 md:grid-cols-16 md:gap-0 gap-4 ${index > 0 ? "mt-[-1px]" : ""} ${snapshot.isDragging ? "bg-gray-50 shadow-md z-50" : ""}`}
+                              >
+                                {/* Mobile labels - only visible on small screens */}
+                                <div className="block md:hidden space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <Label>Description</Label>
+                                    <div 
+                                      {...provided.dragHandleProps}
+                                      className="cursor-grab active:cursor-grabbing p-1"
+                                    >
+                                      <GripVertical className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                  </div>
+                                  <FormField
+                                    control={form.control}
+                                    name={`lineItems.${index}.description`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormControl>
+                                          <Input placeholder="Description" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
                                   
-                                  // Find the selected item to get its name
-                                  const selectedItem = allXeroItems.find(item => item.value === value);
-                                  if (selectedItem) {
-                                    // Set the item name in a separate field
-                                    form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
-                                  }
-                                }}
-                                placeholder="Select item"
-                                emptyMessage={
-                                  loadingXeroItems 
-                                    ? "Loading items..." 
-                                    : "No items found."
-                                }
-                                loading={loadingXeroItems}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                            {allXeroItems.length === 0 && !loadingXeroItems && (
-                              <div className="text-sm text-amber-600 mt-1">
-                                No items available. Please check your Xero connection.
+                                  <Label>Category</Label>
+                                  <FormField
+                                    control={form.control}
+                                    name={`lineItems.${index}.itemId`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormControl>
+                                          <Combobox
+                                            options={allXeroItems || []}
+                                            value={field.value}
+                                            onChange={(value) => {
+                                              field.onChange(value);
+                                              
+                                              // Find the selected item to get its name
+                                              const selectedItem = allXeroItems.find(item => item.value === value);
+                                              if (selectedItem) {
+                                                // Set the item name in a separate field
+                                                form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
+                                              }
+                                            }}
+                                            placeholder="Select item"
+                                            emptyMessage={
+                                              loadingXeroItems 
+                                                ? "Loading items..." 
+                                                : "No items found."
+                                            }
+                                            loading={loadingXeroItems}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                        {allXeroItems.length === 0 && !loadingXeroItems && (
+                                          <div className="text-sm text-amber-600 mt-1">
+                                            No items available. Please check your Xero connection.
+                                          </div>
+                                        )}
+                                      </FormItem>
+                                    )}
+                                  />
+                                  
+                                  <Label>Price (€)</Label>
+                                  <FormField
+                                    control={form.control}
+                                    name={`lineItems.${index}.price`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            placeholder="0.00"
+                                            {...field}
+                                            value={field.value === undefined || field.value === null ? "" : field.value}
+                                            onChange={(e) => {
+                                              const value = e.target.value;
+                                              field.onChange(value === "" ? "" : parseFloat(value) || 0);
+                                              
+                                              // Force recalculation of totals by creating a new array reference
+                                              const updatedItems = [...lineItems];
+                                              setValue("lineItems", updatedItems);
+                                            }}
+                                            onFocus={(e) => e.target.select()}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  
+                                  <div className="flex justify-end mt-2">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="flex items-center"
+                                        >
+                                          <MoreHorizontal className="h-4 w-4 mr-1" />
+                                          Actions
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem
+                                          onClick={() => duplicateLineItem(index)}
+                                        >
+                                          <Copy className="h-4 w-4 mr-2" />
+                                          Duplicate
+                                        </DropdownMenuItem>
+                                        {lineItems.length > 1 && (
+                                          <DropdownMenuItem
+                                            onClick={() => removeLineItem(index)}
+                                            className="text-destructive"
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete
+                                          </DropdownMenuItem>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                  
+                                  {index < lineItems.length - 1 && <hr className="my-4" />}
+                                </div>
+
+                                {/* Desktop layout - hidden on mobile */}
+                                <div className="hidden md:contents">
+                                  <div 
+                                    className="md:col-span-1 relative"
+                                    {...provided.dragHandleProps}
+                                  >
+                                    <div className={`h-full border flex items-center justify-center cursor-grab active:cursor-grabbing ${index === lineItems.length - 1 ? "rounded-bl-md" : ""}`}>
+                                      <GripVertical className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="md:col-span-6 relative -ml-[1px]">
+                                    <FormField
+                                      control={form.control}
+                                      name={`lineItems.${index}.description`}
+                                      render={({ field }) => (
+                                        <FormItem className="[&:has(:focus)]:z-30 relative">
+                                          <FormControl>
+                                            <Input 
+                                              placeholder="Description" 
+                                              {...field} 
+                                              className="rounded-none relative"
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+
+                                  <div className="md:col-span-5 relative -ml-[1px]">
+                                    <FormField
+                                      control={form.control}
+                                      name={`lineItems.${index}.itemId`}
+                                      render={({ field }) => (
+                                        <FormItem className="[&:has(:focus)]:z-30 relative">
+                                          <FormControl>
+                                            <Combobox
+                                              options={allXeroItems || []}
+                                              value={field.value}
+                                              onChange={(value) => {
+                                                field.onChange(value);
+                                                
+                                                // Find the selected item to get its name
+                                                const selectedItem = allXeroItems.find(item => item.value === value);
+                                                if (selectedItem) {
+                                                  // Set the item name in a separate field
+                                                  form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
+                                                }
+                                              }}
+                                              placeholder="Select item"
+                                              emptyMessage={
+                                                loadingXeroItems 
+                                                  ? "Loading items..." 
+                                                  : "No items found."
+                                              }
+                                              loading={loadingXeroItems}
+                                              className="rounded-none relative"
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                          {allXeroItems.length === 0 && !loadingXeroItems && (
+                                            <div className="text-sm text-amber-600 mt-1">
+                                              No items available. Please check your Xero connection.
+                                            </div>
+                                          )}
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+
+                                  <div className="md:col-span-3 relative -ml-[1px]">
+                                    <FormField
+                                      control={form.control}
+                                      name={`lineItems.${index}.price`}
+                                      render={({ field }) => (
+                                        <FormItem className="[&:has(:focus)]:z-30 relative">
+                                          <FormControl>
+                                            <Input
+                                              type="number"
+                                              placeholder="0.00"
+                                              {...field}
+                                              value={field.value === undefined || field.value === null ? "" : field.value}
+                                              onChange={(e) => {
+                                                const value = e.target.value;
+                                                field.onChange(value === "" ? "" : parseFloat(value) || 0);
+                                                
+                                                // Force recalculation of totals by creating a new array reference
+                                                const updatedItems = [...lineItems];
+                                                setValue("lineItems", updatedItems);
+                                              }}
+                                              onFocus={(e) => e.target.select()}
+                                              className="rounded-none relative"
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+
+                                  <div className="md:col-span-1 relative -ml-[1px]">
+                                    <div className={`h-full border flex items-center justify-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 min-w-0 p-0 rounded-md hover:bg-gray-100"
+                                          >
+                                            <span className="sr-only">Open menu</span>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                          <DropdownMenuItem
+                                            onClick={() => duplicateLineItem(index)}
+                                          >
+                                            <Copy className="h-4 w-4 mr-2" />
+                                            Duplicate
+                                          </DropdownMenuItem>
+                                          {lineItems.length > 1 && (
+                                            <DropdownMenuItem
+                                              onClick={() => removeLineItem(index)}
+                                              className="text-destructive"
+                                            >
+                                              <Trash2 className="h-4 w-4 mr-2" />
+                                              Delete
+                                            </DropdownMenuItem>
+                                          )}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             )}
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Label>Price (€)</Label>
-                      <FormField
-                        control={form.control}
-                        name={`lineItems.${index}.price`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="0.00"
-                                {...field}
-                                value={field.value === undefined || field.value === null ? "" : field.value}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  field.onChange(value === "" ? "" : parseFloat(value) || 0);
-                                  
-                                  // Force recalculation of totals by creating a new array reference
-                                  const updatedItems = [...lineItems];
-                                  setValue("lineItems", updatedItems);
-                                }}
-                                onFocus={(e) => e.target.select()}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="flex justify-end mt-2">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="flex items-center"
-                            >
-                              <MoreHorizontal className="h-4 w-4 mr-1" />
-                              Actions
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              onClick={() => duplicateLineItem(index)}
-                            >
-                              <Copy className="h-4 w-4 mr-2" />
-                              Duplicate
-                            </DropdownMenuItem>
-                            {lineItems.length > 1 && (
-                              <DropdownMenuItem
-                                onClick={() => removeLineItem(index)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                      
-                      {index < lineItems.length - 1 && <hr className="my-4" />}
-                    </div>
-
-                    {/* Desktop layout - hidden on mobile */}
-                    <div className="hidden md:contents">
-                      <div className="md:col-span-7 relative">
-                        <FormField
-                          control={form.control}
-                          name={`lineItems.${index}.description`}
-                          render={({ field }) => (
-                            <FormItem className="[&:has(:focus)]:z-30 relative">
-                              <FormControl>
-                                <Input 
-                                  placeholder="Description" 
-                                  {...field} 
-                                  className={`rounded-none ${index === lineItems.length - 1 ? "rounded-bl-md" : ""} relative`}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="md:col-span-5 relative -ml-[1px]">
-                        <FormField
-                          control={form.control}
-                          name={`lineItems.${index}.itemId`}
-                          render={({ field }) => (
-                            <FormItem className="[&:has(:focus)]:z-30 relative">
-                              <FormControl>
-                                <Combobox
-                                  options={allXeroItems || []}
-                                  value={field.value}
-                                  onChange={(value) => {
-                                    field.onChange(value);
-                                    
-                                    // Find the selected item to get its name
-                                    const selectedItem = allXeroItems.find(item => item.value === value);
-                                    if (selectedItem) {
-                                      // Set the item name in a separate field
-                                      form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
-                                    }
-                                  }}
-                                  placeholder="Select item"
-                                  emptyMessage={
-                                    loadingXeroItems 
-                                      ? "Loading items..." 
-                                      : "No items found."
-                                  }
-                                  loading={loadingXeroItems}
-                                  className="rounded-none relative"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                              {allXeroItems.length === 0 && !loadingXeroItems && (
-                                <div className="text-sm text-amber-600 mt-1">
-                                  No items available. Please check your Xero connection.
-                                </div>
-                              )}
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="md:col-span-3 relative -ml-[1px]">
-                        <FormField
-                          control={form.control}
-                          name={`lineItems.${index}.price`}
-                          render={({ field }) => (
-                            <FormItem className="[&:has(:focus)]:z-30 relative">
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  placeholder="0.00"
-                                  {...field}
-                                  value={field.value === undefined || field.value === null ? "" : field.value}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    field.onChange(value === "" ? "" : parseFloat(value) || 0);
-                                    
-                                    // Force recalculation of totals by creating a new array reference
-                                    const updatedItems = [...lineItems];
-                                    setValue("lineItems", updatedItems);
-                                  }}
-                                  onFocus={(e) => e.target.select()}
-                                  className="rounded-none relative"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="md:col-span-1 relative -ml-[1px]">
-                        <div className={`h-full border flex items-center justify-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 min-w-0 p-0 rounded-md hover:bg-gray-100"
-                              >
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem
-                                onClick={() => duplicateLineItem(index)}
-                              >
-                                <Copy className="h-4 w-4 mr-2" />
-                                Duplicate
-                              </DropdownMenuItem>
-                              {lineItems.length > 1 && (
-                                <DropdownMenuItem
-                                  onClick={() => removeLineItem(index)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
                 
                 <div className="flex items-center mt-6">
                   <Button
@@ -1003,7 +1079,8 @@ export default function VeterinaryForm() {
                       <DropdownMenuItem
                         onClick={() => {
                           // Add 5 items
-                          const newItems = Array(5).fill(null).map(() => ({ 
+                          const newItems = Array(5).fill(null).map((_, i) => ({ 
+                            id: `item-${Date.now()}-${lineItems.length + i}`,
                             description: "", 
                             itemId: "", 
                             itemName: "", 
@@ -1017,7 +1094,8 @@ export default function VeterinaryForm() {
                       <DropdownMenuItem
                         onClick={() => {
                           // Add 10 items
-                          const newItems = Array(10).fill(null).map(() => ({ 
+                          const newItems = Array(10).fill(null).map((_, i) => ({ 
+                            id: `item-${Date.now()}-${lineItems.length + i}`,
                             description: "", 
                             itemId: "", 
                             itemName: "", 
@@ -1031,7 +1109,8 @@ export default function VeterinaryForm() {
                       <DropdownMenuItem
                         onClick={() => {
                           // Add 20 items
-                          const newItems = Array(20).fill(null).map(() => ({ 
+                          const newItems = Array(20).fill(null).map((_, i) => ({ 
+                            id: `item-${Date.now()}-${lineItems.length + i}`,
                             description: "", 
                             itemId: "", 
                             itemName: "", 
