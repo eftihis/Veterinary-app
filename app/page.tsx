@@ -36,7 +36,7 @@ export default function Home() {
   return (
     <div className="container max-w-full py-10 px-4">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-center">Veterinary Clinic Invoice</h1>
+        <h1 className="text-1xl font-bold text-center">Veterinary Clinic Invoice</h1>
         <Button onClick={handleSignOut} variant="outline">Sign Out</Button>
       </div>
       <VeterinaryForm />

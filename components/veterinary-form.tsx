@@ -343,7 +343,7 @@ export default function VeterinaryForm() {
       <Form {...form}>
         <form 
           onSubmit={form.handleSubmit(onSubmit)} 
-          className="space-y-8 max-w-3xl mx-auto"
+          className="space-y-8 max-w-4xl mx-auto"
         >
           {/* Show loading state if items are being fetched */}
           {loadingXeroItems && (
@@ -374,6 +374,11 @@ export default function VeterinaryForm() {
           )}
 
           {/* Patient Information Section */}
+
+          {/* Form title area */}
+
+          <h1 className="text-3xl font-bold text-center">Veterinary Clinic Invoice</h1>
+
           <Card>
             <CardContent className="pt-6">
               <h2 className="text-xl font-semibold mb-6">Patient Information</h2>
@@ -685,23 +690,23 @@ export default function VeterinaryForm() {
               <h2 className="text-xl font-semibold mb-6">Services & Products</h2>
               <div className="space-y-0">
                 {/* Headers - visible only on larger screens */}
-                <div className="hidden md:grid md:grid-cols-12 md:gap-0">
-                  <div className="md:col-span-5 bg-gray-50 px-4 py-3 border border-r-0 rounded-tl-md">
+                <div className="hidden md:grid md:grid-cols-16 md:gap-0">
+                  <div className="md:col-span-7 bg-gray-50 px-4 py-3 border rounded-tl-md">
                     <Label className="font-medium text-gray-700">Description</Label>
                   </div>
-                  <div className="md:col-span-4 bg-gray-50 px-4 py-3 border border-x-0">
+                  <div className="md:col-span-6 bg-gray-50 px-4 py-3 border border-l-0">
                     <Label className="font-medium text-gray-700">Category</Label>
                   </div>
-                  <div className="md:col-span-2 bg-gray-50 px-4 py-3 border border-l-0 rounded-tr-md">
+                  <div className="md:col-span-2 bg-gray-50 px-4 py-3 border border-l-0">
                     <Label className="font-medium text-gray-700">Price (€)</Label>
                   </div>
-                  <div className="md:col-span-1">
-                    {/* Empty header for remove button */}
+                  <div className="md:col-span-1 bg-gray-50 px-2 py-3 border border-l-0 rounded-tr-md flex justify-center">
+                    <Label className="font-medium text-gray-700 sr-only">Actions</Label>
                   </div>
                 </div>
 
                 {lineItems.map((item, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-12 md:gap-0 gap-4">
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-16 md:gap-0 gap-4">
                     {/* Mobile labels - only visible on small screens */}
                     <div className="block md:hidden space-y-4">
                       <Label>Description</Label>
@@ -805,7 +810,7 @@ export default function VeterinaryForm() {
 
                     {/* Desktop layout - hidden on mobile */}
                     <div className="hidden md:contents">
-                      <div className="md:col-span-5 relative">
+                      <div className="md:col-span-7 relative">
                         <FormField
                           control={form.control}
                           name={`lineItems.${index}.description`}
@@ -824,7 +829,7 @@ export default function VeterinaryForm() {
                         />
                       </div>
 
-                      <div className="md:col-span-4 relative -ml-[1px]">
+                      <div className="md:col-span-6 relative -ml-[1px]">
                         <FormField
                           control={form.control}
                           name={`lineItems.${index}.itemId`}
@@ -886,7 +891,7 @@ export default function VeterinaryForm() {
                                     setValue("lineItems", updatedItems);
                                   }}
                                   onFocus={(e) => e.target.select()}
-                                  className={`rounded-none ${index === lineItems.length - 1 ? "rounded-br-md" : ""} relative border-t-0`}
+                                  className="rounded-none relative border-t-0"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -895,18 +900,20 @@ export default function VeterinaryForm() {
                         />
                       </div>
 
-                      <div className="md:col-span-1 flex justify-center items-center">
-                        {lineItems.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeLineItem(index)}
-                            className="h-8 w-8"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
+                      <div className="md:col-span-1 relative -ml-[1px]">
+                        <div className={`h-full border border-t-0 flex items-center justify-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
+                          {lineItems.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeLineItem(index)}
+                              className="h-7 w-7 min-w-0 p-0 rounded-md hover:bg-gray-100"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
