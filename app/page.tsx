@@ -4,17 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import VeterinaryForm from "@/components/veterinary-form";
 import { useAuth } from "@/lib/auth-context";
-import { Button } from "@/components/ui/button";
-import { AppSidebar } from "@/components/app-sidebar";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { AppSidebar } from "@/components/app-sidebar";
 
 export default function Home() {
-  const { user, isLoading, signOut } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
 
@@ -24,11 +23,6 @@ export default function Home() {
       router.push("/login");
     }
   }, [user, isLoading, router]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/login");
-  };
 
   // Don't render anything until we're on the client and have checked auth
   if (!isClient || isLoading) {
@@ -52,8 +46,6 @@ export default function Home() {
               className="mr-2 data-[orientation=vertical]:h-4"
             />
             <h1 className="text-xl font-bold">Veterinary Clinic Invoice</h1>
-            <div className="flex-1"></div>
-            <Button onClick={handleSignOut} variant="outline">Sign Out</Button>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
