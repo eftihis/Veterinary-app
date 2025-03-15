@@ -87,7 +87,7 @@ const formatCurrency = (amount: number) => {
 // Format date
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '-'
-  return format(new Date(dateString), 'dd/MM/yyyy')
+  return format(new Date(dateString), 'd MMM yyyy')
 }
 
 // Get status badge
@@ -121,20 +121,20 @@ function DateRangePicker({
   onClear: () => void;
 }) {
   return (
-    <div className="flex gap-2 items-center">
-      <div className="grid gap-2">
+    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+      <div className="grid gap-2 w-full sm:w-auto">
         <Popover>
           <PopoverTrigger asChild>
             <Button
               id="start-date"
               variant={"outline"}
               className={cn(
-                "w-[180px] justify-start text-left font-normal",
+                "w-full sm:w-[150px] md:w-[180px] justify-start text-left font-normal",
                 !startDate && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, "dd/MM/yyyy") : <span>Start date</span>}
+              {startDate ? format(startDate, "d MMM yyyy") : <span>Start date</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -147,19 +147,19 @@ function DateRangePicker({
           </PopoverContent>
         </Popover>
       </div>
-      <div className="grid gap-2">
+      <div className="grid gap-2 w-full sm:w-auto">
         <Popover>
           <PopoverTrigger asChild>
             <Button
               id="end-date"
               variant={"outline"}
               className={cn(
-                "w-[180px] justify-start text-left font-normal",
+                "w-full sm:w-[150px] md:w-[180px] justify-start text-left font-normal",
                 !endDate && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, "dd/MM/yyyy") : <span>End date</span>}
+              {endDate ? format(endDate, "d MMM yyyy") : <span>End date</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -537,27 +537,27 @@ export function InvoicesDataTable() {
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col gap-4 py-4">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="w-full md:max-w-md relative">
-                <Input
-                  placeholder="Search invoices by number, reference, or patient..."
-                  value={globalFilter}
-                  onChange={(event) => setGlobalFilter(event.target.value)}
-                  className="w-full pr-8"
-                />
-                {globalFilter && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full"
-                    onClick={() => setGlobalFilter("")}
-                    aria-label="Clear search"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="w-full md:w-auto relative">
+                  <Input
+                    placeholder="Search invoices by number, reference, or patient..."
+                    value={globalFilter}
+                    onChange={(event) => setGlobalFilter(event.target.value)}
+                    className="w-full md:w-[350px] pr-8"
+                  />
+                  {globalFilter && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full"
+                      onClick={() => setGlobalFilter("")}
+                      aria-label="Clear search"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
                 <DateRangePicker 
                   startDate={startDate}
                   endDate={endDate}
@@ -565,33 +565,34 @@ export function InvoicesDataTable() {
                   onEndDateChange={setEndDate}
                   onClear={clearDateFilters}
                 />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="ml-auto">
-                      Columns <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {table
-                      .getAllColumns()
-                      .filter((column) => column.getCanHide())
-                      .map((column) => {
-                        return (
-                          <DropdownMenuCheckboxItem
-                            key={column.id}
-                            className="capitalize"
-                            checked={column.getIsVisible()}
-                            onCheckedChange={(value) =>
-                              column.toggleVisibility(!!value)
-                            }
-                          >
-                            {column.id}
-                          </DropdownMenuCheckboxItem>
-                        )
-                      })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    Columns <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => {
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          className="capitalize"
+                          checked={column.getIsVisible()}
+                          onCheckedChange={(value) =>
+                            column.toggleVisibility(!!value)
+                          }
+                        >
+                          {column.id}
+                        </DropdownMenuCheckboxItem>
+                      )
+                    })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             {filteredData.length !== invoices.length && (
               <div className="text-sm text-muted-foreground">
