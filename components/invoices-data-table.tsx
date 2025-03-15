@@ -20,9 +20,11 @@ import {
   Eye, 
   FileEdit, 
   Trash2,
-  AlertCircle 
+  AlertCircle,
+  Calendar as CalendarIcon,
+  X
 } from "lucide-react"
-import { format } from "date-fns"
+import { format, isAfter, isBefore, isValid, parseISO } from "date-fns"
 import { supabase } from "@/lib/supabase"
 
 import { Button } from "@/components/ui/button"
@@ -47,6 +49,13 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 
 // Define our Invoice type based on our Supabase table structure
 export type Invoice = {
@@ -225,6 +234,85 @@ export const columns: ColumnDef<Invoice>[] = [
   },
 ]
 
+// Date range picker component
+function DateRangePicker({ 
+  startDate, 
+  endDate, 
+  onStartDateChange, 
+  onEndDateChange,
+  onClear 
+}: { 
+  startDate: Date | undefined; 
+  endDate: Date | undefined; 
+  onStartDateChange: (date: Date | undefined) => void; 
+  onEndDateChange: (date: Date | undefined) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="flex gap-2 items-center">
+      <div className="grid gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              id="start-date"
+              variant={"outline"}
+              className={cn(
+                "w-[180px] justify-start text-left font-normal",
+                !startDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {startDate ? format(startDate, "dd/MM/yyyy") : <span>Start date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={startDate}
+              onSelect={onStartDateChange}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div className="grid gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              id="end-date"
+              variant={"outline"}
+              className={cn(
+                "w-[180px] justify-start text-left font-normal",
+                !endDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {endDate ? format(endDate, "dd/MM/yyyy") : <span>End date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={endDate}
+              onSelect={onEndDateChange}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      {(startDate || endDate) && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClear}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  )
+}
+
 export function InvoicesDataTable() {
   const [invoices, setInvoices] = React.useState<Invoice[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -234,6 +322,11 @@ export function InvoicesDataTable() {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+  
+  // Date range filter state
+  const [startDate, setStartDate] = React.useState<Date | undefined>(undefined)
+  const [endDate, setEndDate] = React.useState<Date | undefined>(undefined)
+  const [filteredData, setFilteredData] = React.useState<Invoice[]>([])
 
   // Fetch invoices from Supabase
   React.useEffect(() => {
@@ -263,8 +356,38 @@ export function InvoicesDataTable() {
     fetchInvoices()
   }, [])
 
+  // Apply date filters
+  React.useEffect(() => {
+    // If no date filters are set, use all invoices
+    if (!startDate && !endDate) {
+      setFilteredData(invoices)
+      return
+    }
+    
+    // Filter invoices based on date range
+    const filtered = invoices.filter(invoice => {
+      const createdDate = parseISO(invoice.created_at)
+      
+      // If start date is set, check if the invoice date is after or equal to it
+      const afterStartDate = startDate ? isAfter(createdDate, startDate) || createdDate.getDate() === startDate.getDate() : true
+      
+      // If end date is set, check if the invoice date is before or equal to it
+      const beforeEndDate = endDate ? isBefore(createdDate, endDate) || createdDate.getDate() === endDate.getDate() : true
+      
+      return afterStartDate && beforeEndDate
+    })
+    
+    setFilteredData(filtered)
+  }, [invoices, startDate, endDate])
+  
+  // Clear date filters
+  const clearDateFilters = () => {
+    setStartDate(undefined)
+    setEndDate(undefined)
+  }
+
   const table = useReactTable({
-    data: invoices,
+    data: filteredData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -310,41 +433,55 @@ export function InvoicesDataTable() {
   return (
     <Card>
       <CardContent className="p-6">
-        <div className="flex items-center py-4">
-          <Input
-            placeholder="Filter by document number..."
-            value={(table.getColumn("document_number")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("document_number")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex flex-col gap-4 py-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <Input
+              placeholder="Filter by document number..."
+              value={(table.getColumn("document_number")?.getFilterValue() as string) ?? ""}
+              onChange={(event) =>
+                table.getColumn("document_number")?.setFilterValue(event.target.value)
+              }
+              className="max-w-sm"
+            />
+            <DateRangePicker 
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+              onClear={clearDateFilters}
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    )
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          {filteredData.length !== invoices.length && (
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredData.length} of {invoices.length} invoices based on date filter.
+            </div>
+          )}
         </div>
         <div className="rounded-md border">
           <Table>
