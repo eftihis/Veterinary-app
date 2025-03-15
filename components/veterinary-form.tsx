@@ -521,13 +521,50 @@ export default function VeterinaryForm({
         if (checkInDate && isNaN(checkInDate.getTime())) checkInDate = undefined;
         if (checkOutDate && isNaN(checkOutDate.getTime())) checkOutDate = undefined;
         
+        // Process animal type to ensure it matches dropdown options
+        let rawAnimalType = initialData.animal_details?.type || "";
+        console.log("Raw animal type from DB:", rawAnimalType);
+        
+        // If we have a Type key in JSONB (case-sensitive key)
+        if (!rawAnimalType && initialData.animal_details?.Type) {
+          rawAnimalType = initialData.animal_details.Type;
+          console.log("Found animal type in Type key:", rawAnimalType);
+        }
+        
+        // Handle potential capitalization variations
+        let animalType = "";
+        if (typeof rawAnimalType === 'string') {
+          // Convert to lowercase for comparison
+          let normalizedType = rawAnimalType.toLowerCase().trim();
+          console.log("Normalized animal type to lowercase:", normalizedType);
+          
+          // Map to the exact values used in the form select
+          if (normalizedType === "dog" || normalizedType.includes("dog") || normalizedType.includes("canine")) {
+            animalType = "dog";
+          } else if (normalizedType === "cat" || normalizedType.includes("cat") || normalizedType.includes("feline")) {
+            animalType = "cat";
+          } else {
+            animalType = "other";
+          }
+          
+          console.log("Final mapped animal type for form:", animalType);
+        } else {
+          console.log("Animal type is not a string:", rawAnimalType);
+          animalType = "other"; // Fallback
+        }
+        
+        console.log("Setting form animal type to:", animalType);
+        
+        // Force-set the animal type separately before the full form reset
+        setValue("animalType", animalType);
+        
         // Set all form values at once
         form.reset({
           documentNumber: initialData.document_number || "",
           reference: initialData.reference || "",
           animalName: initialData.animal_details?.name || "",
           animalId: initialData.animal_id || "",
-          animalType: initialData.animal_details?.type || "",
+          animalType: animalType, // Use our normalized value here
           checkInDate: checkInDate,
           checkOutDate: checkOutDate,
           lineItems: formattedLineItems,
@@ -535,6 +572,28 @@ export default function VeterinaryForm({
           discountValue: initialData.discount_value || 0,
           comment: initialData.comment || "",
         });
+        
+        // For debugging, check what values were actually set
+        setTimeout(() => {
+          console.log("Current form values after reset:", form.getValues());
+          console.log("Current animal type value:", form.getValues("animalType"));
+          
+          // As a fallback, directly set the animal type again
+          setValue("animalType", animalType);
+          
+          // Manually manipulate the DOM to ensure the correct value is selected
+          const animalTypeSelect = document.querySelector('select[name="animalType"]');
+          if (animalTypeSelect) {
+            console.log("Found animal type select element, setting value directly:", animalType);
+            (animalTypeSelect as HTMLSelectElement).value = animalType;
+            
+            // Dispatch a change event to ensure React state is updated
+            const event = new Event('change', { bubbles: true });
+            animalTypeSelect.dispatchEvent(event);
+          } else {
+            console.log("Could not find animal type select element in the DOM");
+          }
+        }, 100);
         
         // Update the line items state
         setValue("lineItems", formattedLineItems);
