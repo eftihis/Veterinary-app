@@ -13,7 +13,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import InvoiceList from "@/components/invoice-list"
+import { InvoicesDataTable } from "@/components/invoices-data-table"
 
 export default function InvoicesPage() {
   return (
@@ -44,7 +44,7 @@ export default function InvoicesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
           <p className="text-muted-foreground">View and manage your veterinary invoices.</p>
           
-          <InvoiceList />
+          <InvoicesDataTable />
         </div>
       </SidebarInset>
     </SidebarProvider>

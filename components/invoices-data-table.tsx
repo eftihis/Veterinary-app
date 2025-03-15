@@ -1,0 +1,424 @@
+"use client"
+
+import * as React from "react"
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
+import { 
+  ArrowUpDown, 
+  ChevronDown, 
+  MoreHorizontal, 
+  Eye, 
+  FileEdit, 
+  Trash2,
+  AlertCircle 
+} from "lucide-react"
+import { format } from "date-fns"
+import { supabase } from "@/lib/supabase"
+
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+
+// Define our Invoice type based on our Supabase table structure
+export type Invoice = {
+  id: string
+  document_number: string
+  reference: string | null
+  animal_details: {
+    name: string
+    type: string
+  }
+  check_in_date: string | null
+  check_out_date: string | null
+  subtotal: number
+  discount_amount: number
+  total: number
+  status: string
+  created_at: string
+}
+
+// Format currency
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-IE', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount)
+}
+
+// Format date
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return '-'
+  return format(new Date(dateString), 'dd/MM/yyyy')
+}
+
+// Get status badge
+const getStatusBadge = (status: string) => {
+  const statusClass = {
+    'paid': "bg-green-500",
+    'pending': "bg-yellow-500",
+    'overdue': "bg-red-500",
+    'cancelled': "border-gray-200 text-gray-800 bg-transparent",
+  }[status.toLowerCase()] || "bg-gray-500"
+  
+  return (
+    <Badge className={statusClass}>
+      <span className="capitalize">{status}</span>
+    </Badge>
+  )
+}
+
+// Define our columns
+export const columns: ColumnDef<Invoice>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value: boolean | "indeterminate") => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value: boolean) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: "document_number",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Invoice #
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => (
+      <div className="font-medium">{row.getValue("document_number")}</div>
+    ),
+  },
+  {
+    accessorKey: "animal_details",
+    header: "Patient",
+    cell: ({ row }) => {
+      const animalDetails = row.getValue("animal_details") as Invoice["animal_details"]
+      return (
+        <div>
+          <div className="font-medium">{animalDetails.name}</div>
+          <div className="text-muted-foreground text-xs capitalize">{animalDetails.type}</div>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: "created_at",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Date
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => formatDate(row.getValue("created_at")),
+  },
+  {
+    accessorKey: "check_in_date",
+    header: "Check-in",
+    cell: ({ row }) => formatDate(row.getValue("check_in_date")),
+  },
+  {
+    accessorKey: "check_out_date",
+    header: "Check-out",
+    cell: ({ row }) => formatDate(row.getValue("check_out_date")),
+  },
+  {
+    accessorKey: "total",
+    header: () => <div className="text-right">Total</div>,
+    cell: ({ row }) => {
+      const amount = parseFloat(row.getValue("total"))
+      return <div className="text-right font-medium">{formatCurrency(amount)}</div>
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => getStatusBadge(row.getValue("status")),
+  },
+  {
+    id: "actions",
+    enableHiding: false,
+    cell: ({ row }) => {
+      const invoice = row.original
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(invoice.id)}
+            >
+              Copy invoice ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <Eye className="mr-2 h-4 w-4" />
+              View details
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <FileEdit className="mr-2 h-4 w-4" />
+              Edit invoice
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete invoice
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
+  },
+]
+
+export function InvoicesDataTable() {
+  const [invoices, setInvoices] = React.useState<Invoice[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+  
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = React.useState({})
+
+  // Fetch invoices from Supabase
+  React.useEffect(() => {
+    async function fetchInvoices() {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const { data, error } = await supabase
+          .from('invoices')
+          .select('id, document_number, reference, animal_details, check_in_date, check_out_date, subtotal, discount_amount, total, status, created_at')
+          .order('created_at', { ascending: false })
+        
+        if (error) {
+          throw error
+        }
+        
+        setInvoices(data || [])
+      } catch (err) {
+        console.error("Error fetching invoices:", err)
+        setError(err instanceof Error ? err.message : "Unknown error occurred")
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchInvoices()
+  }, [])
+
+  const table = useReactTable({
+    data: invoices,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+  })
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="bg-red-50 text-red-700 p-4 rounded-md flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            <p>Error loading invoices: {error}</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center py-4">
+          <Input
+            placeholder="Filter by document number..."
+            value={(table.getColumn("document_number")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("document_number")?.setFilterValue(event.target.value)
+            }
+            className="max-w-sm"
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    )
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No invoices found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <div className="flex-1 text-sm text-muted-foreground">
+            {table.getFilteredSelectedRowModel().rows.length} of{" "}
+            {table.getFilteredRowModel().rows.length} row(s) selected.
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+} 
