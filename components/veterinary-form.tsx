@@ -276,8 +276,11 @@ export default function VeterinaryForm() {
 
   // Reorder line items after drag and drop
   const reorderLineItems = (result: DropResult) => {
+    console.log('Drag result:', result);
+    
     // Dropped outside the list
     if (!result.destination) {
+      console.log('Dropped outside the list');
       return;
     }
 
@@ -286,22 +289,26 @@ export default function VeterinaryForm() {
 
     // If the item was dropped in the same position, do nothing
     if (sourceIndex === destinationIndex) {
+      console.log('Source and destination indices are the same');
       return;
     }
 
-    // Create a deep copy of the current line items to avoid reference issues
-    const updatedItems = [...lineItems].map(item => ({...item}));
+    console.log(`Moving item from position ${sourceIndex} to position ${destinationIndex}`);
+    console.log('Items before reordering:', [...lineItems]);
+    
+    // Make a deep clone to ensure complete new reference
+    const itemsCopy = JSON.parse(JSON.stringify(lineItems));
     
     // Remove the dragged item from its original position
-    const [removed] = updatedItems.splice(sourceIndex, 1);
+    const [removed] = itemsCopy.splice(sourceIndex, 1);
     
     // Insert the dragged item at its new position
-    updatedItems.splice(destinationIndex, 0, removed);
+    itemsCopy.splice(destinationIndex, 0, removed);
     
-    // Update the form state with the new order and trigger validation
-    setValue("lineItems", updatedItems, { 
-      shouldValidate: true 
-    });
+    console.log('Items after reordering:', itemsCopy);
+    
+    // Use form.setValue instead of setValue to ensure proper update
+    form.setValue("lineItems", itemsCopy);
   };
 
   // Handle form submission
@@ -777,17 +784,14 @@ export default function VeterinaryForm() {
                         {...provided.droppableProps}
                       >
                         {lineItems.map((item, index) => {
-                          // Ensure each item has a unique ID
-                          const itemId = item.id || `item-${Date.now()}-${index}`;
-                          if (!item.id) {
-                            // If an item doesn't have an ID, assign one
-                            item.id = itemId;
-                          }
+                          // Create a stable draggable ID based only on index
+                          const draggableId = `draggable-item-${index}`;
+                          console.log(`Rendering item at index ${index} with draggableId: ${draggableId}`);
                           
                           return (
                             <Draggable 
-                              key={itemId} 
-                              draggableId={itemId} 
+                              key={draggableId} 
+                              draggableId={draggableId} 
                               index={index}
                             >
                               {(provided, snapshot) => (
