@@ -197,6 +197,7 @@ export function InvoicesDataTable() {
     }
   ])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [globalFilter, setGlobalFilter] = React.useState<string>("")
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   
@@ -467,6 +468,23 @@ export function InvoicesDataTable() {
     },
   ]
 
+  // Custom filter function to search across multiple columns
+  const fuzzyFilter = (row: any, columnId: string, filterValue: string) => {
+    const searchValue = filterValue.toLowerCase();
+    
+    // Get the values we want to search in
+    const documentNumber = row.getValue("document_number")?.toString().toLowerCase() || "";
+    const reference = row.getValue("reference")?.toString().toLowerCase() || "";
+    const animalDetails = row.getValue("animal_details") as Invoice["animal_details"] || { name: "", type: "" };
+    
+    // Check if any of the values match the search term
+    return (
+      documentNumber.includes(searchValue) ||
+      reference.includes(searchValue) ||
+      animalDetails.name.toLowerCase().includes(searchValue)
+    );
+  };
+
   const table = useReactTable({
     data: filteredData,
     columns,
@@ -478,11 +496,14 @@ export function InvoicesDataTable() {
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    globalFilterFn: fuzzyFilter,
+    onGlobalFilterChange: setGlobalFilter,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      globalFilter,
     },
   })
 
@@ -517,21 +538,24 @@ export function InvoicesDataTable() {
         <CardContent className="p-6">
           <div className="flex flex-col gap-4 py-4">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full md:max-w-xl">
+              <div className="w-full md:max-w-md relative">
                 <Input
-                  placeholder="Filter by document number..."
-                  value={(table.getColumn("document_number")?.getFilterValue() as string) ?? ""}
-                  onChange={(event) =>
-                    table.getColumn("document_number")?.setFilterValue(event.target.value)
-                  }
+                  placeholder="Search invoices by number, reference, or patient..."
+                  value={globalFilter}
+                  onChange={(event) => setGlobalFilter(event.target.value)}
+                  className="w-full pr-8"
                 />
-                <Input
-                  placeholder="Filter by reference..."
-                  value={(table.getColumn("reference")?.getFilterValue() as string) ?? ""}
-                  onChange={(event) =>
-                    table.getColumn("reference")?.setFilterValue(event.target.value)
-                  }
-                />
+                {globalFilter && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full"
+                    onClick={() => setGlobalFilter("")}
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 <DateRangePicker 
