@@ -442,10 +442,6 @@ export default function VeterinaryForm() {
 
           {/* Patient Information Section */}
 
-          {/* Form title area */}
-
-          <h1 className="text-3xl font-bold text-center">Veterinary Clinic Invoice</h1>
-
           <Card>
             <CardContent className="pt-6">
               <h2 className="text-xl font-semibold mb-6">Patient Information</h2>

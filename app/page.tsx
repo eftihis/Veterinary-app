@@ -45,10 +45,10 @@ export default function Home() {
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            <h1 className="text-xl font-bold">Veterinary Clinic Invoice</h1>
+            <h1 className="text-l font-bold">Veterinary Clinic Invoice</h1>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-15 pb-15">
           <div className="flex justify-center">
             <div className="w-full max-w-4xl">
               <VeterinaryForm />
