@@ -108,7 +108,15 @@ type FormValues = Omit<z.infer<typeof formSchema>, 'lineItems'> & {
   animalId?: string;
 };
 
-export default function VeterinaryForm() {
+export default function VeterinaryForm({
+  editMode = false,
+  initialData = null,
+  onSuccess
+}: {
+  editMode?: boolean;
+  initialData?: any;
+  onSuccess?: () => void;
+}) {
   const [showComment, setShowComment] = useState(false);
   const [subtotal, setSubtotal] = useState<number>(0);
   const [discountAmount, setDiscountAmount] = useState<number>(0);
@@ -316,7 +324,7 @@ export default function VeterinaryForm() {
   const onSubmit = async (data: FormValues) => {
     try {
       // Show loading toast
-      const loadingToastId = toast.loading("Submitting form...");
+      const loadingToastId = toast.loading(editMode ? "Updating invoice..." : "Submitting form...");
       
       // Create payload from form data with enhanced line items
       const enhancedLineItems = data.lineItems.map(item => {
@@ -367,83 +375,180 @@ export default function VeterinaryForm() {
         type: data.animalType
       };
       
-      // Create the invoice record in Supabase
-      const { data: invoiceData, error: invoiceError } = await supabase
-        .from('invoices')
-        .insert({
-          document_number: data.documentNumber,
-          reference: data.reference || null,
-          animal_id: data.animalId || null,
-          animal_details: animalDetails,
-          check_in_date: data.checkInDate || null,
-          check_out_date: data.checkOutDate || null,
-          subtotal: subtotal,
-          discount_type: data.discountType,
-          discount_value: data.discountValue,
-          discount_amount: discountAmount,
-          total: total,
-          status: 'pending',
-          line_items: enhancedLineItems,
-          comment: data.comment || null,
-          sender_info: sender
-        })
-        .select('id')
-        .single();
+      let invoiceData;
+      let invoiceError;
+      
+      if (editMode && initialData?.id) {
+        // Update existing invoice
+        const { data: updatedData, error: updateError } = await supabase
+          .from('invoices')
+          .update({
+            document_number: data.documentNumber,
+            reference: data.reference || null,
+            animal_id: data.animalId || null,
+            animal_details: animalDetails,
+            check_in_date: data.checkInDate || null,
+            check_out_date: data.checkOutDate || null,
+            subtotal: subtotal,
+            discount_type: data.discountType,
+            discount_value: data.discountValue,
+            discount_amount: discountAmount,
+            total: total,
+            line_items: enhancedLineItems,
+            comment: data.comment || null,
+            sender_info: sender
+          })
+          .eq('id', initialData.id)
+          .select('id')
+          .single();
+        
+        invoiceData = updatedData;
+        invoiceError = updateError;
+      } else {
+        // Create new invoice
+        const { data: newData, error: insertError } = await supabase
+          .from('invoices')
+          .insert({
+            document_number: data.documentNumber,
+            reference: data.reference || null,
+            animal_id: data.animalId || null,
+            animal_details: animalDetails,
+            check_in_date: data.checkInDate || null,
+            check_out_date: data.checkOutDate || null,
+            subtotal: subtotal,
+            discount_type: data.discountType,
+            discount_value: data.discountValue,
+            discount_amount: discountAmount,
+            total: total,
+            status: 'pending',
+            line_items: enhancedLineItems,
+            comment: data.comment || null,
+            sender_info: sender
+          })
+          .select('id')
+          .single();
+        
+        invoiceData = newData;
+        invoiceError = insertError;
+      }
       
       if (invoiceError) {
         console.error("Error saving invoice to Supabase:", invoiceError);
-        throw new Error(`Failed to save invoice: ${invoiceError.message}`);
+        throw new Error(`Failed to ${editMode ? 'update' : 'save'} invoice: ${invoiceError.message}`);
       }
       
-      console.log("Invoice saved to Supabase with ID:", invoiceData?.id);
+      console.log(`Invoice ${editMode ? 'updated' : 'saved'} in Supabase with ID:`, invoiceData?.id);
       
-      // Send data to the Make.com webhook - Use environment variable only, remove hardcoded fallback
-      const webhookUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL;
-      
-      if (!webhookUrl) {
-        throw new Error("Webhook URL is not configured. Please check your environment variables.");
-      }
-      
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...payload,
-          invoiceId: invoiceData?.id // Include the Supabase invoice ID in the webhook payload
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
+      // Only call the webhook for new invoices, not for updates
+      if (!editMode) {
+        // Send data to the Make.com webhook - Use environment variable only, remove hardcoded fallback
+        const webhookUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL;
+        
+        if (!webhookUrl) {
+          throw new Error("Webhook URL is not configured. Please check your environment variables.");
+        }
+        
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...payload,
+            invoiceId: invoiceData?.id // Include the Supabase invoice ID in the webhook payload
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
+        }
       }
       
       // Dismiss loading toast and show success
       toast.dismiss(loadingToastId);
-      toast.success("Form submitted successfully!");
       
-      // Reset form
-      form.reset({
-        documentNumber: "",
-        reference: "",
-        animalName: "",
-        animalId: "",
-        animalType: "",
-        checkInDate: undefined,
-        checkOutDate: undefined,
-        lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", price: "" }],
-        discountType: "percent",
-        discountValue: 0,
-        comment: "",
-      });
+      if (editMode && onSuccess) {
+        // Call the success callback for edit mode
+        toast.success("Invoice updated successfully!");
+        onSuccess();
+      } else {
+        // Show success toast and reset form for new invoices
+        toast.success("Form submitted successfully!");
+        
+        // Reset form
+        form.reset({
+          documentNumber: "",
+          reference: "",
+          animalName: "",
+          animalId: "",
+          animalType: "",
+          checkInDate: undefined,
+          checkOutDate: undefined,
+          lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", price: "" }],
+          discountType: "percent",
+          discountValue: 0,
+          comment: "",
+        });
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      toast.error(`Failed to submit form: ${errorMessage}`);
+      toast.error(`Failed to ${editMode ? 'update' : 'submit'} form: ${errorMessage}`);
     }
   };
+
+  // Pre-populate form with initial data if in edit mode
+  useEffect(() => {
+    if (editMode && initialData) {
+      try {
+        console.log("Pre-populating form with:", initialData);
+        
+        // Convert line items from the database format to the form format
+        const formattedLineItems = initialData.line_items.map((item: any, index: number) => ({
+          id: `item-${Date.now()}-${index}`,
+          description: item.description || "",
+          itemId: item.itemId || "",
+          itemName: item.itemName || "",
+          price: item.price || 0
+        }));
+        
+        // Format dates
+        let checkInDate = initialData.check_in_date ? new Date(initialData.check_in_date) : undefined;
+        let checkOutDate = initialData.check_out_date ? new Date(initialData.check_out_date) : undefined;
+        
+        // Ensure dates are valid
+        if (checkInDate && isNaN(checkInDate.getTime())) checkInDate = undefined;
+        if (checkOutDate && isNaN(checkOutDate.getTime())) checkOutDate = undefined;
+        
+        // Set all form values at once
+        form.reset({
+          documentNumber: initialData.document_number || "",
+          reference: initialData.reference || "",
+          animalName: initialData.animal_details?.name || "",
+          animalId: initialData.animal_id || "",
+          animalType: initialData.animal_details?.type || "",
+          checkInDate: checkInDate,
+          checkOutDate: checkOutDate,
+          lineItems: formattedLineItems,
+          discountType: initialData.discount_type || "percent",
+          discountValue: initialData.discount_value || 0,
+          comment: initialData.comment || "",
+        });
+        
+        // Update the line items state
+        setValue("lineItems", formattedLineItems);
+        
+        // Show comment section if there's a comment
+        if (initialData.comment) {
+          setShowComment(true);
+        }
+      } catch (error) {
+        console.error("Error pre-populating form:", error);
+        toast.error("Failed to load invoice data into the form");
+      }
+    }
+  }, [editMode, initialData, form]);
 
   return (
     <>

@@ -56,6 +56,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
 
 // Define our Invoice type based on our Supabase table structure
 export type Invoice = {
@@ -104,135 +105,6 @@ const getStatusBadge = (status: string) => {
     </Badge>
   )
 }
-
-// Define our columns
-export const columns: ColumnDef<Invoice>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value: boolean | "indeterminate") => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value: boolean) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "document_number",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Invoice #
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("document_number")}</div>
-    ),
-  },
-  {
-    accessorKey: "animal_details",
-    header: "Patient",
-    cell: ({ row }) => {
-      const animalDetails = row.getValue("animal_details") as Invoice["animal_details"]
-      return (
-        <div>
-          <div className="font-medium">{animalDetails.name}</div>
-          <div className="text-muted-foreground text-xs capitalize">{animalDetails.type}</div>
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: "created_at",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Date
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => formatDate(row.getValue("created_at")),
-  },
-  {
-    accessorKey: "check_in_date",
-    header: "Check-in",
-    cell: ({ row }) => formatDate(row.getValue("check_in_date")),
-  },
-  {
-    accessorKey: "check_out_date",
-    header: "Check-out",
-    cell: ({ row }) => formatDate(row.getValue("check_out_date")),
-  },
-  {
-    accessorKey: "total",
-    header: () => <div className="text-right">Total</div>,
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("total"))
-      return <div className="text-right font-medium">{formatCurrency(amount)}</div>
-    },
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => getStatusBadge(row.getValue("status")),
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const invoice = row.original
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(invoice.id)}
-            >
-              Copy invoice ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Eye className="mr-2 h-4 w-4" />
-              View details
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <FileEdit className="mr-2 h-4 w-4" />
-              Edit invoice
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete invoice
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-]
 
 // Date range picker component
 function DateRangePicker({ 
@@ -327,34 +199,45 @@ export function InvoicesDataTable() {
   const [startDate, setStartDate] = React.useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined)
   const [filteredData, setFilteredData] = React.useState<Invoice[]>([])
+  
+  // Edit invoice dialog state
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
+  const [selectedInvoice, setSelectedInvoice] = React.useState<Invoice | null>(null)
+
+  // Function to handle opening the edit dialog
+  const handleEditInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice)
+    setEditDialogOpen(true)
+  }
+  
+  // Function to refresh invoices after an update
+  const refreshInvoices = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('id, document_number, reference, animal_details, check_in_date, check_out_date, subtotal, discount_amount, total, status, created_at')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        throw error
+      }
+      
+      setInvoices(data || [])
+    } catch (err) {
+      console.error("Error fetching invoices:", err)
+      setError(err instanceof Error ? err.message : "Unknown error occurred")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   // Fetch invoices from Supabase
   React.useEffect(() => {
-    async function fetchInvoices() {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        const { data, error } = await supabase
-          .from('invoices')
-          .select('id, document_number, reference, animal_details, check_in_date, check_out_date, subtotal, discount_amount, total, status, created_at')
-          .order('created_at', { ascending: false })
-        
-        if (error) {
-          throw error
-        }
-        
-        setInvoices(data || [])
-      } catch (err) {
-        console.error("Error fetching invoices:", err)
-        setError(err instanceof Error ? err.message : "Unknown error occurred")
-      } finally {
-        setLoading(false)
-      }
-    }
-    
-    fetchInvoices()
-  }, [])
+    refreshInvoices()
+  }, [refreshInvoices])
 
   // Apply date filters
   React.useEffect(() => {
@@ -385,6 +268,135 @@ export function InvoicesDataTable() {
     setStartDate(undefined)
     setEndDate(undefined)
   }
+
+  // Define columns with access to component state/functions
+  const columns: ColumnDef<Invoice>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value: boolean | "indeterminate") => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value: boolean) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "document_number",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Invoice #
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("document_number")}</div>
+      ),
+    },
+    {
+      accessorKey: "animal_details",
+      header: "Patient",
+      cell: ({ row }) => {
+        const animalDetails = row.getValue("animal_details") as Invoice["animal_details"]
+        return (
+          <div>
+            <div className="font-medium">{animalDetails.name}</div>
+            <div className="text-muted-foreground text-xs capitalize">{animalDetails.type}</div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "created_at",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => formatDate(row.getValue("created_at")),
+    },
+    {
+      accessorKey: "check_in_date",
+      header: "Check-in",
+      cell: ({ row }) => formatDate(row.getValue("check_in_date")),
+    },
+    {
+      accessorKey: "check_out_date",
+      header: "Check-out",
+      cell: ({ row }) => formatDate(row.getValue("check_out_date")),
+    },
+    {
+      accessorKey: "total",
+      header: () => <div className="text-right">Total</div>,
+      cell: ({ row }) => {
+        const amount = parseFloat(row.getValue("total"))
+        return <div className="text-right font-medium">{formatCurrency(amount)}</div>
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => getStatusBadge(row.getValue("status")),
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const invoice = row.original
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => navigator.clipboard.writeText(invoice.id)}
+              >
+                Copy invoice ID
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Eye className="mr-2 h-4 w-4" />
+                View details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEditInvoice(invoice)}>
+                <FileEdit className="mr-2 h-4 w-4" />
+                Edit invoice
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete invoice
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
 
   const table = useReactTable({
     data: filteredData,
@@ -431,131 +443,140 @@ export function InvoicesDataTable() {
   }
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col gap-4 py-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <Input
-              placeholder="Filter by document number..."
-              value={(table.getColumn("document_number")?.getFilterValue() as string) ?? ""}
-              onChange={(event) =>
-                table.getColumn("document_number")?.setFilterValue(event.target.value)
-              }
-              className="max-w-sm"
-            />
-            <DateRangePicker 
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
-              onClear={clearDateFilters}
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-auto">
-                  Columns <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {table
-                  .getAllColumns()
-                  .filter((column) => column.getCanHide())
-                  .map((column) => {
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) =>
-                          column.toggleVisibility(!!value)
-                        }
-                      >
-                        {column.id}
-                      </DropdownMenuCheckboxItem>
-                    )
-                  })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          {filteredData.length !== invoices.length && (
-            <div className="text-sm text-muted-foreground">
-              Showing {filteredData.length} of {invoices.length} invoices based on date filter.
+    <>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <Input
+                placeholder="Filter by document number..."
+                value={(table.getColumn("document_number")?.getFilterValue() as string) ?? ""}
+                onChange={(event) =>
+                  table.getColumn("document_number")?.setFilterValue(event.target.value)
+                }
+                className="max-w-sm"
+              />
+              <DateRangePicker 
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                onClear={clearDateFilters}
+              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="ml-auto">
+                    Columns <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => {
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          className="capitalize"
+                          checked={column.getIsVisible()}
+                          onCheckedChange={(value) =>
+                            column.toggleVisibility(!!value)
+                          }
+                        >
+                          {column.id}
+                        </DropdownMenuCheckboxItem>
+                      )
+                    })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          )}
-        </div>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    )
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No invoices found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
+            {filteredData.length !== invoices.length && (
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredData.length} of {invoices.length} invoices based on date filter.
+              </div>
+            )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      )
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No invoices found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <div className="flex-1 text-sm text-muted-foreground">
+              {table.getFilteredSelectedRowModel().rows.length} of{" "}
+              {table.getFilteredRowModel().rows.length} row(s) selected.
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <EditInvoiceDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        invoice={selectedInvoice}
+        onInvoiceUpdated={refreshInvoices}
+      />
+    </>
   )
 } 
