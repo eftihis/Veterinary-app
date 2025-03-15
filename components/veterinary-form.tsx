@@ -1473,22 +1473,53 @@ export default function VeterinaryForm({
             </CardContent>
           </Card>
 
-          {/* Submit Button - right aligned and not full width */}
+          {/* Button section - conditionally render based on edit mode */}
           <div className="flex justify-end gap-4">
-            <Button 
-              type="button" 
-              variant="outline"
-              className="px-8"
-            >
-              Save
-            </Button>
-            <Button 
-              type="submit" 
-              className="px-8"
-              disabled={!form.formState.isValid || isDiscountTooHigh}
-            >
-              Submit Invoice
-            </Button>
+            {editMode ? (
+              <>
+                {/* For edit mode, show Cancel and Save buttons side by side */}
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  className="px-8"
+                  onClick={() => {
+                    // This button doesn't need direct functionality as it uses the dialog's Cancel button
+                    // The dialog handles the close confirmation if there are unsaved changes
+                    if (onSuccess) {
+                      // This is a workaround to trigger the dialog's close handler
+                      onSuccess();
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="px-8"
+                  disabled={!form.formState.isValid || isDiscountTooHigh}
+                >
+                  Save
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* For create mode, show Save (does nothing) and Submit Invoice buttons */}
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  className="px-8"
+                >
+                  Save
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="px-8"
+                  disabled={!form.formState.isValid || isDiscountTooHigh}
+                >
+                  Submit Invoice
+                </Button>
+              </>
+            )}
           </div>
         </form>
       </Form>

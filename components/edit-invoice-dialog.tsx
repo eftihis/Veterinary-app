@@ -162,9 +162,7 @@ export function EditInvoiceDialog({
           )}
           
           <DialogFooter>
-            <Button variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
+            {/* Cancel button removed since it's now in the form */}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -174,7 +172,7 @@ export function EditInvoiceDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes. Do you want to save your changes or discard them?
+              You have unsaved changes. Do you want to continue editing or discard your changes?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
