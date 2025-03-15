@@ -190,7 +190,12 @@ export function InvoicesDataTable() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [sorting, setSorting] = React.useState<SortingState>([
+    {
+      id: "created_at",
+      desc: true
+    }
+  ])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
@@ -309,8 +314,32 @@ export function InvoicesDataTable() {
       ),
     },
     {
+      accessorKey: "reference",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Reference
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const reference = row.getValue("reference") as string | null
+        return <div>{reference || "-"}</div>
+      },
+    },
+    {
       accessorKey: "animal_details",
-      header: "Patient",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Patient
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const animalDetails = row.getValue("animal_details") as Invoice["animal_details"]
         return (
@@ -320,6 +349,11 @@ export function InvoicesDataTable() {
           </div>
         )
       },
+      sortingFn: (rowA, rowB) => {
+        const animalA = (rowA.getValue("animal_details") as Invoice["animal_details"]).name.toLowerCase();
+        const animalB = (rowB.getValue("animal_details") as Invoice["animal_details"]).name.toLowerCase();
+        return animalA.localeCompare(animalB);
+      }
     },
     {
       accessorKey: "created_at",
@@ -336,17 +370,43 @@ export function InvoicesDataTable() {
     },
     {
       accessorKey: "check_in_date",
-      header: "Check-in",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Check-in
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => formatDate(row.getValue("check_in_date")),
     },
     {
       accessorKey: "check_out_date",
-      header: "Check-out",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Check-out
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => formatDate(row.getValue("check_out_date")),
     },
     {
       accessorKey: "total",
-      header: () => <div className="text-right">Total</div>,
+      header: ({ column }) => (
+        <div className="text-right">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Total
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      ),
       cell: ({ row }) => {
         const amount = parseFloat(row.getValue("total"))
         return <div className="text-right font-medium">{formatCurrency(amount)}</div>
@@ -354,11 +414,20 @@ export function InvoicesDataTable() {
     },
     {
       accessorKey: "status",
-      header: "Status",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Status
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => getStatusBadge(row.getValue("status")),
     },
     {
       id: "actions",
+      enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => {
         const invoice = row.original
@@ -448,47 +517,57 @@ export function InvoicesDataTable() {
         <CardContent className="p-6">
           <div className="flex flex-col gap-4 py-4">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <Input
-                placeholder="Filter by document number..."
-                value={(table.getColumn("document_number")?.getFilterValue() as string) ?? ""}
-                onChange={(event) =>
-                  table.getColumn("document_number")?.setFilterValue(event.target.value)
-                }
-                className="max-w-sm"
-              />
-              <DateRangePicker 
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-                onClear={clearDateFilters}
-              />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="ml-auto">
-                    Columns <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {table
-                    .getAllColumns()
-                    .filter((column) => column.getCanHide())
-                    .map((column) => {
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={column.id}
-                          className="capitalize"
-                          checked={column.getIsVisible()}
-                          onCheckedChange={(value) =>
-                            column.toggleVisibility(!!value)
-                          }
-                        >
-                          {column.id}
-                        </DropdownMenuCheckboxItem>
-                      )
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full md:max-w-xl">
+                <Input
+                  placeholder="Filter by document number..."
+                  value={(table.getColumn("document_number")?.getFilterValue() as string) ?? ""}
+                  onChange={(event) =>
+                    table.getColumn("document_number")?.setFilterValue(event.target.value)
+                  }
+                />
+                <Input
+                  placeholder="Filter by reference..."
+                  value={(table.getColumn("reference")?.getFilterValue() as string) ?? ""}
+                  onChange={(event) =>
+                    table.getColumn("reference")?.setFilterValue(event.target.value)
+                  }
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <DateRangePicker 
+                  startDate={startDate}
+                  endDate={endDate}
+                  onStartDateChange={setStartDate}
+                  onEndDateChange={setEndDate}
+                  onClear={clearDateFilters}
+                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="ml-auto">
+                      Columns <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {table
+                      .getAllColumns()
+                      .filter((column) => column.getCanHide())
+                      .map((column) => {
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={column.id}
+                            className="capitalize"
+                            checked={column.getIsVisible()}
+                            onCheckedChange={(value) =>
+                              column.toggleVisibility(!!value)
+                            }
+                          >
+                            {column.id}
+                          </DropdownMenuCheckboxItem>
+                        )
+                      })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
             {filteredData.length !== invoices.length && (
               <div className="text-sm text-muted-foreground">
