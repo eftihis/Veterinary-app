@@ -41,6 +41,8 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
+  const [highlightedIndex, setHighlightedIndex] = React.useState(-1)
+  const itemsRef = React.useRef<(HTMLDivElement | null)[]>([])
 
   // Filter options based on input value
   const filteredOptions = React.useMemo(() => {
@@ -49,6 +51,69 @@ export function Combobox({
       option.label.toLowerCase().includes(inputValue.toLowerCase())
     );
   }, [options, inputValue]);
+
+  // Reset highlighted index when filtered options change
+  React.useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [filteredOptions]);
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open) return;
+    
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        e.stopPropagation(); // Stop event from bubbling up
+        setHighlightedIndex(prev => 
+          prev < filteredOptions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        e.stopPropagation(); // Stop event from bubbling up
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredOptions.length - 1
+        );
+        break;
+      case "Enter":
+        e.preventDefault();
+        e.stopPropagation(); // Stop event from bubbling up
+        if (highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+          selectOption(filteredOptions[highlightedIndex]);
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        e.stopPropagation(); // Stop event from bubbling up
+        setOpen(false);
+        break;
+    }
+  };
+
+  // Scroll highlighted option into view
+  React.useEffect(() => {
+    if (highlightedIndex >= 0 && itemsRef.current[highlightedIndex]) {
+      itemsRef.current[highlightedIndex]?.scrollIntoView({
+        block: "nearest",
+      });
+    }
+  }, [highlightedIndex]);
+
+  // Select an option
+  const selectOption = (option: Option) => {
+    onChange(option.value);
+    setOpen(false);
+    setInputValue("");
+  };
+
+  // Handle input keydown separately to avoid double event handling
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    // Only handle special keys here - let regular typing go through
+    if (["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.key)) {
+      handleKeyDown(e);
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -69,7 +134,11 @@ export function Combobox({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0" style={{ width: "var(--radix-popover-trigger-width)" }}>
+      <PopoverContent 
+        className="p-0" 
+        style={{ width: "var(--radix-popover-trigger-width)" }}
+        onKeyDown={handleKeyDown}
+      >
         <div className="bg-popover text-popover-foreground flex flex-col overflow-hidden rounded-md">
           {/* Search input */}
           <div className="flex items-center border-b px-3 py-2">
@@ -79,6 +148,7 @@ export function Combobox({
               className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleInputKeyDown}
             />
           </div>
           
@@ -100,19 +170,23 @@ export function Combobox({
                 {/* Options */}
                 {filteredOptions.length > 0 && (
                   <div className="py-1">
-                    {filteredOptions.map((option) => (
+                    {filteredOptions.map((option, index) => (
                       <div
                         key={option.value}
+                        ref={(el) => {
+                          itemsRef.current[index] = el;
+                          return undefined;
+                        }}
                         className={cn(
                           "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none",
                           "hover:bg-accent hover:text-accent-foreground",
-                          value === option.value && "bg-accent text-accent-foreground"
+                          (value === option.value || highlightedIndex === index) && "bg-accent text-accent-foreground"
                         )}
-                        onClick={() => {
-                          onChange(option.value);
-                          setOpen(false);
-                          setInputValue("");
-                        }}
+                        onClick={() => selectOption(option)}
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                        tabIndex={0}
+                        role="option"
+                        aria-selected={value === option.value}
                       >
                         {renderOption ? renderOption(option) : option.label}
                         <Check
