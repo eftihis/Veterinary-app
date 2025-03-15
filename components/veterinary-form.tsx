@@ -1267,7 +1267,14 @@ export default function VeterinaryForm() {
           </Card>
 
           {/* Submit Button - right aligned and not full width */}
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-4">
+            <Button 
+              type="button" 
+              variant="outline"
+              className="px-8"
+            >
+              Save
+            </Button>
             <Button 
               type="submit" 
               className="px-8"
