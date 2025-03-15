@@ -111,11 +111,13 @@ type FormValues = Omit<z.infer<typeof formSchema>, 'lineItems'> & {
 export default function VeterinaryForm({
   editMode = false,
   initialData = null,
-  onSuccess
+  onSuccess,
+  onFormChange
 }: {
   editMode?: boolean;
   initialData?: any;
   onSuccess?: () => void;
+  onFormChange?: () => void;
 }) {
   const [showComment, setShowComment] = useState(false);
   const [subtotal, setSubtotal] = useState<number>(0);
@@ -237,7 +239,7 @@ export default function VeterinaryForm({
   // Store the function in the ref
   calculateTotalsRef.current = calculateTotals;
 
-  // Replace the current watch calls with:
+  // Set up form change tracking
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
       // This will run on ANY form value change
@@ -248,10 +250,15 @@ export default function VeterinaryForm({
           value.discountValue as number
         );
       }
+      
+      // Notify parent component of changes
+      if (onFormChange && name) {  // Only trigger when actual values change, not on init
+        onFormChange();
+      }
     });
     
     return () => subscription.unsubscribe();
-  }, [form.watch]);
+  }, [form.watch, onFormChange]);
 
   // Add a new line item
   const addLineItem = () => {

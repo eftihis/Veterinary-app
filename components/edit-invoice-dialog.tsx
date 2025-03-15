@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { 
   Dialog, 
   DialogContent, 
@@ -10,6 +10,16 @@ import {
   DialogTitle,
   DialogFooter
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import VeterinaryForm from "@/components/veterinary-form"
 import { Invoice } from "@/components/invoices-data-table"
@@ -31,6 +41,11 @@ export function EditInvoiceDialog({
 }: EditInvoiceDialogProps) {
   const [loading, setLoading] = useState(false)
   const [fullInvoiceData, setFullInvoiceData] = useState<any | null>(null)
+  const [isFormDirty, setIsFormDirty] = useState(false)
+  const [showUnsavedChangesAlert, setShowUnsavedChangesAlert] = useState(false)
+  
+  // Store pendingClose intention to use after alert dialog action
+  const pendingCloseRef = useRef(false)
 
   // Fetch the complete invoice data when the dialog opens
   useEffect(() => {
@@ -51,6 +66,7 @@ export function EditInvoiceDialog({
         }
         
         setFullInvoiceData(data)
+        setIsFormDirty(false) // Reset dirty state when form is loaded with new data
       } catch (err) {
         console.error("Error fetching invoice details:", err)
         toast.error("Failed to load invoice details")
@@ -62,52 +78,118 @@ export function EditInvoiceDialog({
     fetchInvoiceData()
   }, [open, invoice?.id])
 
+  // Handler for dialog's onOpenChange
+  const handleOpenChange = (newOpenState: boolean) => {
+    // If trying to close the dialog and there are unsaved changes
+    if (!newOpenState && isFormDirty) {
+      setShowUnsavedChangesAlert(true)
+      pendingCloseRef.current = true
+      return // Prevent closing until user confirms
+    }
+    
+    // Otherwise proceed with the open change
+    onOpenChange(newOpenState)
+  }
+
   // Close dialog handler
   const handleClose = () => {
-    onOpenChange(false)
+    if (isFormDirty) {
+      setShowUnsavedChangesAlert(true)
+      pendingCloseRef.current = true
+    } else {
+      onOpenChange(false)
+    }
+  }
+  
+  // Handle discard changes from alert dialog
+  const handleDiscardChanges = () => {
+    setIsFormDirty(false)
+    setShowUnsavedChangesAlert(false)
+    
+    if (pendingCloseRef.current) {
+      pendingCloseRef.current = false
+      onOpenChange(false)
+    }
+  }
+  
+  // Handle cancel from alert dialog (keep editing)
+  const handleCancelClose = () => {
+    setShowUnsavedChangesAlert(false)
+    pendingCloseRef.current = false
+  }
+
+  // When a change is made to the form
+  const handleFormChange = () => {
+    setIsFormDirty(true)
   }
 
   // When an invoice is successfully updated
   const handleInvoiceUpdated = () => {
+    setIsFormDirty(false) // Reset dirty state on successful save
     toast.success("Invoice updated successfully")
     onInvoiceUpdated?.()
-    handleClose()
+    onOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-[95%] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Invoice {invoice?.document_number}</DialogTitle>
-          <DialogDescription>
-            Make changes to the invoice and save when you're done.
-          </DialogDescription>
-        </DialogHeader>
-        
-        {loading ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : fullInvoiceData ? (
-          <div>
-            <VeterinaryForm
-              editMode={true}
-              initialData={fullInvoiceData}
-              onSuccess={handleInvoiceUpdated}
-            />
-          </div>
-        ) : (
-          <div className="py-4">
-            Failed to load invoice data. Please try again.
-          </div>
-        )}
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
-            Cancel
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-w-6xl w-[95%] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Invoice {invoice?.document_number}</DialogTitle>
+            <DialogDescription>
+              Make changes to the invoice and save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : fullInvoiceData ? (
+            <div>
+              <VeterinaryForm
+                editMode={true}
+                initialData={fullInvoiceData}
+                onSuccess={handleInvoiceUpdated}
+                onFormChange={handleFormChange}
+              />
+            </div>
+          ) : (
+            <div className="py-4">
+              Failed to load invoice data. Please try again.
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={showUnsavedChangesAlert} onOpenChange={setShowUnsavedChangesAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Do you want to save your changes or discard them?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelClose}>
+              Continue Editing
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDiscardChanges} 
+              className="bg-destructive hover:bg-destructive/90 text-white"
+            >
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 } 
