@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import VeterinaryForm from "@/components/veterinary-form";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import { AppSidebar } from "@/components/app-sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 
 export default function Home() {
   const { user, isLoading, signOut } = useAuth();
@@ -34,12 +41,29 @@ export default function Home() {
   }
 
   return (
-    <div className="container max-w-full py-10 px-4">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-1xl font-bold text-center">Veterinary Clinic Invoice</h1>
-        <Button onClick={handleSignOut} variant="outline">Sign Out</Button>
-      </div>
-      <VeterinaryForm />
-    </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-[orientation=vertical]:h-4"
+            />
+            <h1 className="text-xl font-bold">Veterinary Clinic Invoice</h1>
+            <div className="flex-1"></div>
+            <Button onClick={handleSignOut} variant="outline">Sign Out</Button>
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl">
+              <VeterinaryForm />
+            </div>
+          </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

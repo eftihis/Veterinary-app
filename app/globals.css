@@ -155,7 +155,7 @@ input, textarea {
   .touch-manipulation {
     touch-action: manipulation;
   }
-  
+
   /* Increase tap target size for calendar buttons */
   .rdp-day {
     min-width: 40px;
