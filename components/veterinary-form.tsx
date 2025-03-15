@@ -48,6 +48,7 @@ import { AnimalCombobox } from "@/components/ui/animal-combobox";
 import { useXeroItems } from '@/hooks/useXeroItems';
 import { useAnimals } from '@/hooks/useAnimals';
 import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/lib/supabase';
 
 // Define the schema for line items
 const lineItemSchema = z.object({
@@ -360,6 +361,42 @@ export default function VeterinaryForm() {
       
       console.log("Form submitted:", payload);
       
+      // Save the invoice data to Supabase
+      const animalDetails = {
+        name: data.animalName,
+        type: data.animalType
+      };
+      
+      // Create the invoice record in Supabase
+      const { data: invoiceData, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert({
+          document_number: data.documentNumber,
+          reference: data.reference || null,
+          animal_id: data.animalId || null,
+          animal_details: animalDetails,
+          check_in_date: data.checkInDate || null,
+          check_out_date: data.checkOutDate || null,
+          subtotal: subtotal,
+          discount_type: data.discountType,
+          discount_value: data.discountValue,
+          discount_amount: discountAmount,
+          total: total,
+          status: 'pending',
+          line_items: enhancedLineItems,
+          comment: data.comment || null,
+          sender_info: sender
+        })
+        .select('id')
+        .single();
+      
+      if (invoiceError) {
+        console.error("Error saving invoice to Supabase:", invoiceError);
+        throw new Error(`Failed to save invoice: ${invoiceError.message}`);
+      }
+      
+      console.log("Invoice saved to Supabase with ID:", invoiceData?.id);
+      
       // Send data to the Make.com webhook - Use environment variable only, remove hardcoded fallback
       const webhookUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL;
       
@@ -372,7 +409,10 @@ export default function VeterinaryForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...payload,
+          invoiceId: invoiceData?.id // Include the Supabase invoice ID in the webhook payload
+        }),
       });
       
       if (!response.ok) {

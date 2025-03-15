@@ -10,6 +10,7 @@ import {
   GalleryVerticalEnd,
   Map,
   PieChart,
+  Receipt,
   Settings2,
   SquareTerminal,
 } from "lucide-react"
@@ -55,6 +56,21 @@ const data = {
         {
           title: "Settings",
           url: "#",
+        },
+      ],
+    },
+    {
+      title: "Invoices",
+      url: "/invoices",
+      icon: Receipt,
+      items: [
+        {
+          title: "All Invoices",
+          url: "/invoices",
+        },
+        {
+          title: "Create New",
+          url: "/",
         },
       ],
     },
