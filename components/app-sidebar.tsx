@@ -40,22 +40,47 @@ const data = {
   ],
   navMain: [
     {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: PieChart,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "Overview",
+          url: "/dashboard",
         },
         {
-          title: "Starred",
-          url: "#",
+          title: "Analytics",
+          url: "/dashboard/analytics",
+        },
+      ],
+    },
+    {
+      title: "Veterinary Form",
+      url: "/veterinary-form",
+      icon: BookOpen,
+      items: [
+        {
+          title: "Create New Form",
+          url: "/veterinary-form",
         },
         {
-          title: "Settings",
-          url: "#",
+          title: "View Forms",
+          url: "/veterinary-forms",
+        },
+      ],
+    },
+    {
+      title: "Records",
+      url: "/records",
+      icon: Receipt,
+      items: [
+        {
+          title: "Patients",
+          url: "/records/patients",
+        },
+        {
+          title: "Treatments",
+          url: "/records/treatments",
         },
       ],
     },
@@ -65,81 +90,31 @@ const data = {
       icon: Receipt,
       items: [
         {
-          title: "All Invoices",
+          title: "View All",
           url: "/invoices",
         },
         {
-          title: "Line Items",
-          url: "/line-items",
-        },
-        {
           title: "Create New",
-          url: "/",
-        },
-      ],
-    },
-    {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
+          url: "/invoices/new",
         },
       ],
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       icon: Settings2,
       items: [
         {
           title: "General",
-          url: "#",
+          url: "/settings",
         },
         {
-          title: "Team",
-          url: "#",
+          title: "Appearance",
+          url: "/settings/appearance",
         },
         {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
+          title: "Notifications",
+          url: "/settings/notifications",
         },
       ],
     },
@@ -164,7 +139,7 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -174,13 +149,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Create user object with the format NavUser expects
   const userData = user ? {
-    name: user.email?.split('@')[0] || 'User',
+    name: profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
     email: user.email || '',
-    avatar: '',
+    avatar: profile?.avatar_url || user.user_metadata?.avatar_url || '/placeholder.svg',
   } : {
     name: 'User',
     email: '',
-    avatar: '',
+    avatar: '/placeholder.svg',
   };
 
   return (
