@@ -29,6 +29,9 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
@@ -48,6 +51,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { StatusFilter } from "@/components/status-filter"
 
 // Define our LineItem type based on our Supabase view structure
 export type LineItem = {
@@ -168,10 +172,82 @@ function DateRangePicker({
           onClick={onClear}
         >
           <X className="h-4 w-4" />
+          <span className="sr-only">Clear dates</span>
         </Button>
       )}
     </div>
   )
+}
+
+// Helper component for active filters
+const ActiveFilters = ({
+  selectedStatuses,
+  toggleStatus,
+  startDate,
+  endDate,
+  setStartDate,
+  setEndDate,
+  clearAllFilters
+}: {
+  selectedStatuses: string[];
+  toggleStatus: (status: string) => void;
+  startDate?: Date;
+  endDate?: Date;
+  setStartDate: (date: Date | undefined) => void;
+  setEndDate: (date: Date | undefined) => void;
+  clearAllFilters: () => void;
+}) => {
+  if (selectedStatuses.length === 0 && !startDate && !endDate) {
+    return null;
+  }
+  
+  return (
+    <div className="flex flex-wrap gap-2 pt-2">
+      <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>
+      
+      {selectedStatuses.map(status => (
+        <Badge key={status} variant="secondary" className="flex items-center gap-1">
+          <span className="capitalize">{status}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-4 w-4 p-0 hover:bg-transparent"
+            onClick={() => toggleStatus(status)}
+          >
+            <X className="h-3 w-3" />
+            <span className="sr-only">Remove {status} filter</span>
+          </Button>
+        </Badge>
+      ))}
+      
+      {(startDate || endDate) && (
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <span>Date: {startDate ? format(startDate, "d MMM yyyy") : "Any"} - {endDate ? format(endDate, "d MMM yyyy") : "Any"}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-4 w-4 p-0 hover:bg-transparent"
+            onClick={() => {
+              setStartDate(undefined);
+              setEndDate(undefined);
+            }}
+          >
+            <X className="h-3 w-3" />
+            <span className="sr-only">Remove date filter</span>
+          </Button>
+        </Badge>
+      )}
+      
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 px-2 text-xs"
+        onClick={clearAllFilters}
+      >
+        Clear all
+      </Button>
+    </div>
+  );
 }
 
 export function LineItemsDataTable() {
@@ -190,10 +266,22 @@ export function LineItemsDataTable() {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   
+  // Status filter state
+  const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([])
+  
   // Date range filter state
   const [startDate, setStartDate] = React.useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined)
   const [filteredData, setFilteredData] = React.useState<LineItem[]>([])
+  
+  // Available statuses
+  const statusOptions = [
+    { value: "draft", label: "Draft" },
+    { value: "submitted", label: "Submitted" },
+    { value: "authorised", label: "Authorised" },
+    { value: "paid", label: "Paid" },
+    { value: "voided", label: "Voided" }
+  ]
   
   // Function to refresh line items
   const refreshLineItems = React.useCallback(async () => {
@@ -225,34 +313,51 @@ export function LineItemsDataTable() {
     refreshLineItems()
   }, [refreshLineItems])
 
-  // Apply date filters
+  // Apply filters (date + status)
   React.useEffect(() => {
-    // If no date filters are set, use all line items
-    if (!startDate && !endDate) {
-      setFilteredData(lineItems)
-      return
+    // Start with all line items
+    let filtered = lineItems;
+    
+    // Apply date filters if set
+    if (startDate || endDate) {
+      filtered = filtered.filter(item => {
+        const createdDate = parseISO(item.created_at)
+        
+        // If start date is set, check if the line item date is after or equal to it
+        const afterStartDate = startDate ? isAfter(createdDate, startDate) || createdDate.getDate() === startDate.getDate() : true
+        
+        // If end date is set, check if the line item date is before or equal to it
+        const beforeEndDate = endDate ? isBefore(createdDate, endDate) || createdDate.getDate() === endDate.getDate() : true
+        
+        return afterStartDate && beforeEndDate
+      })
     }
     
-    // Filter line items based on date range
-    const filtered = lineItems.filter(item => {
-      const createdDate = parseISO(item.created_at)
-      
-      // If start date is set, check if the line item date is after or equal to it
-      const afterStartDate = startDate ? isAfter(createdDate, startDate) || createdDate.getDate() === startDate.getDate() : true
-      
-      // If end date is set, check if the line item date is before or equal to it
-      const beforeEndDate = endDate ? isBefore(createdDate, endDate) || createdDate.getDate() === endDate.getDate() : true
-      
-      return afterStartDate && beforeEndDate
-    })
+    // Apply status filters if any are selected
+    if (selectedStatuses.length > 0) {
+      filtered = filtered.filter(item => 
+        selectedStatuses.includes(item.status.toLowerCase())
+      );
+    }
     
     setFilteredData(filtered)
-  }, [lineItems, startDate, endDate])
+  }, [lineItems, startDate, endDate, selectedStatuses])
   
-  // Clear date filters
-  const clearDateFilters = () => {
+  // Clear all filters
+  const clearAllFilters = () => {
     setStartDate(undefined)
     setEndDate(undefined)
+    setSelectedStatuses([])
+    setGlobalFilter("")
+  }
+  
+  // Handle status selection toggle
+  const toggleStatus = (status: string) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status) 
+        : [...prev, status]
+    )
   }
 
   // Define columns
@@ -297,20 +402,25 @@ export function LineItemsDataTable() {
         </Button>
       ),
       cell: ({ row }) => {
-        const animalName = row.getValue("animal_name");
-        const animalType = row.original.animal_type;
+        const animalName = row.getValue("animal_name") as string | null;
+        const animalType = row.original.animal_type as string | null;
         
-        // Check if the animal data is missing
         if (!animalName) {
           return <div className="text-gray-400 italic">No patient details</div>;
+        }
+        
+        if (animalType) {
+          return (
+            <div>
+              <div className="font-medium">{animalName}</div>
+              <div className="text-muted-foreground text-xs capitalize">{animalType}</div>
+            </div>
+          );
         }
         
         return (
           <div>
             <div className="font-medium">{animalName}</div>
-            {animalType && (
-              <div className="text-muted-foreground text-xs capitalize">{animalType}</div>
-            )}
           </div>
         );
       },
@@ -475,7 +585,15 @@ export function LineItemsDataTable() {
                 endDate={endDate}
                 onStartDateChange={setStartDate}
                 onEndDateChange={setEndDate}
-                onClear={clearDateFilters}
+                onClear={clearAllFilters}
+              />
+              
+              {/* Status Filter */}
+              <StatusFilter
+                statusOptions={statusOptions}
+                selectedStatuses={selectedStatuses}
+                setSelectedStatuses={setSelectedStatuses}
+                getStatusBadge={getStatusBadge}
               />
             </div>
             
@@ -495,7 +613,7 @@ export function LineItemsDataTable() {
                         key={column.id}
                         className="capitalize"
                         checked={column.getIsVisible()}
-                        onCheckedChange={(value) =>
+                        onCheckedChange={(value: boolean) =>
                           column.toggleVisibility(!!value)
                         }
                       >
@@ -508,9 +626,20 @@ export function LineItemsDataTable() {
           </div>
           {filteredData.length !== lineItems.length && (
             <div className="text-sm text-muted-foreground">
-              Showing {filteredData.length} of {lineItems.length} line items based on date filter.
+              Showing {filteredData.length} of {lineItems.length} line items based on filters.
             </div>
           )}
+          
+          {/* Active Filters */}
+          <ActiveFilters
+            selectedStatuses={selectedStatuses}
+            toggleStatus={toggleStatus}
+            startDate={startDate}
+            endDate={endDate}
+            setStartDate={setStartDate}
+            setEndDate={setEndDate}
+            clearAllFilters={clearAllFilters}
+          />
         </div>
         <div className="rounded-md border">
           <Table>
