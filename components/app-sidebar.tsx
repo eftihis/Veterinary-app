@@ -69,6 +69,10 @@ const data = {
           url: "/invoices",
         },
         {
+          title: "Line Items",
+          url: "/line-items",
+        },
+        {
           title: "Create New",
           url: "/",
         },
