@@ -233,7 +233,7 @@ export function ViewInvoiceDialog({
                             <TableCell>{item.description || '-'}</TableCell>
                             <TableCell className="text-right">{quantity}</TableCell>
                             <TableCell className="text-right">{formatCurrency(price)}</TableCell>
-                            <TableCell className={`text-right ${lineTotal < 0 ? 'text-red-600' : ''}`}>
+                            <TableCell className="text-right">
                               {formatCurrency(lineTotal)}
                             </TableCell>
                           </TableRow>

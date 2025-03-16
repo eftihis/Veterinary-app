@@ -1250,7 +1250,7 @@ export default function VeterinaryForm({
                                             const lineTotal = price * quantity;
                                             
                                             return (
-                                              <span className={`${lineTotal < 0 ? 'text-red-500' : ''}`}>
+                                              <span className="text-sm">
                                                 € {lineTotal.toFixed(2)}
                                               </span>
                                             );
@@ -1441,7 +1441,7 @@ export default function VeterinaryForm({
                                             const lineTotal = price * quantity;
                                             
                                             return (
-                                              <span className={`${lineTotal < 0 ? 'text-red-500' : ''}`}>
+                                              <span className="text-sm">
                                                 € {lineTotal.toFixed(2)}
                                               </span>
                                             );
@@ -1450,14 +1450,14 @@ export default function VeterinaryForm({
                                       </div>
 
                                       <div className="md:col-span-1 relative -ml-[1px]">
-                                        <div className={`h-full border flex items-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
+                                        <div className={`h-full border flex items-center justify-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
                                           <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                               <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-7 w-7 min-w-0 p-0 rounded-md hover:bg-gray-100"
+                                                className="h-7 w-7 min-w-0 p-0 rounded-md hover:bg-gray-100 flex items-center justify-center"
                                               >
                                                 <span className="sr-only">Open menu</span>
                                                 <MoreHorizontal className="h-4 w-4" />
