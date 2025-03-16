@@ -1173,7 +1173,7 @@ export default function VeterinaryForm({
                                       
                                       <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                          <Label>Quantity</Label>
+                                          <Label className="mb-2">Quantity</Label>
                                           <FormField
                                             control={form.control}
                                             name={`lineItems.${index}.quantity`}
@@ -1205,7 +1205,7 @@ export default function VeterinaryForm({
                                         </div>
                                         
                                         <div>
-                                          <Label>Price (€)</Label>
+                                          <Label className="mb-2">Price (€)</Label>
                                           <FormField
                                             control={form.control}
                                             name={`lineItems.${index}.price`}
