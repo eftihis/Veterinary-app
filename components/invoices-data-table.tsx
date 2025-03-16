@@ -478,9 +478,17 @@ export function InvoicesDataTable() {
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("document_number")}</div>
-      ),
+      cell: ({ row }) => {
+        const invoice = row.original;
+        return (
+          <div 
+            className="font-medium text-primary underline cursor-pointer hover:text-primary/80"
+            onClick={() => handleViewInvoice(invoice)}
+          >
+            {row.getValue("document_number")}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "reference",
