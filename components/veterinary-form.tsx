@@ -114,6 +114,41 @@ type FormValues = Omit<z.infer<typeof formSchema>, 'lineItems'> & {
   animalId?: string;
 };
 
+// Add a helper function to evaluate mathematical expressions safely
+const evaluateExpression = (expression: string): number => {
+  try {
+    // Remove all spaces from the expression
+    const sanitizedExpression = expression.replace(/\s+/g, '');
+    
+    // Only allow digits, decimal points, and basic operators
+    if (!/^[0-9+\-*/().]+$/.test(sanitizedExpression)) {
+      throw new Error('Invalid characters in expression');
+    }
+    
+    // Use Function constructor instead of eval for better security
+    // This limits the scope to just the mathematical expression
+    const result = new Function(`return ${sanitizedExpression}`)();
+    
+    // Check if the result is a valid number
+    if (typeof result !== 'number' || !isFinite(result)) {
+      throw new Error('Invalid result');
+    }
+    
+    return result;
+  } catch (error) {
+    console.log('Error evaluating expression:', error);
+    
+    // If evaluation fails, try to extract any valid numbers from the string
+    const numericMatch = expression.match(/-?\d+(\.\d+)?/);
+    if (numericMatch) {
+      return parseFloat(numericMatch[0]);
+    }
+    
+    // Return 0 if no valid number is found
+    return 0;
+  }
+};
+
 export default function VeterinaryForm({
   editMode = false,
   initialData = null,
@@ -1102,15 +1137,455 @@ export default function VeterinaryForm({
                               index={index}
                             >
                               {(provided, snapshot) => {
-                                // Create the draggable content
-                                const content = (
+                                // Use a portal when dragging to avoid positioning issues within dialogs
+                                if (snapshot.isDragging) {
+                                  return createPortal(
+                                    <div 
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={`grid grid-cols-1 md:grid-cols-20 md:gap-0 gap-4 ${index > 0 ? "mt-[-1px]" : ""} bg-gray-50 shadow-md z-50`}
+                                    >
+                                      {/* Mobile labels - only visible on small screens */}
+                                      <div className="block md:hidden space-y-4">
+                                        <div className="flex items-center justify-between">
+                                          <Label>Description</Label>
+                                          <div 
+                                            {...provided.dragHandleProps}
+                                            className="cursor-grab active:cursor-grabbing p-1"
+                                          >
+                                            <GripVertical className="h-5 w-5 text-gray-400" />
+                                          </div>
+                                        </div>
+                                        <FormField
+                                          control={form.control}
+                                          name={`lineItems.${index}.description`}
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormControl>
+                                                <Input placeholder="Description" {...field} />
+                                              </FormControl>
+                                            </FormItem>
+                                          )}
+                                        />
+                                        
+                                        <Label>Item</Label>
+                                        <FormField
+                                          control={form.control}
+                                          name={`lineItems.${index}.itemId`}
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormControl>
+                                                <Combobox
+                                                  options={allXeroItems || []}
+                                                  value={field.value}
+                                                  onChange={(value) => {
+                                                    field.onChange(value);
+                                                    
+                                                    // Find the selected item to get its name
+                                                    const selectedItem = allXeroItems.find(item => item.value === value);
+                                                    if (selectedItem) {
+                                                      // Set the item name in a separate field
+                                                      form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
+                                                      
+                                                      // Log for debugging
+                                                      console.log(`Set item name for line ${index} to ${selectedItem.label}`);
+                                                    }
+                                                  }}
+                                                  placeholder="Select item"
+                                                  emptyMessage={
+                                                    loadingXeroItems 
+                                                      ? "Loading items..." 
+                                                      : "No items found."
+                                                  }
+                                                  loading={loadingXeroItems}
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div>
+                                            <Label className="mb-2">Quantity</Label>
+                                            <FormField
+                                              control={form.control}
+                                              name={`lineItems.${index}.quantity`}
+                                              render={({ field }) => (
+                                                <FormItem>
+                                                  <FormControl>
+                                                    <Input
+                                                      type="number"
+                                                      placeholder="1"
+                                                      {...field}
+                                                      value={field.value === undefined || field.value === null ? "1" : field.value}
+                                                      onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        field.onChange(value === "" ? "1" : parseFloat(value) || 1);
+                                                        
+                                                        // Force recalculation of totals
+                                                        const updatedItems = [...lineItems];
+                                                        setValue("lineItems", updatedItems);
+                                                      }}
+                                                      min="0.01"
+                                                      step="any"
+                                                      onFocus={(e) => e.target.select()}
+                                                    />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                          </div>
+                                          
+                                          <div>
+                                            <Label className="mb-2">Price (€)</Label>
+                                            <FormField
+                                              control={form.control}
+                                              name={`lineItems.${index}.price`}
+                                              render={({ field }) => (
+                                                <FormItem>
+                                                  <FormControl>
+                                                    <Input
+                                                      type="text"
+                                                      placeholder="0.00"
+                                                      {...field}
+                                                      value={field.value === undefined || field.value === null ? "" : field.value}
+                                                      onChange={(e) => {
+                                                        // Pass the raw string value through
+                                                        field.onChange(e.target.value);
+                                                      }}
+                                                      onBlur={(e) => {
+                                                        const value = e.target.value;
+                                                        
+                                                        // Skip calculation if empty
+                                                        if (value === '') {
+                                                          field.onChange('');
+                                                          return;
+                                                        }
+                                                        
+                                                        // Check if the value contains any operators
+                                                        if (/[+\-*/]/.test(value)) {
+                                                          try {
+                                                            // Evaluate the expression
+                                                            const result = evaluateExpression(value);
+                                                            // Format the result to 2 decimal places
+                                                            field.onChange(parseFloat(result.toFixed(2)));
+                                                          } catch (error) {
+                                                            console.error('Failed to evaluate expression:', error);
+                                                            field.onChange(parseFloat(value) || 0);
+                                                          }
+                                                        } else {
+                                                          // Just convert to number if no operators
+                                                          field.onChange(parseFloat(value) || 0);
+                                                        }
+                                                        
+                                                        // Force recalculation of totals
+                                                        const updatedItems = [...lineItems];
+                                                        setValue("lineItems", updatedItems);
+                                                      }}
+                                                      onFocus={(e) => e.target.select()}
+                                                      min="0"
+                                                      step="any"
+                                                    />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="mb-4">
+                                          <Label>Line Total</Label>
+                                          <div className="h-10 border rounded-md flex items-center px-3 mt-2 bg-gray-50">
+                                            {(() => {
+                                              const price = typeof lineItems[index].price === 'string'
+                                                ? (lineItems[index].price === "" ? 0 : parseFloat(lineItems[index].price) || 0)
+                                                : (Number(lineItems[index].price) || 0);
+                                              
+                                              const quantity = typeof lineItems[index].quantity === 'string'
+                                                ? (lineItems[index].quantity === "" ? 1 : parseFloat(lineItems[index].quantity) || 1)
+                                                : (Number(lineItems[index].quantity) || 1);
+                                              
+                                              const lineTotal = price * quantity;
+                                              
+                                              return (
+                                                <span className="text-sm">
+                                                  € {lineTotal.toFixed(2)}
+                                                </span>
+                                              );
+                                            })()}
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="flex justify-end mt-2">
+                                          <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="flex items-center"
+                                              >
+                                                <MoreHorizontal className="h-4 w-4 mr-1" />
+                                                Actions
+                                              </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                              <DropdownMenuItem
+                                                onClick={() => duplicateLineItem(index)}
+                                              >
+                                                <Copy className="h-4 w-4 mr-2" />
+                                                Duplicate
+                                              </DropdownMenuItem>
+                                              {lineItems.length > 1 && (
+                                                <DropdownMenuItem
+                                                  onClick={() => removeLineItem(index)}
+                                                  className="text-destructive"
+                                                >
+                                                  <Trash2 className="h-4 w-4 mr-2" />
+                                                  Delete
+                                                </DropdownMenuItem>
+                                              )}
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
+                                        </div>
+                                        
+                                        {index < lineItems.length - 1 && <hr className="my-4" />}
+                                      </div>
+
+                                      {/* Desktop layout - hidden on mobile */}
+                                      <div className="hidden md:contents">
+                                        <div 
+                                          className="md:col-span-1 relative"
+                                          {...provided.dragHandleProps}
+                                        >
+                                          <div className={`h-full border flex items-center justify-center cursor-grab active:cursor-grabbing ${index === lineItems.length - 1 ? "rounded-bl-md" : ""}`}>
+                                            <GripVertical className="h-5 w-5 text-gray-400" />
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="md:col-span-5 relative -ml-[1px]">
+                                          <FormField
+                                            control={form.control}
+                                            name={`lineItems.${index}.description`}
+                                            render={({ field }) => (
+                                              <FormItem className="[&:has(:focus)]:z-30 relative">
+                                                <FormControl>
+                                                  <Input 
+                                                    placeholder="Description" 
+                                                    {...field} 
+                                                    className="rounded-none relative"
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+
+                                        <div className="md:col-span-5 relative -ml-[1px]">
+                                          <FormField
+                                            control={form.control}
+                                            name={`lineItems.${index}.itemId`}
+                                            render={({ field }) => (
+                                              <FormItem className="[&:has(:focus)]:z-30 relative">
+                                                <FormControl>
+                                                  <Combobox
+                                                    options={allXeroItems || []}
+                                                    value={field.value}
+                                                    onChange={(value) => {
+                                                      field.onChange(value);
+                                                      
+                                                      // Find the selected item to get its name
+                                                      const selectedItem = allXeroItems.find(item => item.value === value);
+                                                      if (selectedItem) {
+                                                        // Set the item name in a separate field
+                                                        form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
+                                                        
+                                                        // Log for debugging
+                                                        console.log(`Set item name for line ${index} to ${selectedItem.label}`);
+                                                      }
+                                                    }}
+                                                    placeholder="Select item"
+                                                    emptyMessage={
+                                                      loadingXeroItems 
+                                                        ? "Loading items..." 
+                                                        : "No items found."
+                                                    }
+                                                    loading={loadingXeroItems}
+                                                    className="rounded-none relative"
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+
+                                        <div className="md:col-span-2 relative -ml-[1px]">
+                                          <FormField
+                                            control={form.control}
+                                            name={`lineItems.${index}.quantity`}
+                                            render={({ field }) => (
+                                              <FormItem className="[&:has(:focus)]:z-30 relative">
+                                                <FormControl>
+                                                  <Input
+                                                    type="number"
+                                                    placeholder="1"
+                                                    {...field}
+                                                    value={field.value === undefined || field.value === null ? "1" : field.value}
+                                                    onChange={(e) => {
+                                                      const value = e.target.value;
+                                                      field.onChange(value === "" ? "1" : parseFloat(value) || 1);
+                                                      
+                                                      // Force recalculation of totals
+                                                      const updatedItems = [...lineItems];
+                                                      setValue("lineItems", updatedItems);
+                                                    }}
+                                                    min="0.01"
+                                                    step="any"
+                                                    onFocus={(e) => e.target.select()}
+                                                    className="rounded-none relative"
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+
+                                        <div className="md:col-span-3 relative -ml-[1px]">
+                                          <FormField
+                                            control={form.control}
+                                            name={`lineItems.${index}.price`}
+                                            render={({ field }) => (
+                                              <FormItem className="[&:has(:focus)]:z-30 relative">
+                                                <FormControl>
+                                                  <Input
+                                                    type="text"
+                                                    placeholder="0.00"
+                                                    {...field}
+                                                    value={field.value === undefined || field.value === null ? "" : field.value}
+                                                    onChange={(e) => {
+                                                      // Pass the raw string value through
+                                                      field.onChange(e.target.value);
+                                                    }}
+                                                    onBlur={(e) => {
+                                                      const value = e.target.value;
+                                                      
+                                                      // Skip calculation if empty
+                                                      if (value === '') {
+                                                        field.onChange('');
+                                                        return;
+                                                      }
+                                                      
+                                                      // Check if the value contains any operators
+                                                      if (/[+\-*/]/.test(value)) {
+                                                        try {
+                                                          // Evaluate the expression
+                                                          const result = evaluateExpression(value);
+                                                          // Format the result to 2 decimal places
+                                                          field.onChange(parseFloat(result.toFixed(2)));
+                                                        } catch (error) {
+                                                          console.error('Failed to evaluate expression:', error);
+                                                          field.onChange(parseFloat(value) || 0);
+                                                        }
+                                                      } else {
+                                                        // Just convert to number if no operators
+                                                        field.onChange(parseFloat(value) || 0);
+                                                      }
+                                                      
+                                                      // Force recalculation of totals
+                                                      const updatedItems = [...lineItems];
+                                                      setValue("lineItems", updatedItems);
+                                                    }}
+                                                    onFocus={(e) => e.target.select()}
+                                                    min="0"
+                                                    step="any"
+                                                    className="rounded-none relative"
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+
+                                        <div className="md:col-span-3 relative -ml-[1px]">
+                                          {/* Calculate and display line total (price × quantity) */}
+                                          <div className="h-full border flex items-center px-4">
+                                            {(() => {
+                                              const price = typeof lineItems[index].price === 'string'
+                                                ? (lineItems[index].price === "" ? 0 : parseFloat(lineItems[index].price) || 0)
+                                                : (Number(lineItems[index].price) || 0);
+                                              
+                                              const quantity = typeof lineItems[index].quantity === 'string'
+                                                ? (lineItems[index].quantity === "" ? 1 : parseFloat(lineItems[index].quantity) || 1)
+                                                : (Number(lineItems[index].quantity) || 1);
+                                              
+                                              const lineTotal = price * quantity;
+                                              
+                                              return (
+                                                <span className="text-sm">
+                                                  € {lineTotal.toFixed(2)}
+                                                </span>
+                                              );
+                                            })()}
+                                          </div>
+                                        </div>
+
+                                        <div className="md:col-span-1 relative -ml-[1px]">
+                                          <div className={`h-full border flex items-center justify-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button
+                                                  type="button"
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-7 w-7 min-w-0 p-0 rounded-md hover:bg-gray-100 flex items-center justify-center"
+                                                >
+                                                  <span className="sr-only">Open menu</span>
+                                                  <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem
+                                                  onClick={() => duplicateLineItem(index)}
+                                                >
+                                                  <Copy className="h-4 w-4 mr-2" />
+                                                  Duplicate
+                                                </DropdownMenuItem>
+                                                {lineItems.length > 1 && (
+                                                  <DropdownMenuItem
+                                                    onClick={() => removeLineItem(index)}
+                                                    className="text-destructive"
+                                                  >
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    Delete
+                                                  </DropdownMenuItem>
+                                                )}
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>,
+                                    document.body
+                                  );
+                                }
+                                
+                                // Regular render
+                                return (
                                   <div 
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
-                                    className={`grid grid-cols-1 md:grid-cols-20 md:gap-0 gap-4 ${index > 0 ? "mt-[-1px]" : ""} ${snapshot.isDragging ? "bg-gray-50 shadow-md z-50" : ""}`}
+                                    className={`grid grid-cols-1 md:grid-cols-20 md:gap-0 gap-4 ${index > 0 ? "mt-[-1px]" : ""}`}
                                   >
-                                  
-                                  {/* Mobile labels - only visible on small screens */}
+                                    {/* Mobile labels - only visible on small screens */}
                                     <div className="block md:hidden space-y-4">
                                       <div className="flex items-center justify-between">
                                         <Label>Description</Label>
@@ -1213,19 +1688,46 @@ export default function VeterinaryForm({
                                               <FormItem>
                                                 <FormControl>
                                                   <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="0.00"
                                                     {...field}
                                                     value={field.value === undefined || field.value === null ? "" : field.value}
                                                     onChange={(e) => {
+                                                      // Pass the raw string value through
+                                                      field.onChange(e.target.value);
+                                                    }}
+                                                    onBlur={(e) => {
                                                       const value = e.target.value;
-                                                      field.onChange(value === "" ? "" : parseFloat(value) || 0);
+                                                      
+                                                      // Skip calculation if empty
+                                                      if (value === '') {
+                                                        field.onChange('');
+                                                        return;
+                                                      }
+                                                      
+                                                      // Check if the value contains any operators
+                                                      if (/[+\-*/]/.test(value)) {
+                                                        try {
+                                                          // Evaluate the expression
+                                                          const result = evaluateExpression(value);
+                                                          // Format the result to 2 decimal places
+                                                          field.onChange(parseFloat(result.toFixed(2)));
+                                                        } catch (error) {
+                                                          console.error('Failed to evaluate expression:', error);
+                                                          field.onChange(parseFloat(value) || 0);
+                                                        }
+                                                      } else {
+                                                        // Just convert to number if no operators
+                                                        field.onChange(parseFloat(value) || 0);
+                                                      }
                                                       
                                                       // Force recalculation of totals
                                                       const updatedItems = [...lineItems];
                                                       setValue("lineItems", updatedItems);
                                                     }}
                                                     onFocus={(e) => e.target.select()}
+                                                    min="0"
+                                                    step="any"
                                                   />
                                                 </FormControl>
                                                 <FormMessage />
@@ -1380,7 +1882,7 @@ export default function VeterinaryForm({
                                                     const value = e.target.value;
                                                     field.onChange(value === "" ? "1" : parseFloat(value) || 1);
                                                     
-                                                    // Force recalculation of totals by creating a new array reference
+                                                    // Force recalculation of totals
                                                     const updatedItems = [...lineItems];
                                                     setValue("lineItems", updatedItems);
                                                   }}
@@ -1404,19 +1906,46 @@ export default function VeterinaryForm({
                                             <FormItem className="[&:has(:focus)]:z-30 relative">
                                               <FormControl>
                                                 <Input
-                                                  type="number"
+                                                  type="text"
                                                   placeholder="0.00"
                                                   {...field}
                                                   value={field.value === undefined || field.value === null ? "" : field.value}
                                                   onChange={(e) => {
+                                                    // Pass the raw string value through
+                                                    field.onChange(e.target.value);
+                                                  }}
+                                                  onBlur={(e) => {
                                                     const value = e.target.value;
-                                                    field.onChange(value === "" ? "" : parseFloat(value) || 0);
                                                     
-                                                    // Force recalculation of totals by creating a new array reference
+                                                    // Skip calculation if empty
+                                                    if (value === '') {
+                                                      field.onChange('');
+                                                      return;
+                                                    }
+                                                    
+                                                    // Check if the value contains any operators
+                                                    if (/[+\-*/]/.test(value)) {
+                                                      try {
+                                                        // Evaluate the expression
+                                                        const result = evaluateExpression(value);
+                                                        // Format the result to 2 decimal places
+                                                        field.onChange(parseFloat(result.toFixed(2)));
+                                                      } catch (error) {
+                                                        console.error('Failed to evaluate expression:', error);
+                                                        field.onChange(parseFloat(value) || 0);
+                                                      }
+                                                    } else {
+                                                      // Just convert to number if no operators
+                                                      field.onChange(parseFloat(value) || 0);
+                                                    }
+                                                    
+                                                    // Force recalculation of totals
                                                     const updatedItems = [...lineItems];
                                                     setValue("lineItems", updatedItems);
                                                   }}
                                                   onFocus={(e) => e.target.select()}
+                                                  min="0"
+                                                  step="any"
                                                   className="rounded-none relative"
                                                 />
                                               </FormControl>
@@ -1487,13 +2016,6 @@ export default function VeterinaryForm({
                                     </div>
                                   </div>
                                 );
-                                
-                                // Use a portal when dragging to avoid positioning issues within dialogs
-                                if (snapshot.isDragging) {
-                                  return createPortal(content, document.body);
-                                }
-                                
-                                return content;
                               }}
                             </Draggable>
                           );
@@ -1521,7 +2043,7 @@ export default function VeterinaryForm({
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="rounded-l-none"
+                        className="rounded-l-none focus:z-30 relative"
                       >
                         <ChevronDown className="h-4 w-4" />
                       </Button>
