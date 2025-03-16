@@ -531,9 +531,15 @@ export function InvoicesDataTable() {
                 <Eye className="mr-2 h-4 w-4" />
                 View details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleEditInvoice(invoice)}>
+              <DropdownMenuItem 
+                onClick={() => handleEditInvoice(invoice)}
+                disabled={!["draft", "submitted"].includes(invoice.status.toLowerCase())}
+                className={!["draft", "submitted"].includes(invoice.status.toLowerCase()) ? "text-muted-foreground cursor-not-allowed" : ""}
+              >
                 <FileEdit className="mr-2 h-4 w-4" />
                 Edit invoice
+                {!["draft", "submitted"].includes(invoice.status.toLowerCase())
+                }
               </DropdownMenuItem>
               <DropdownMenuItem className="text-red-600">
                 <Trash2 className="mr-2 h-4 w-4" />
