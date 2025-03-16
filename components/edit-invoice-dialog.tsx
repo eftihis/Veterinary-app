@@ -68,11 +68,14 @@ export function EditInvoiceDialog({
           throw error
         }
         
+        console.log("Raw invoice data from database:", data);
+        
         // Process the data to match the expected format for the form
         const processedData = {
           ...data,
           // Ensure line_items is always an array
-          line_items: Array.isArray(data.line_items) ? data.line_items : [],
+          line_items: Array.isArray(data.line_items) ? data.line_items : 
+                      (data.line_items ? [data.line_items] : []),
           // Create animal_details from the joined animals data
           animal_details: data.animals ? {
             id: data.animals.id,
@@ -81,7 +84,7 @@ export function EditInvoiceDialog({
           } : null
         };
         
-        console.log("Fetched invoice data:", processedData);
+        console.log("Processed invoice data for form:", processedData);
         setFullInvoiceData(processedData);
         setIsFormDirty(false) // Reset dirty state when form is loaded with new data
       } catch (err) {

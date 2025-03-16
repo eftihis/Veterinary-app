@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
+import { ViewInvoiceDialog } from "@/components/view-invoice-dialog"
 
 // Define our Invoice type based on our Supabase table structure
 export type Invoice = {
@@ -212,10 +213,19 @@ export function InvoicesDataTable() {
   const [editDialogOpen, setEditDialogOpen] = React.useState(false)
   const [selectedInvoice, setSelectedInvoice] = React.useState<Invoice | null>(null)
 
+  // View invoice dialog state
+  const [viewDialogOpen, setViewDialogOpen] = React.useState(false)
+
   // Function to handle opening the edit dialog
   const handleEditInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice)
     setEditDialogOpen(true)
+  }
+
+  // Function to handle opening the view dialog
+  const handleViewInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice)
+    setViewDialogOpen(true)
   }
   
   // Function to refresh invoices after an update
@@ -517,7 +527,7 @@ export function InvoicesDataTable() {
                 Copy invoice ID
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleViewInvoice(invoice)}>
                 <Eye className="mr-2 h-4 w-4" />
                 View details
               </DropdownMenuItem>
@@ -752,6 +762,12 @@ export function InvoicesDataTable() {
         onOpenChange={setEditDialogOpen}
         invoice={selectedInvoice}
         onInvoiceUpdated={refreshInvoices}
+      />
+      
+      <ViewInvoiceDialog
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+        invoice={selectedInvoice}
       />
     </>
   )

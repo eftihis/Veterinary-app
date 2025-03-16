@@ -393,7 +393,6 @@ export default function VeterinaryForm({
             document_number: data.documentNumber,
             reference: data.reference || null,
             animal_id: data.animalId || null,
-            animal_details: animalDetails,
             check_in_date: data.checkInDate || null,
             check_out_date: data.checkOutDate || null,
             subtotal: subtotal,
@@ -403,7 +402,8 @@ export default function VeterinaryForm({
             total: total,
             line_items: enhancedLineItems,
             comment: data.comment || null,
-            sender_info: sender
+            sender_id: user?.id || null,
+            updated_at: new Date()
           })
           .eq('id', initialData.id)
           .select('id')
@@ -419,7 +419,6 @@ export default function VeterinaryForm({
             document_number: data.documentNumber,
             reference: data.reference || null,
             animal_id: data.animalId || null,
-            animal_details: animalDetails,
             check_in_date: data.checkInDate || null,
             check_out_date: data.checkOutDate || null,
             subtotal: subtotal,
@@ -430,7 +429,10 @@ export default function VeterinaryForm({
             status: 'pending',
             line_items: enhancedLineItems,
             comment: data.comment || null,
-            sender_info: sender
+            sender_id: user?.id || null,
+            created_by: user?.id || null,
+            created_at: new Date(),
+            updated_at: new Date()
           })
           .select('id')
           .single();
@@ -536,13 +538,20 @@ export default function VeterinaryForm({
         if (checkOutDate && isNaN(checkOutDate.getTime())) checkOutDate = undefined;
         
         // Process animal type to ensure it matches dropdown options
-        let rawAnimalType = initialData.animal_details?.type || "";
-        console.log("Raw animal type from DB:", rawAnimalType);
+        let rawAnimalType = "";
         
-        // If we have a Type key in JSONB (case-sensitive key)
-        if (!rawAnimalType && initialData.animal_details?.Type) {
+        // Get animal type from either animals data or animal_details (for backward compatibility)
+        if (initialData.animals) {
+          rawAnimalType = initialData.animals.type || "";
+          console.log("Animal type from joined animals table:", rawAnimalType);
+        } else if (initialData.animal_details?.type) {
+          // Backward compatibility for old data format
+          rawAnimalType = initialData.animal_details.type;
+          console.log("Animal type from animal_details:", rawAnimalType);
+        } else if (initialData.animal_details?.Type) {
+          // Backward compatibility for old data format with capitalized key
           rawAnimalType = initialData.animal_details.Type;
-          console.log("Found animal type in Type key:", rawAnimalType);
+          console.log("Animal type from animal_details.Type:", rawAnimalType);
         }
         
         // Handle potential capitalization variations
@@ -572,12 +581,24 @@ export default function VeterinaryForm({
         // Force-set the animal type separately before the full form reset
         setValue("animalType", animalType);
         
+        // Get animal name from either animals data or animal_details (for backward compatibility)
+        let animalName = "";
+        let animalId = initialData.animal_id || "";
+        
+        if (initialData.animals) {
+          animalName = initialData.animals.name || "";
+          animalId = initialData.animals.id || initialData.animal_id || "";
+        } else if (initialData.animal_details?.name) {
+          // Backward compatibility for old data format
+          animalName = initialData.animal_details.name;
+        }
+        
         // Set all form values at once
         form.reset({
           documentNumber: initialData.document_number || "",
           reference: initialData.reference || "",
-          animalName: initialData.animal_details?.name || "",
-          animalId: initialData.animal_id || "",
+          animalName: animalName,
+          animalId: animalId,
           animalType: animalType, // Use our normalized value here
           checkInDate: checkInDate,
           checkOutDate: checkOutDate,
