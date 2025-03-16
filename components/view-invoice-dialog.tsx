@@ -50,16 +50,19 @@ const formatCurrency = (amount: number) => {
 
 // Get status badge
 const getStatusBadge = (status: string) => {
-  switch (status?.toLowerCase()) {
-    case 'paid':
-      return <Badge className="bg-green-500">Paid</Badge>
-    case 'pending':
-      return <Badge className="bg-yellow-500">Pending</Badge>
-    case 'overdue':
-      return <Badge className="bg-red-500">Overdue</Badge>
-    default:
-      return <Badge className="bg-gray-500">{status || 'Unknown'}</Badge>
-  }
+  const statusClass = {
+    'draft': "bg-gray-100 text-gray-600 border-gray-300 border",
+    'submitted': "bg-yellow-100 text-yellow-700 border-yellow-300 border",
+    'authorised': "bg-blue-100 text-blue-700 border-blue-300 border",
+    'paid': "bg-green-100 text-green-800 border-green-300 border",
+    'voided': "bg-red-100 text-red-800 border-red-300 border",
+  }[status.toLowerCase()] || "bg-gray-500"
+  
+  return (
+    <Badge className={statusClass + " hover:bg-none"}>
+      <span className="capitalize">{status}</span>
+    </Badge>
+  )
 }
 
 export function ViewInvoiceDialog({

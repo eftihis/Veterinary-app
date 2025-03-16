@@ -109,7 +109,7 @@ const getStatusBadge = (status: string) => {
   }[status.toLowerCase()] || "bg-gray-500"
   
   return (
-    <Badge className={statusClass}>
+    <Badge className={statusClass + " hover:bg-none"}>
       <span className="capitalize">{status}</span>
     </Badge>
   )
