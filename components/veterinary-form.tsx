@@ -1089,7 +1089,7 @@ export default function VeterinaryForm({
                                         )}
                                       />
                                       
-                                      <Label>Category</Label>
+                                      <Label>Item</Label>
                                       <FormField
                                         control={form.control}
                                         name={`lineItems.${index}.itemId`}
@@ -1481,7 +1481,7 @@ export default function VeterinaryForm({
                   type="submit" 
                   className="px-8"
                 >
-                  Submit Invoice
+                  Submit
                 </Button>
               </>
             )}
