@@ -22,7 +22,11 @@ import {
   Trash2,
   AlertCircle,
   Calendar as CalendarIcon,
-  X
+  X,
+  Check,
+  ChevronsUpDown,
+  PencilIcon,
+  Trash,
 } from "lucide-react"
 import { format, isAfter, isBefore, isValid, parseISO } from "date-fns"
 import { supabase } from "@/lib/supabase"
@@ -58,6 +62,7 @@ import {
 import { cn } from "@/lib/utils"
 import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
 import { ViewInvoiceDialog } from "@/components/view-invoice-dialog"
+import { StatusFilter } from "@/components/status-filter"
 
 // Define our Invoice type based on our Supabase table structure
 export type Invoice = {
@@ -205,6 +210,9 @@ export function InvoicesDataTable() {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   
+  // Status filter state
+  const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([])
+  
   // Date range filter state
   const [startDate, setStartDate] = React.useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined)
@@ -216,6 +224,15 @@ export function InvoicesDataTable() {
 
   // View invoice dialog state
   const [viewDialogOpen, setViewDialogOpen] = React.useState(false)
+
+  // Available statuses
+  const statusOptions = [
+    { value: "draft", label: "Draft" },
+    { value: "submitted", label: "Submitted" },
+    { value: "authorised", label: "Authorised" },
+    { value: "paid", label: "Paid" },
+    { value: "voided", label: "Voided" }
+  ]
 
   // Function to handle opening the edit dialog
   const handleEditInvoice = (invoice: Invoice) => {
@@ -303,34 +320,51 @@ export function InvoicesDataTable() {
     refreshInvoices()
   }, [refreshInvoices])
 
-  // Apply date filters
+  // Update the filter effect to include status filtering
   React.useEffect(() => {
-    // If no date filters are set, use all invoices
-    if (!startDate && !endDate) {
-      setFilteredData(invoices)
-      return
+    // Start with all invoices
+    let filtered = invoices;
+    
+    // Apply date filters if set
+    if (startDate || endDate) {
+      filtered = filtered.filter(invoice => {
+        const createdDate = parseISO(invoice.created_at)
+        
+        // If start date is set, check if the invoice date is after or equal to it
+        const afterStartDate = startDate ? isAfter(createdDate, startDate) || createdDate.getDate() === startDate.getDate() : true
+        
+        // If end date is set, check if the invoice date is before or equal to it
+        const beforeEndDate = endDate ? isBefore(createdDate, endDate) || createdDate.getDate() === endDate.getDate() : true
+        
+        return afterStartDate && beforeEndDate
+      })
     }
     
-    // Filter invoices based on date range
-    const filtered = invoices.filter(invoice => {
-      const createdDate = parseISO(invoice.created_at)
-      
-      // If start date is set, check if the invoice date is after or equal to it
-      const afterStartDate = startDate ? isAfter(createdDate, startDate) || createdDate.getDate() === startDate.getDate() : true
-      
-      // If end date is set, check if the invoice date is before or equal to it
-      const beforeEndDate = endDate ? isBefore(createdDate, endDate) || createdDate.getDate() === endDate.getDate() : true
-      
-      return afterStartDate && beforeEndDate
-    })
+    // Apply status filters if any are selected
+    if (selectedStatuses.length > 0) {
+      filtered = filtered.filter(invoice => 
+        selectedStatuses.includes(invoice.status.toLowerCase())
+      );
+    }
     
     setFilteredData(filtered)
-  }, [invoices, startDate, endDate])
+  }, [invoices, startDate, endDate, selectedStatuses])
   
-  // Clear date filters
-  const clearDateFilters = () => {
+  // Clear all filters
+  const clearAllFilters = () => {
     setStartDate(undefined)
     setEndDate(undefined)
+    setSelectedStatuses([])
+    setGlobalFilter("")
+  }
+  
+  // Handle status selection toggle
+  const toggleStatus = (status: string) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status) 
+        : [...prev, status]
+    )
   }
 
   // Define columns with access to component state/functions
@@ -652,7 +686,15 @@ export function InvoicesDataTable() {
                   endDate={endDate}
                   onStartDateChange={setStartDate}
                   onEndDateChange={setEndDate}
-                  onClear={clearDateFilters}
+                  onClear={clearAllFilters}
+                />
+                
+                {/* Status Filter */}
+                <StatusFilter
+                  statusOptions={statusOptions}
+                  selectedStatuses={selectedStatuses}
+                  setSelectedStatuses={setSelectedStatuses}
+                  getStatusBadge={getStatusBadge}
                 />
               </div>
               
@@ -685,7 +727,56 @@ export function InvoicesDataTable() {
             </div>
             {filteredData.length !== invoices.length && (
               <div className="text-sm text-muted-foreground">
-                Showing {filteredData.length} of {invoices.length} invoices based on date filter.
+                Showing {filteredData.length} of {invoices.length} invoices based on filters.
+              </div>
+            )}
+            
+            {/* Active Filters */}
+            {(selectedStatuses.length > 0 || startDate || endDate) && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>
+                
+                {selectedStatuses.map(status => (
+                  <Badge key={status} variant="secondary" className="flex items-center gap-1">
+                    <span className="capitalize">{status}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => toggleStatus(status)}
+                    >
+                      <X className="h-3 w-3" />
+                      <span className="sr-only">Remove {status} filter</span>
+                    </Button>
+                  </Badge>
+                ))}
+                
+                {(startDate || endDate) && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <span>Date: {startDate ? format(startDate, "d MMM yyyy") : "Any"} - {endDate ? format(endDate, "d MMM yyyy") : "Any"}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => {
+                        setStartDate(undefined);
+                        setEndDate(undefined);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                      <span className="sr-only">Remove date filter</span>
+                    </Button>
+                  </Badge>
+                )}
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={clearAllFilters}
+                >
+                  Clear all
+                </Button>
               </div>
             )}
           </div>
