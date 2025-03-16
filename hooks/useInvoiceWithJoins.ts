@@ -13,6 +13,7 @@ export type InvoiceWithJoins = {
   total: number;
   status: string;
   line_items: any[];
+  comment: string | null;
   created_at: string;
   updated_at: string;
   // References
@@ -110,6 +111,7 @@ export function useInvoicesWithJoins() {
             total: invoice.total,
             status: invoice.status,
             line_items: invoice.line_items || [],
+            comment: invoice.comment,
             created_at: invoice.created_at,
             updated_at: invoice.updated_at,
             animal_id: invoice.animal_id,
@@ -187,6 +189,7 @@ export async function getInvoiceById(invoiceId: string): Promise<InvoiceWithJoin
       total: data.total,
       status: data.status,
       line_items: data.line_items || [],
+      comment: data.comment,
       created_at: data.created_at,
       updated_at: data.updated_at,
       animal_id: data.animal_id,

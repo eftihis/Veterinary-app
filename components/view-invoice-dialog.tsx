@@ -106,10 +106,10 @@ export function ViewInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[95%] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl w-[95%] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <Eye className="mr-2 h-5 w-5" />
+          <DialogTitle className="flex items-center text-base sm:text-lg">
+            <Eye className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
             Invoice {invoice?.document_number}
           </DialogTitle>
           <DialogDescription>
@@ -126,50 +126,50 @@ export function ViewInvoiceDialog({
             {error}
           </div>
         ) : fullInvoiceData ? (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Invoice Header Information */}
             <Card>
-              <CardHeader>
-                <CardTitle>Invoice Information</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Invoice Information</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <div className="flex items-center">
-                      <Hash className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="font-medium mr-2">Document Number:</span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Hash className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium mr-1">Document Number:</span>
                       <span>{fullInvoiceData.document_number}</span>
                     </div>
                     
-                    <div className="flex items-center">
-                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="font-medium mr-2">Reference:</span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <FileText className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium mr-1">Reference:</span>
                       <span>{fullInvoiceData.reference || "-"}</span>
                     </div>
                     
-                    <div className="flex items-center">
-                      <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="font-medium mr-2">Status:</span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <DollarSign className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium mr-1">Status:</span>
                       <span>{getStatusBadge(fullInvoiceData.status)}</span>
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="font-medium mr-2">Created:</span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Calendar className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium mr-1">Created:</span>
                       <span>{formatDate(fullInvoiceData.created_at)}</span>
                     </div>
                     
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="font-medium mr-2">Check-in Date:</span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Calendar className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium mr-1">Check-in Date:</span>
                       <span>{formatDate(fullInvoiceData.check_in_date)}</span>
                     </div>
                     
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="font-medium mr-2">Check-out Date:</span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Calendar className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium mr-1">Check-out Date:</span>
                       <span>{formatDate(fullInvoiceData.check_out_date)}</span>
                     </div>
                   </div>
@@ -179,21 +179,21 @@ export function ViewInvoiceDialog({
             
             {/* Patient Information */}
             <Card>
-              <CardHeader>
-                <CardTitle>Patient Information</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Patient Information</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                 {fullInvoiceData.animal ? (
                   <div className="space-y-2">
-                    <div className="flex items-center">
-                      <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="font-medium mr-2">Name:</span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <User className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium mr-1">Name:</span>
                       <span>{fullInvoiceData.animal.name}</span>
                     </div>
                     
-                    <div className="flex items-center">
-                      <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="font-medium mr-2">Type:</span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Tag className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium mr-1">Type:</span>
                       <span className="capitalize">{fullInvoiceData.animal.type}</span>
                     </div>
                   </div>
@@ -205,71 +205,94 @@ export function ViewInvoiceDialog({
             
             {/* Line Items */}
             <Card>
-              <CardHeader>
-                <CardTitle>Line Items</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Line Items</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Price</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {fullInvoiceData.line_items?.length > 0 ? (
-                      fullInvoiceData.line_items.map((item: any, index: number) => {
-                        // Calculate line total
-                        const quantity = Number(item.quantity) || 1; // Default to 1 if not specified
-                        const price = Number(item.price) || 0;
-                        const lineTotal = quantity * price;
-                        
-                        return (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{item.itemName || item.item_name || '-'}</TableCell>
-                            <TableCell>{item.description || '-'}</TableCell>
-                            <TableCell className="text-right">{quantity}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(price)}</TableCell>
-                            <TableCell className="text-right">
-                              {formatCurrency(lineTotal)}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    ) : (
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center">No items found</TableCell>
+                        <TableHead className="w-[30%]">Item</TableHead>
+                        <TableHead className="hidden sm:table-cell">Description</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Price</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
                       </TableRow>
-                    )}
-                    
-                    {/* Subtotal, Discount and Total */}
-                    <TableRow className="border-t-2">
-                      <TableCell colSpan={4} className="text-right font-medium">Subtotal</TableCell>
-                      <TableCell className="text-right">{formatCurrency(fullInvoiceData.subtotal)}</TableCell>
-                    </TableRow>
-                    
-                    {fullInvoiceData.discount_total > 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-right font-medium">
-                          Discount Total
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(fullInvoiceData.discount_total)}
-                        </TableCell>
+                    </TableHeader>
+                    <TableBody>
+                      {fullInvoiceData.line_items?.length > 0 ? (
+                        fullInvoiceData.line_items.map((item: any, index: number) => {
+                          // Calculate line total
+                          const quantity = Number(item.quantity) || 1; // Default to 1 if not specified
+                          const price = Number(item.price) || 0;
+                          const lineTotal = quantity * price;
+                          
+                          return (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">
+                                {item.itemName || item.item_name || '-'}
+                                {/* Show description on mobile as part of the item cell */}
+                                <div className="block sm:hidden text-xs text-muted-foreground mt-1">
+                                  {item.description || '-'}
+                                </div>
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell">{item.description || '-'}</TableCell>
+                              <TableCell className="text-right">{quantity}</TableCell>
+                              <TableCell className="text-right">{formatCurrency(price)}</TableCell>
+                              <TableCell className="text-right">
+                                {formatCurrency(lineTotal)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center">No items found</TableCell>
+                        </TableRow>
+                      )}
+                      
+                      {/* Subtotal, Discount and Total */}
+                      <TableRow className="border-t-2">
+                        {/* On mobile: 3 columns (Item, Qty, Price) before Total */}
+                        <TableCell colSpan={3} className="sm:hidden text-right font-medium">Subtotal:</TableCell>
+                        {/* On desktop: 4 columns (Item, Description, Qty, Price) before Total */}
+                        <TableCell colSpan={4} className="hidden sm:table-cell text-right font-medium">Subtotal:</TableCell>
+                        <TableCell className="text-right">{formatCurrency(fullInvoiceData.subtotal)}</TableCell>
                       </TableRow>
-                    )}
-                    
-                    <TableRow className="font-bold">
-                      <TableCell colSpan={4} className="text-right">Total</TableCell>
-                      <TableCell className="text-right">{formatCurrency(fullInvoiceData.total)}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                      
+                      {fullInvoiceData.discount_total > 0 && (
+                        <TableRow>
+                          <TableCell colSpan={3} className="sm:hidden text-right font-medium">Discount:</TableCell>
+                          <TableCell colSpan={4} className="hidden sm:table-cell text-right font-medium">Discount:</TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(fullInvoiceData.discount_total)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      
+                      <TableRow className="font-bold">
+                        <TableCell colSpan={3} className="sm:hidden text-right">Total:</TableCell>
+                        <TableCell colSpan={4} className="hidden sm:table-cell text-right">Total:</TableCell>
+                        <TableCell className="text-right">{formatCurrency(fullInvoiceData.total)}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
+            
+            {/* Comment section if available */}
+            {fullInvoiceData.comment && (
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg">Additional Comments</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                  <p className="whitespace-pre-wrap">{fullInvoiceData.comment}</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         ) : (
           <div className="py-4">
@@ -277,7 +300,7 @@ export function ViewInvoiceDialog({
           </div>
         )}
         
-        <DialogFooter>
+        <DialogFooter className="mt-4 sm:mt-6">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
