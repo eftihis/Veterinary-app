@@ -35,7 +35,10 @@ export function StatusFilter({
   setSelectedStatuses,
   getStatusBadge
 }: StatusFilterProps) {
-  // Handle status toggle
+  // Keep track of dropdown open state
+  const [open, setOpen] = React.useState(false)
+  
+  // Handle status toggle without closing the dropdown
   const handleStatusToggle = (status: string, checked: boolean) => {
     if (checked) {
       if (!selectedStatuses.includes(status)) {
@@ -44,17 +47,18 @@ export function StatusFilter({
     } else {
       setSelectedStatuses(prev => prev.filter(s => s !== status))
     }
+    // Do not close the dropdown after selection
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="h-9 border-dashed flex gap-1 min-w-[120px]">
           <div className="flex gap-1 items-center">
             {selectedStatuses.length > 0 ? (
               <>
-                <span>Status: {selectedStatuses.length}</span>
-                <Badge className="ml-1 rounded-sm px-1 font-normal lg:hidden">
+                <span>Status</span>
+                <Badge className="ml-1 rounded-sm px-1.5 py-0.5 font-medium bg-secondary text-secondary-foreground">
                   {selectedStatuses.length}
                 </Badge>
               </>
@@ -75,16 +79,12 @@ export function StatusFilter({
             onCheckedChange={(checked: boolean) => 
               handleStatusToggle(option.value, checked)
             }
+            onSelect={(e) => {
+              e.preventDefault();
+            }}
           >
             <div className="flex items-center gap-2">
               <div className="flex-1">{option.label}</div>
-              {selectedStatuses.includes(option.value) && (
-                <div className="ml-auto">
-                  <span className="capitalize text-xs px-2 py-0.5 rounded-full bg-secondary">
-                    Selected
-                  </span>
-                </div>
-              )}
             </div>
           </DropdownMenuCheckboxItem>
         ))}
@@ -92,7 +92,10 @@ export function StatusFilter({
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => setSelectedStatuses([])}
+              onClick={() => {
+                setSelectedStatuses([]);
+                setOpen(false); // Close dropdown on clear all
+              }}
               className="justify-center text-center"
             >
               Clear filters
