@@ -1093,11 +1093,6 @@ export default function VeterinaryForm({
                                               />
                                             </FormControl>
                                             <FormMessage />
-                                            {allXeroItems.length === 0 && !loadingXeroItems && (
-                                              <div className="text-sm text-amber-600 mt-1">
-                                                No items available. Please check your Xero connection.
-                                              </div>
-                                            )}
                                           </FormItem>
                                         )}
                                       />
@@ -1228,11 +1223,6 @@ export default function VeterinaryForm({
                                                 />
                                               </FormControl>
                                               <FormMessage />
-                                              {allXeroItems.length === 0 && !loadingXeroItems && (
-                                                <div className="text-sm text-amber-600 mt-1">
-                                                  No items available. Please check your Xero connection.
-                                                </div>
-                                              )}
                                             </FormItem>
                                           )}
                                         />
