@@ -512,11 +512,18 @@ export default function VeterinaryForm({
         console.log("Pre-populating form with:", initialData);
         
         // Convert line items from the database format to the form format
-        const formattedLineItems = initialData.line_items.map((item: any, index: number) => ({
+        // Ensure line_items is an array before mapping
+        const lineItemsArray = Array.isArray(initialData.line_items) 
+          ? initialData.line_items 
+          : (initialData.line_items ? [initialData.line_items] : []);
+          
+        console.log("Line items array:", lineItemsArray);
+        
+        const formattedLineItems = lineItemsArray.map((item: any, index: number) => ({
           id: `item-${Date.now()}-${index}`,
           description: item.description || "",
-          itemId: item.itemId || "",
-          itemName: item.itemName || "",
+          itemId: item.item_id || item.itemId || "",
+          itemName: item.item_name || item.itemName || "",
           price: item.price || 0
         }));
         

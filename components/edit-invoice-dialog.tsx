@@ -57,7 +57,10 @@ export function EditInvoiceDialog({
         
         const { data, error } = await supabase
           .from('invoices')
-          .select('*')
+          .select(`
+            *,
+            animals!left(id, name, type)
+          `)
           .eq('id', invoice.id)
           .single()
         
@@ -65,7 +68,21 @@ export function EditInvoiceDialog({
           throw error
         }
         
-        setFullInvoiceData(data)
+        // Process the data to match the expected format for the form
+        const processedData = {
+          ...data,
+          // Ensure line_items is always an array
+          line_items: Array.isArray(data.line_items) ? data.line_items : [],
+          // Create animal_details from the joined animals data
+          animal_details: data.animals ? {
+            id: data.animals.id,
+            name: data.animals.name,
+            type: data.animals.type
+          } : null
+        };
+        
+        console.log("Fetched invoice data:", processedData);
+        setFullInvoiceData(processedData);
         setIsFormDirty(false) // Reset dirty state when form is loaded with new data
       } catch (err) {
         console.error("Error fetching invoice details:", err)

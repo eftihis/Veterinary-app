@@ -63,10 +63,12 @@ export type Invoice = {
   id: string
   document_number: string
   reference: string | null
-  animal_details: {
+  animal_id: string | null
+  animal: {
+    id: string
     name: string
     type: string
-  }
+  } | null
   check_in_date: string | null
   check_out_date: string | null
   subtotal: number
@@ -222,16 +224,61 @@ export function InvoicesDataTable() {
       setLoading(true)
       setError(null)
       
+      // Use a join query to get invoice data along with animal data
       const { data, error } = await supabase
         .from('invoices')
-        .select('id, document_number, reference, animal_details, check_in_date, check_out_date, subtotal, discount_amount, total, status, created_at')
+        .select(`
+          id, 
+          document_number, 
+          reference, 
+          animal_id,
+          check_in_date, 
+          check_out_date, 
+          subtotal, 
+          discount_amount, 
+          total, 
+          status, 
+          created_at,
+          animals!left(id, name, type)
+        `)
         .order('created_at', { ascending: false })
       
       if (error) {
         throw error
       }
       
-      setInvoices(data || [])
+      // Process the data to include animal information
+      const processedData = (data || []).map((invoice: any) => {
+        // Handle the animals property which might be an array or object
+        let animalData = null;
+        if (invoice.animals) {
+          // If it's an array with elements, use the first one
+          if (Array.isArray(invoice.animals) && invoice.animals.length > 0) {
+            animalData = {
+              id: invoice.animals[0].id || "",
+              name: invoice.animals[0].name || "",
+              type: invoice.animals[0].type || ""
+            };
+          } 
+          // If it's a single object (not in an array)
+          else if (typeof invoice.animals === 'object') {
+            animalData = {
+              id: invoice.animals.id || "",
+              name: invoice.animals.name || "",
+              type: invoice.animals.type || ""
+            };
+          }
+        }
+        
+        return {
+          ...invoice,
+          // Create a properly structured animal object from the joined data
+          animal: animalData
+        };
+      });
+      
+      console.log("Successfully fetched invoices:", processedData.length, "records");
+      setInvoices(processedData)
     } catch (err) {
       console.error("Error fetching invoices:", err)
       setError(err instanceof Error ? err.message : "Unknown error occurred")
@@ -331,7 +378,22 @@ export function InvoicesDataTable() {
       },
     },
     {
-      accessorKey: "animal_details",
+      accessorKey: "animal_id",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Patient ID
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div>{row.getValue("animal_id") || "-"}</div>
+      ),
+    },
+    {
+      accessorKey: "animal",
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -342,17 +404,23 @@ export function InvoicesDataTable() {
         </Button>
       ),
       cell: ({ row }) => {
-        const animalDetails = row.getValue("animal_details") as Invoice["animal_details"]
+        const animal = row.getValue("animal") as Invoice["animal"];
+        
+        // Check if the animal data is missing
+        if (!animal) {
+          return <div className="text-gray-400 italic">No animal details</div>;
+        }
+        
         return (
           <div>
-            <div className="font-medium">{animalDetails.name}</div>
-            <div className="text-muted-foreground text-xs capitalize">{animalDetails.type}</div>
+            <div className="font-medium">{animal.name || "Unknown"}</div>
+            <div className="text-muted-foreground text-xs capitalize">{animal.type || "Unknown"}</div>
           </div>
-        )
+        );
       },
       sortingFn: (rowA, rowB) => {
-        const animalA = (rowA.getValue("animal_details") as Invoice["animal_details"]).name.toLowerCase();
-        const animalB = (rowB.getValue("animal_details") as Invoice["animal_details"]).name.toLowerCase();
+        const animalA = (rowA.getValue("animal") as Invoice["animal"])?.name?.toLowerCase() || "";
+        const animalB = (rowB.getValue("animal") as Invoice["animal"])?.name?.toLowerCase() || "";
         return animalA.localeCompare(animalB);
       }
     },
@@ -472,16 +540,17 @@ export function InvoicesDataTable() {
   const fuzzyFilter = (row: any, columnId: string, filterValue: string) => {
     const searchValue = filterValue.toLowerCase();
     
-    // Get the values we want to search in
+    // Get the values to search in
     const documentNumber = row.getValue("document_number")?.toString().toLowerCase() || "";
     const reference = row.getValue("reference")?.toString().toLowerCase() || "";
-    const animalDetails = row.getValue("animal_details") as Invoice["animal_details"] || { name: "", type: "" };
+    const animal = row.getValue("animal") as Invoice["animal"];
+    const animalName = animal?.name?.toLowerCase() || "";
     
     // Check if any of the values match the search term
     return (
       documentNumber.includes(searchValue) ||
       reference.includes(searchValue) ||
-      animalDetails.name.toLowerCase().includes(searchValue)
+      animalName.includes(searchValue)
     );
   };
 
@@ -501,7 +570,10 @@ export function InvoicesDataTable() {
     state: {
       sorting,
       columnFilters,
-      columnVisibility,
+      columnVisibility: {
+        ...columnVisibility,
+        animal_id: false, // Hide the animal_id column by default
+      },
       rowSelection,
       globalFilter,
     },
