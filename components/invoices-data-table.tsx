@@ -96,10 +96,11 @@ const formatDate = (dateString: string | null) => {
 // Get status badge
 const getStatusBadge = (status: string) => {
   const statusClass = {
-    'paid': "bg-green-500",
-    'pending': "bg-yellow-500",
-    'overdue': "bg-red-500",
-    'cancelled': "border-gray-200 text-gray-800 bg-transparent",
+    'draft': "bg-gray-100 text-gray-600 border-gray-300 border",
+    'submitted': "bg-yellow-100 text-yellow-700 border-yellow-300 border",
+    'authorised': "bg-blue-100 text-blue-700 border-blue-300 border",
+    'paid': "bg-green-100 text-green-800 border-green-300 border",
+    'voided': "bg-red-100 text-red-800 border-red-300 border",
   }[status.toLowerCase()] || "bg-gray-500"
   
   return (
