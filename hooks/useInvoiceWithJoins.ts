@@ -78,8 +78,8 @@ export function useInvoicesWithJoins() {
         
         if (userIds.length > 0) {
           const { data: users, error: userError } = await supabase
-            .from('auth.users')
-            .select('id, email, raw_user_meta_data')
+            .from('profiles')
+            .select('id, email, full_name')
             .in('id', userIds);
             
           if (!userError && users) {
@@ -96,7 +96,7 @@ export function useInvoicesWithJoins() {
             ? {
                 id: userData[invoice.sender_id].id,
                 email: userData[invoice.sender_id].email,
-                name: userData[invoice.sender_id].raw_user_meta_data?.full_name || userData[invoice.sender_id].email
+                name: userData[invoice.sender_id].full_name || userData[invoice.sender_id].email
               }
             : null;
             
@@ -163,8 +163,8 @@ export async function getInvoiceById(invoiceId: string): Promise<InvoiceWithJoin
     let sender = null;
     if (data.sender_id) {
       const { data: userData, error: userError } = await supabase
-        .from('auth.users')
-        .select('id, email, raw_user_meta_data')
+        .from('profiles')
+        .select('id, email, full_name')
         .eq('id', data.sender_id)
         .single();
         
@@ -172,7 +172,7 @@ export async function getInvoiceById(invoiceId: string): Promise<InvoiceWithJoin
         sender = {
           id: userData.id,
           email: userData.email,
-          name: userData.raw_user_meta_data?.full_name || userData.email
+          name: userData.full_name || userData.email
         };
       }
     }
