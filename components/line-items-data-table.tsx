@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { StatusFilter } from "@/components/status-filter"
+import { ItemFilter } from "@/components/item-filter"
 
 // Define our LineItem type based on our Supabase view structure
 export type LineItem = {
@@ -183,6 +184,8 @@ function DateRangePicker({
 const ActiveFilters = ({
   selectedStatuses,
   toggleStatus,
+  selectedItems,
+  toggleItem,
   startDate,
   endDate,
   setStartDate,
@@ -191,13 +194,15 @@ const ActiveFilters = ({
 }: {
   selectedStatuses: string[];
   toggleStatus: (status: string) => void;
+  selectedItems: string[];
+  toggleItem: (item: string) => void;
   startDate?: Date;
   endDate?: Date;
   setStartDate: (date: Date | undefined) => void;
   setEndDate: (date: Date | undefined) => void;
   clearAllFilters: () => void;
 }) => {
-  if (selectedStatuses.length === 0 && !startDate && !endDate) {
+  if (selectedStatuses.length === 0 && selectedItems.length === 0 && !startDate && !endDate) {
     return null;
   }
   
@@ -216,6 +221,21 @@ const ActiveFilters = ({
           >
             <X className="h-3 w-3" />
             <span className="sr-only">Remove {status} filter</span>
+          </Button>
+        </Badge>
+      ))}
+      
+      {selectedItems.map(item => (
+        <Badge key={item} variant="secondary" className="flex items-center gap-1">
+          <span>{item}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-4 w-4 p-0 hover:bg-transparent"
+            onClick={() => toggleItem(item)}
+          >
+            <X className="h-3 w-3" />
+            <span className="sr-only">Remove {item} filter</span>
           </Button>
         </Badge>
       ))}
@@ -269,6 +289,10 @@ export function LineItemsDataTable() {
   // Status filter state
   const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([])
   
+  // Item filter state
+  const [selectedItems, setSelectedItems] = React.useState<string[]>([])
+  const [itemOptions, setItemOptions] = React.useState<{ value: string; label: string }[]>([])
+  
   // Date range filter state
   const [startDate, setStartDate] = React.useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined)
@@ -313,7 +337,25 @@ export function LineItemsDataTable() {
     refreshLineItems()
   }, [refreshLineItems])
 
-  // Apply filters (date + status)
+  // Extract unique item options after fetching line items
+  React.useEffect(() => {
+    if (lineItems.length > 0) {
+      // Get unique items
+      const uniqueItems = Array.from(
+        new Set(lineItems.map(item => item.item_name))
+      ).sort();
+      
+      // Format as options
+      const options = uniqueItems.map(item => ({
+        value: item,
+        label: item
+      }));
+      
+      setItemOptions(options);
+    }
+  }, [lineItems]);
+
+  // Update the filtering effect to include item filtering
   React.useEffect(() => {
     // Start with all line items
     let filtered = lineItems;
@@ -340,14 +382,22 @@ export function LineItemsDataTable() {
       );
     }
     
+    // Apply item filters if any are selected
+    if (selectedItems.length > 0) {
+      filtered = filtered.filter(item => 
+        selectedItems.includes(item.item_name)
+      );
+    }
+    
     setFilteredData(filtered)
-  }, [lineItems, startDate, endDate, selectedStatuses])
+  }, [lineItems, startDate, endDate, selectedStatuses, selectedItems])
   
   // Clear all filters
   const clearAllFilters = () => {
     setStartDate(undefined)
     setEndDate(undefined)
     setSelectedStatuses([])
+    setSelectedItems([])
     setGlobalFilter("")
   }
   
@@ -357,6 +407,15 @@ export function LineItemsDataTable() {
       prev.includes(status) 
         ? prev.filter(s => s !== status) 
         : [...prev, status]
+    )
+  }
+  
+  // Handle item selection toggle
+  const toggleItem = (item: string) => {
+    setSelectedItems(prev => 
+      prev.includes(item) 
+        ? prev.filter(i => i !== item) 
+        : [...prev, item]
     )
   }
 
@@ -595,6 +654,13 @@ export function LineItemsDataTable() {
                 setSelectedStatuses={setSelectedStatuses}
                 getStatusBadge={getStatusBadge}
               />
+              
+              {/* Item Filter */}
+              <ItemFilter
+                itemOptions={itemOptions}
+                selectedItems={selectedItems}
+                setSelectedItems={setSelectedItems}
+              />
             </div>
             
             <DropdownMenu>
@@ -634,6 +700,8 @@ export function LineItemsDataTable() {
           <ActiveFilters
             selectedStatuses={selectedStatuses}
             toggleStatus={toggleStatus}
+            selectedItems={selectedItems}
+            toggleItem={toggleItem}
             startDate={startDate}
             endDate={endDate}
             setStartDate={setStartDate}
