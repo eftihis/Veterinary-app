@@ -9,9 +9,7 @@ export type InvoiceWithJoins = {
   check_in_date: string | null;
   check_out_date: string | null;
   subtotal: number;
-  discount_type: 'percent' | 'amount';
-  discount_value: number;
-  discount_amount: number;
+  discount_total: number;
   total: number;
   status: string;
   line_items: any[];
@@ -108,9 +106,7 @@ export function useInvoicesWithJoins() {
             check_in_date: invoice.check_in_date,
             check_out_date: invoice.check_out_date,
             subtotal: invoice.subtotal,
-            discount_type: invoice.discount_type,
-            discount_value: invoice.discount_value,
-            discount_amount: invoice.discount_amount,
+            discount_total: invoice.discount_total || 0,
             total: invoice.total,
             status: invoice.status,
             line_items: invoice.line_items || [],
@@ -187,9 +183,7 @@ export async function getInvoiceById(invoiceId: string): Promise<InvoiceWithJoin
       check_in_date: data.check_in_date,
       check_out_date: data.check_out_date,
       subtotal: data.subtotal,
-      discount_type: data.discount_type,
-      discount_value: data.discount_value,
-      discount_amount: data.discount_amount,
+      discount_total: data.discount_total || 0,
       total: data.total,
       status: data.status,
       line_items: data.line_items || [],

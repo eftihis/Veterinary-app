@@ -61,6 +61,7 @@ const lineItemSchema = z.object({
     z.coerce.number(),
     z.string().transform(val => val === "" ? 0 : parseFloat(val) || 0)
   ]),
+  type: z.enum(["item", "discount"]).optional(),
 });
 
 // Define the schema for the form
@@ -89,8 +90,6 @@ const formSchema = z.object({
       }
     ),
   lineItems: z.array(lineItemSchema).min(1, "At least one line item is required"),
-  discountType: z.enum(["percent", "amount"]),
-  discountValue: z.coerce.number().min(0),
   comment: z.string().optional(),
 });
 
@@ -101,6 +100,7 @@ type LineItem = {
   itemId: string;
   itemName?: string;
   price: string | number;
+  type?: "item" | "discount";
 };
 
 // Update the FormValues type
@@ -122,9 +122,8 @@ export default function VeterinaryForm({
 }) {
   const [showComment, setShowComment] = useState(false);
   const [subtotal, setSubtotal] = useState<number>(0);
-  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [discountTotal, setDiscountTotal] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
-  const [isDiscountTooHigh, setIsDiscountTooHigh] = useState(false);
   const { user } = useAuth(); // Get the authenticated user
 
   // Create a ref to store the calculateTotals function to avoid dependency issues
@@ -141,9 +140,7 @@ export default function VeterinaryForm({
       animalType: "",
       checkInDate: undefined,
       checkOutDate: undefined,
-      lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", price: "" }],
-      discountType: "percent",
-      discountValue: 0,
+      lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", price: "", type: "item" }],
       comment: "",
     },
     mode: "onBlur",
@@ -165,12 +162,10 @@ export default function VeterinaryForm({
 
   const { watch, setValue } = form;
   const lineItems = watch("lineItems");
-  const discountType = watch("discountType");
-  const discountValue = watch("discountValue");
   const animalType = watch("animalType");
 
   // Fetch Xero items with automatic token management and filtering by animal type
-  const { 
+  const {
     items: xeroItems, 
     loading: loadingXeroItems, 
     error: xeroItemsError,
@@ -179,8 +174,8 @@ export default function VeterinaryForm({
     allItems: allXeroItems
   } = useXeroItems();
   
-  // Fetch all animals and optionally filter by animal type
-  const { 
+  // Fetch animals with filtering by type
+  const {
     animals: filteredAnimals,
     allAnimals: animalOptions, 
     loading: loadingAnimals, 
@@ -191,9 +186,6 @@ export default function VeterinaryForm({
   
   // Update filtered animals when animal type changes
   useEffect(() => {
-    // Skip if no animal type or no filter function
-    if (!filterAnimalsByType) return;
-    
     // Use setTimeout to break potential update cycles
     const timeoutId = setTimeout(() => {
       filterAnimalsByType(animalType);
@@ -203,13 +195,37 @@ export default function VeterinaryForm({
   }, [animalType, filterAnimalsByType]);
 
   // Define the calculation function and store it in the ref
-  const calculateTotals = (
-    items: LineItem[], 
-    type: "percent" | "amount", 
-    value: number
-  ) => {
-    // Calculate subtotal
+  const calculateTotals = (items: LineItem[]) => {
+    // Calculate subtotal (sum of positive line items)
     const newSubtotal = items.reduce(
+      (sum, item) => {
+        const price = typeof item.price === 'string' 
+          ? (item.price === "" ? 0 : parseFloat(item.price) || 0) 
+          : (Number(item.price) || 0);
+        
+        // Only add positive prices to subtotal
+        return sum + (price > 0 ? price : 0);
+      },
+      0
+    );
+    setSubtotal(newSubtotal);
+
+    // Calculate discount total (absolute sum of negative line items)
+    const newDiscountTotal = Math.abs(items.reduce(
+      (sum, item) => {
+        const price = typeof item.price === 'string' 
+          ? (item.price === "" ? 0 : parseFloat(item.price) || 0) 
+          : (Number(item.price) || 0);
+        
+        // Only add negative prices to discount total (as positive values)
+        return sum + (price < 0 ? price : 0);
+      },
+      0
+    ));
+    setDiscountTotal(newDiscountTotal);
+
+    // Calculate total (net sum of all line items)
+    const newTotal = items.reduce(
       (sum, item) => {
         const price = typeof item.price === 'string' 
           ? (item.price === "" ? 0 : parseFloat(item.price) || 0) 
@@ -218,23 +234,7 @@ export default function VeterinaryForm({
       },
       0
     );
-    setSubtotal(newSubtotal);
-
-    // Calculate discount
-    let newDiscountAmount = 0;
-    if (type === "percent") {
-      newDiscountAmount = newSubtotal * (Number(value) / 100);
-    } else {
-      newDiscountAmount = Number(value);
-    }
-    setDiscountAmount(newDiscountAmount);
-
-    // Calculate total
-    const newTotal = newSubtotal - newDiscountAmount;
     setTotal(newTotal);
-    
-    // Check if discount makes total zero or negative
-    setIsDiscountTooHigh(newTotal < 0);
   };
 
   // Store the function in the ref
@@ -245,21 +245,17 @@ export default function VeterinaryForm({
     const subscription = form.watch((value, { name, type }) => {
       // This will run on ANY form value change
       if (value.lineItems) {
-        calculateTotals(
-          value.lineItems as LineItem[], 
-          value.discountType as "percent" | "amount", 
-          value.discountValue as number
-        );
+        calculateTotals(value.lineItems as LineItem[]);
       }
       
-      // Notify parent component of changes
-      if (onFormChange && name) {  // Only trigger when actual values change, not on init
+      // Call the onFormChange prop to notify parent components
+      if (onFormChange) {
         onFormChange();
       }
     });
     
     return () => subscription.unsubscribe();
-  }, [form.watch, onFormChange]);
+  }, [form, onFormChange]);
 
   // Add a new line item
   const addLineItem = () => {
@@ -267,7 +263,7 @@ export default function VeterinaryForm({
     const newId = `item-${timestamp}-${lineItems.length}`;
     setValue("lineItems", [
       ...lineItems,
-      { id: newId, description: "", itemId: "", itemName: "", price: "" },
+      { id: newId, description: "", itemId: "", itemName: "", price: "", type: "item" },
     ]);
   };
 
@@ -328,6 +324,45 @@ export default function VeterinaryForm({
     form.setValue("lineItems", itemsCopy);
   };
 
+  // Add 5 line items
+  const addFiveLineItems = () => {
+    const newItems = Array(5).fill(null).map((_, i) => ({
+      id: `item-${Date.now()}-${lineItems.length + i}`,
+      description: "",
+      itemId: "",
+      itemName: "",
+      price: "",
+      type: "item" as const
+    }));
+    setValue("lineItems", [...lineItems, ...newItems]);
+  };
+  
+  // Add 10 line items
+  const addTenLineItems = () => {
+    const newItems = Array(10).fill(null).map((_, i) => ({
+      id: `item-${Date.now()}-${lineItems.length + i}`,
+      description: "",
+      itemId: "",
+      itemName: "",
+      price: "",
+      type: "item" as const
+    }));
+    setValue("lineItems", [...lineItems, ...newItems]);
+  };
+  
+  // Add 20 line items
+  const addTwentyLineItems = () => {
+    const newItems = Array(20).fill(null).map((_, i) => ({
+      id: `item-${Date.now()}-${lineItems.length + i}`,
+      description: "",
+      itemId: "",
+      itemName: "",
+      price: "",
+      type: "item" as const
+    }));
+    setValue("lineItems", [...lineItems, ...newItems]);
+  };
+
   // Handle form submission
   const onSubmit = async (data: FormValues) => {
     try {
@@ -337,13 +372,14 @@ export default function VeterinaryForm({
       // Create payload from form data with enhanced line items
       const enhancedLineItems = data.lineItems.map(item => {
         // Find the corresponding Xero item to get its name
-        const xeroItem = xeroItems.find(xeroItem => xeroItem.value === item.itemId);
+        const xeroItem = xeroItems.find((xeroItem: any) => xeroItem.value === item.itemId);
         
         return {
           description: item.description,
           itemId: item.itemId,
-          itemName: xeroItem?.label || "Unknown Item",
+          itemName: xeroItem?.label || item.itemName || "Unknown Item",
           price: item.price,
+          type: item.type || "item"
         };
       });
       
@@ -368,9 +404,7 @@ export default function VeterinaryForm({
         checkOutDate: data.checkOutDate ? data.checkOutDate.toISOString() : null,
         lineItems: enhancedLineItems,
         subtotal,
-        discountType: data.discountType,
-        discountValue: data.discountValue,
-        discountAmount,
+        discountTotal,
         total,
         comment: data.comment,
       };
@@ -397,9 +431,7 @@ export default function VeterinaryForm({
             check_in_date: data.checkInDate || null,
             check_out_date: data.checkOutDate || null,
             subtotal: subtotal,
-            discount_type: data.discountType,
-            discount_value: data.discountValue,
-            discount_amount: discountAmount,
+            discount_total: discountTotal,
             total: total,
             line_items: enhancedLineItems,
             comment: data.comment || null,
@@ -423,9 +455,7 @@ export default function VeterinaryForm({
             check_in_date: data.checkInDate || null,
             check_out_date: data.checkOutDate || null,
             subtotal: subtotal,
-            discount_type: data.discountType,
-            discount_value: data.discountValue,
-            discount_amount: discountAmount,
+            discount_total: discountTotal,
             total: total,
             status: 'pending',
             line_items: enhancedLineItems,
@@ -495,9 +525,7 @@ export default function VeterinaryForm({
           animalType: "",
           checkInDate: undefined,
           checkOutDate: undefined,
-          lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", price: "" }],
-          discountType: "percent",
-          discountValue: 0,
+          lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", price: "", type: "item" }],
           comment: "",
         });
       }
@@ -604,8 +632,6 @@ export default function VeterinaryForm({
           checkInDate: checkInDate,
           checkOutDate: checkOutDate,
           lineItems: formattedLineItems,
-          discountType: initialData.discount_type || "percent",
-          discountValue: initialData.discount_value || 0,
           comment: initialData.comment || "",
         });
         
@@ -1321,66 +1347,33 @@ export default function VeterinaryForm({
                     onClick={addLineItem}
                     className="rounded-r-none border-r-0 focus:border-r-1 focus:z-30 relative"
                   >
+                    <Plus className="h-4 w-4 mr-1" />
                     Add Row
                   </Button>
-                  
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="px-2 rounded-l-none &:has(:focus)]:z-30 relative"
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="rounded-l-none"
                       >
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => {
-                          // Add 5 items
-                          const timestamp = Date.now();
-                          const newItems = Array(5).fill(null).map((_, i) => ({ 
-                            id: `item-${timestamp}-${lineItems.length + i}`,
-                            description: "", 
-                            itemId: "", 
-                            itemName: "", 
-                            price: "" 
-                          }));
-                          setValue("lineItems", [...lineItems, ...newItems]);
-                        }}
+                        onClick={addFiveLineItems}
                       >
                         Add 5 Rows
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => {
-                          // Add 10 items
-                          const timestamp = Date.now();
-                          const newItems = Array(10).fill(null).map((_, i) => ({ 
-                            id: `item-${timestamp}-${lineItems.length + i}`,
-                            description: "", 
-                            itemId: "", 
-                            itemName: "", 
-                            price: "" 
-                          }));
-                          setValue("lineItems", [...lineItems, ...newItems]);
-                        }}
+                        onClick={addTenLineItems}
                       >
                         Add 10 Rows
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => {
-                          // Add 20 items
-                          const timestamp = Date.now();
-                          const newItems = Array(20).fill(null).map((_, i) => ({ 
-                            id: `item-${timestamp}-${lineItems.length + i}`,
-                            description: "", 
-                            itemId: "", 
-                            itemName: "", 
-                            price: "" 
-                          }));
-                          setValue("lineItems", [...lineItems, ...newItems]);
-                        }}
+                        onClick={addTwentyLineItems}
                       >
                         Add 20 Rows
                       </DropdownMenuItem>
@@ -1402,68 +1395,12 @@ export default function VeterinaryForm({
                 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <span>Discount:</span>
-                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-                    <div className="flex border rounded-md overflow-hidden">
-                      <Button
-                        type="button"
-                        variant={discountType === "percent" ? "default" : "outline"}
-                        className="rounded-none px-3 py-1 h-9 min-w-10"
-                        onClick={() => setValue("discountType", "percent")}
-                      >
-                        %
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={discountType === "amount" ? "default" : "outline"}
-                        className="rounded-none px-3 py-1 h-9 min-w-10"
-                        onClick={() => setValue("discountType", "amount")}
-                      >
-                        €
-                      </Button>
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="discountValue"
-                      render={({ field }) => (
-                        <FormItem className="w-24 m-0 relative">
-                          <FormControl>
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                step={discountType === "percent" ? "1" : "0.01"}
-                                max={discountType === "percent" ? "100" : undefined}
-                                {...field}
-                                onChange={(e) => {
-                                  field.onChange(e.target.valueAsNumber || 0);
-                                }}
-                                onFocus={(e) => e.target.select()}
-                                className={`${isDiscountTooHigh ? "border-red-500" : ""} pr-7`}
-                              />
-                              <div className="absolute inset-y-0 right-0 flex items-center pointer-events-none px-3 text-muted-foreground">
-                                {discountType === "percent" ? "%" : "€"}
-                              </div>
-                            </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <span className="ml-auto sm:ml-0">€{discountAmount.toFixed(2)}</span>
-                  </div>
+                  <span className="ml-auto sm:ml-0">€{discountTotal.toFixed(2)}</span>
                 </div>
-                
-                {/* Display warning message when discount is too high */}
-                {isDiscountTooHigh && (
-                  <div className="text-red-500 text-sm mt-1">
-                    Warning: Total cannot be less than 0.
-                  </div>
-                )}
                 
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
                   <span>Total:</span>
-                  <span className={isDiscountTooHigh ? "text-red-500" : ""}>
-                    €{total.toFixed(2)}
-                  </span>
+                  <span>€{total.toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>
@@ -1526,7 +1463,6 @@ export default function VeterinaryForm({
                 <Button 
                   type="submit" 
                   className="px-8"
-                  disabled={!form.formState.isValid || isDiscountTooHigh}
                 >
                   Save
                 </Button>
@@ -1544,7 +1480,6 @@ export default function VeterinaryForm({
                 <Button 
                   type="submit" 
                   className="px-8"
-                  disabled={!form.formState.isValid || isDiscountTooHigh}
                 >
                   Submit Invoice
                 </Button>

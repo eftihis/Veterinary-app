@@ -78,7 +78,7 @@ export type Invoice = {
   check_in_date: string | null
   check_out_date: string | null
   subtotal: number
-  discount_amount: number
+  discount_total: number
   total: number
   status: string
   created_at: string
@@ -252,68 +252,144 @@ export function InvoicesDataTable() {
       setLoading(true)
       setError(null)
       
-      // Use a join query to get invoice data along with animal data
-      const { data, error } = await supabase
-        .from('invoices')
-        .select(`
-          id, 
-          document_number, 
-          reference, 
-          animal_id,
-          check_in_date, 
-          check_out_date, 
-          subtotal, 
-          discount_amount, 
-          total, 
-          status, 
-          created_at,
-          animals!left(id, name, type)
-        `)
-        .order('created_at', { ascending: false })
+      console.log("Fetching invoices from Supabase...")
       
-      if (error) {
-        throw error
+      // First, check if we can access the invoices table at all
+      const { error: tableCheckError } = await supabase
+        .from('invoices')
+        .select('id')
+        .limit(1)
+      
+      if (tableCheckError) {
+        console.error("Error accessing invoices table:", tableCheckError)
+        throw new Error(`Table access error: ${tableCheckError.message || JSON.stringify(tableCheckError)}`)
       }
       
-      // Process the data to include animal information
-      const processedData = (data || []).map((invoice: any) => {
-        // Handle the animals property which might be an array or object
-        let animalData = null;
-        if (invoice.animals) {
-          // If it's an array with elements, use the first one
-          if (Array.isArray(invoice.animals) && invoice.animals.length > 0) {
-            animalData = {
-              id: invoice.animals[0].id || "",
-              name: invoice.animals[0].name || "",
-              type: invoice.animals[0].type || ""
-            };
-          } 
-          // If it's a single object (not in an array)
-          else if (typeof invoice.animals === 'object') {
-            animalData = {
-              id: invoice.animals.id || "",
-              name: invoice.animals.name || "",
-              type: invoice.animals.type || ""
-            };
-          }
-        }
+      // Check for available columns in the invoices table
+      const { data: columnData, error: columnError } = await supabase
+        .from('invoices')
+        .select('*')
+        .limit(1)
+      
+      // Determine available columns to handle both old and new schema
+      const availableColumns = columnData && columnData.length > 0 
+        ? Object.keys(columnData[0])
+        : [];
         
-        return {
-          ...invoice,
-          // Create a properly structured animal object from the joined data
-          animal: animalData
-        };
+      console.log("Available columns in invoices table:", availableColumns);
+      
+      // Determine which discount column to use based on available columns
+      const hasDiscountTotal = availableColumns.includes('discount_total');
+      const hasDiscountAmount = availableColumns.includes('discount_amount');
+      
+      console.log("Schema info - discount_total:", hasDiscountTotal, "discount_amount:", hasDiscountAmount);
+      
+      // Dynamically build select query based on available columns
+      let selectQuery = `
+        id, 
+        document_number, 
+        reference, 
+        animal_id,
+        check_in_date, 
+        check_out_date, 
+        subtotal, 
+        ${hasDiscountTotal ? 'discount_total' : (hasDiscountAmount ? 'discount_amount' : '0 as discount_total')}, 
+        total, 
+        status, 
+        created_at,
+        animals!left(id, name, type)
+      `;
+      
+      // Now try the query with the appropriate columns
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(selectQuery)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("Supabase query error:", error);
+        throw new Error(`Full query error: ${error.message || JSON.stringify(error)}`);
+      }
+      
+      if (!data) {
+        console.error("No data returned from Supabase");
+        throw new Error("No data returned from Supabase");
+      }
+      
+      console.log(`Raw data from Supabase: ${data.length} records`);
+      
+      // Process the data to include animal information and handle discount field changes
+      const processedData = (data || []).map((invoice: any) => {
+        try {
+          // Determine which discount field to use
+          let discountValue = 0;
+          if (hasDiscountTotal && invoice.discount_total !== undefined) {
+            discountValue = invoice.discount_total;
+          } else if (hasDiscountAmount && invoice.discount_amount !== undefined) {
+            discountValue = invoice.discount_amount;
+          }
+          
+          // Handle the animals property which might be an array or object
+          let animalData = null;
+          if (invoice.animals) {
+            // If it's an array with elements, use the first one
+            if (Array.isArray(invoice.animals) && invoice.animals.length > 0) {
+              animalData = {
+                id: invoice.animals[0].id || "",
+                name: invoice.animals[0].name || "",
+                type: invoice.animals[0].type || ""
+              };
+            } 
+            // If it's a single object (not in an array)
+            else if (typeof invoice.animals === 'object' && invoice.animals !== null) {
+              animalData = {
+                id: invoice.animals.id || "",
+                name: invoice.animals.name || "",
+                type: invoice.animals.type || ""
+              };
+            }
+          }
+          
+          // Return a standardized invoice object with all required fields
+          return {
+            ...invoice,
+            // Create a properly structured animal object from the joined data
+            animal: animalData,
+            // Ensure all required fields have defaults
+            subtotal: invoice.subtotal || 0,
+            // Use the determined discount value
+            discount_total: discountValue || 0,
+            total: invoice.total || 0
+          };
+        } catch (itemErr) {
+          console.error("Error processing invoice item:", itemErr, "Invoice data:", JSON.stringify(invoice));
+          // Return a minimal valid object to prevent the entire map from failing
+          return {
+            id: invoice.id || "unknown",
+            document_number: invoice.document_number || "unknown",
+            reference: invoice.reference || null,
+            animal_id: invoice.animal_id || null,
+            animal: null,
+            check_in_date: invoice.check_in_date || null,
+            check_out_date: invoice.check_out_date || null,
+            subtotal: 0,
+            discount_total: 0,
+            total: 0,
+            status: invoice.status || "unknown",
+            created_at: invoice.created_at || new Date().toISOString()
+          };
+        }
       });
       
-      console.log("Successfully fetched invoices:", processedData.length, "records");
-      setInvoices(processedData)
+      console.log("Successfully processed invoices:", processedData.length, "records");
+      setInvoices(processedData);
     } catch (err) {
-      console.error("Error fetching invoices:", err)
-      setError(err instanceof Error ? err.message : "Unknown error occurred")
+      console.error("Error fetching invoices:", err);
+      setError(err instanceof Error ? err.message : "Unknown error occurred");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   // Fetch invoices from Supabase
   React.useEffect(() => {

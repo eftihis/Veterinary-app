@@ -13,7 +13,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { InvoiceWithJoins, getInvoiceById } from "@/hooks/useInvoiceWithJoins"
+import { getInvoiceById, InvoiceWithJoins } from "@/hooks/useInvoiceWithJoins"
 import { Invoice } from "@/components/invoices-data-table"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
@@ -238,19 +238,18 @@ export function ViewInvoiceDialog({
                       <TableCell className="text-right">{formatCurrency(fullInvoiceData.subtotal)}</TableCell>
                     </TableRow>
                     
-                    <TableRow>
-                      <TableCell colSpan={2} className="text-right font-medium">
-                        Discount 
-                        {fullInvoiceData.discount_type === 'percent' ? 
-                          ` (${fullInvoiceData.discount_value}%)` : 
-                          ''}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(fullInvoiceData.discount_amount)}
-                      </TableCell>
-                    </TableRow>
+                    {fullInvoiceData.discount_total > 0 && (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-right font-medium">
+                          Discount Total
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(fullInvoiceData.discount_total)}
+                        </TableCell>
+                      </TableRow>
+                    )}
                     
-                    <TableRow className="font-bold">
+                    <TableRow className="font-bold text-lg">
                       <TableCell colSpan={2} className="text-right">Total</TableCell>
                       <TableCell className="text-right">{formatCurrency(fullInvoiceData.total)}</TableCell>
                     </TableRow>
