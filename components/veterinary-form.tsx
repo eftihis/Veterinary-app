@@ -57,6 +57,10 @@ const lineItemSchema = z.object({
   description: z.string().optional(),
   itemId: z.string().min(1, "Item is required"),
   itemName: z.string().optional(),
+  quantity: z.union([
+    z.coerce.number().min(0.01, "Quantity must be greater than 0"),
+    z.string().transform(val => val === "" ? 1 : parseFloat(val) || 1)
+  ]),
   price: z.union([
     z.coerce.number(),
     z.string().transform(val => val === "" ? 0 : parseFloat(val) || 0)
@@ -99,6 +103,7 @@ type LineItem = {
   description: string;
   itemId: string;
   itemName?: string;
+  quantity: string | number;
   price: string | number;
   type?: "item" | "discount";
 };
@@ -140,7 +145,7 @@ export default function VeterinaryForm({
       animalType: "",
       checkInDate: undefined,
       checkOutDate: undefined,
-      lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", price: "", type: "item" }],
+      lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", quantity: 1, price: "", type: "item" }],
       comment: "",
     },
     mode: "onBlur",
@@ -196,41 +201,60 @@ export default function VeterinaryForm({
 
   // Define the calculation function and store it in the ref
   const calculateTotals = (items: LineItem[]) => {
-    // Calculate subtotal (sum of positive line items)
+    // Calculate subtotal (sum of positive line items with quantity)
     const newSubtotal = items.reduce(
       (sum, item) => {
         const price = typeof item.price === 'string' 
           ? (item.price === "" ? 0 : parseFloat(item.price) || 0) 
           : (Number(item.price) || 0);
         
+        const quantity = typeof item.quantity === 'string' 
+          ? (item.quantity === "" ? 1 : parseFloat(item.quantity) || 1) 
+          : (Number(item.quantity) || 1);
+        
+        const lineTotal = price * quantity;
+        
         // Only add positive prices to subtotal
-        return sum + (price > 0 ? price : 0);
+        return sum + (lineTotal > 0 ? lineTotal : 0);
       },
       0
     );
     setSubtotal(newSubtotal);
 
-    // Calculate discount total (absolute sum of negative line items)
+    // Calculate discount total (absolute sum of negative line items with quantity)
     const newDiscountTotal = Math.abs(items.reduce(
       (sum, item) => {
         const price = typeof item.price === 'string' 
           ? (item.price === "" ? 0 : parseFloat(item.price) || 0) 
           : (Number(item.price) || 0);
         
+        const quantity = typeof item.quantity === 'string' 
+          ? (item.quantity === "" ? 1 : parseFloat(item.quantity) || 1) 
+          : (Number(item.quantity) || 1);
+        
+        const lineTotal = price * quantity;
+        
         // Only add negative prices to discount total (as positive values)
-        return sum + (price < 0 ? price : 0);
+        return sum + (lineTotal < 0 ? lineTotal : 0);
       },
       0
     ));
     setDiscountTotal(newDiscountTotal);
 
-    // Calculate total (net sum of all line items)
+    // Calculate total (net sum of all line items with quantity)
     const newTotal = items.reduce(
       (sum, item) => {
         const price = typeof item.price === 'string' 
           ? (item.price === "" ? 0 : parseFloat(item.price) || 0) 
           : (Number(item.price) || 0);
-        return sum + price;
+        
+        const quantity = typeof item.quantity === 'string' 
+          ? (item.quantity === "" ? 1 : parseFloat(item.quantity) || 1) 
+          : (Number(item.quantity) || 1);
+        
+        const lineTotal = price * quantity;
+        
+        return sum + lineTotal;
       },
       0
     );
@@ -263,7 +287,7 @@ export default function VeterinaryForm({
     const newId = `item-${timestamp}-${lineItems.length}`;
     setValue("lineItems", [
       ...lineItems,
-      { id: newId, description: "", itemId: "", itemName: "", price: "", type: "item" },
+      { id: newId, description: "", itemId: "", itemName: "", quantity: 1, price: "", type: "item" },
     ]);
   };
 
@@ -331,6 +355,7 @@ export default function VeterinaryForm({
       description: "",
       itemId: "",
       itemName: "",
+      quantity: 1,
       price: "",
       type: "item" as const
     }));
@@ -344,6 +369,7 @@ export default function VeterinaryForm({
       description: "",
       itemId: "",
       itemName: "",
+      quantity: 1,
       price: "",
       type: "item" as const
     }));
@@ -357,6 +383,7 @@ export default function VeterinaryForm({
       description: "",
       itemId: "",
       itemName: "",
+      quantity: 1,
       price: "",
       type: "item" as const
     }));
@@ -378,6 +405,7 @@ export default function VeterinaryForm({
           description: item.description,
           itemId: item.itemId,
           itemName: xeroItem?.label || item.itemName || "Unknown Item",
+          quantity: item.quantity,
           price: item.price,
           type: item.type || "item"
         };
@@ -457,7 +485,7 @@ export default function VeterinaryForm({
             subtotal: subtotal,
             discount_total: discountTotal,
             total: total,
-            status: 'pending',
+            status: 'draft',
             line_items: enhancedLineItems,
             comment: data.comment || null,
             sender_id: user?.id || null,
@@ -525,7 +553,7 @@ export default function VeterinaryForm({
           animalType: "",
           checkInDate: undefined,
           checkOutDate: undefined,
-          lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", price: "", type: "item" }],
+          lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", quantity: 1, price: "", type: "item" }],
           comment: "",
         });
       }
@@ -550,13 +578,24 @@ export default function VeterinaryForm({
           
         console.log("Line items array:", lineItemsArray);
         
-        const formattedLineItems = lineItemsArray.map((item: any, index: number) => ({
-          id: `item-${Date.now()}-${index}`,
-          description: item.description || "",
-          itemId: item.item_id || item.itemId || "",
-          itemName: item.item_name || item.itemName || "",
-          price: item.price || 0
-        }));
+        const formattedLineItems = lineItemsArray.map((item: any, index: number) => {
+          // Extract item details, handling both camelCase and snake_case formats
+          const itemId = item.item_id || item.itemId || "";
+          const itemName = item.item_name || item.itemName || "";
+          const quantity = item.quantity || 1; // Default to 1 for existing items
+          
+          console.log(`Line item ${index}: ID=${itemId}, Name=${itemName}, Quantity=${quantity}`);
+          
+          return {
+            id: `item-${Date.now()}-${index}`,
+            description: item.description || "",
+            itemId: itemId,
+            itemName: itemName,
+            quantity: quantity,
+            price: item.price || 0,
+            type: item.type || "item"
+          };
+        });
         
         // Format dates
         let checkInDate = initialData.check_in_date ? new Date(initialData.check_in_date) : undefined;
@@ -1019,18 +1058,24 @@ export default function VeterinaryForm({
               <h2 className="text-xl font-semibold mb-6">Services & Products</h2>
               <div className="space-y-0">
                 {/* Headers - visible only on larger screens */}
-                <div className="hidden md:grid md:grid-cols-16 md:gap-0">
+                <div className="hidden md:grid md:grid-cols-20 md:gap-0">
                   <div className="md:col-span-1 bg-gray-50 px-2 py-3 border border-r-0 rounded-tl-md flex justify-center">
                     <Label className="font-medium text-gray-700 sr-only">Drag</Label>
                   </div>
-                  <div className="md:col-span-6 bg-gray-50 px-4 py-3 border border-l-0 border-r-0">
+                  <div className="md:col-span-5 bg-gray-50 px-4 py-3 border border-l-0 border-r-0">
                     <Label className="font-medium text-gray-700">Description</Label>
                   </div>
                   <div className="md:col-span-5 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
                     <Label className="font-medium text-gray-700">Category</Label>
                   </div>
+                  <div className="md:col-span-2 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
+                    <Label className="font-medium text-gray-700">Qty</Label>
+                  </div>
                   <div className="md:col-span-3 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
                     <Label className="font-medium text-gray-700">Price (€)</Label>
+                  </div>
+                  <div className="md:col-span-3 bg-gray-50 px-4 py-3 border border-r-0 border-l-0">
+                    <Label className="font-medium text-gray-700">Total (€)</Label>
                   </div>
                   <div className="md:col-span-1 bg-gray-50 px-2 py-3 border border-l-0 rounded-tr-md flex justify-center">
                     <Label className="font-medium text-gray-700 sr-only">Actions</Label>
@@ -1062,7 +1107,7 @@ export default function VeterinaryForm({
                                   <div 
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
-                                    className={`grid grid-cols-1 md:grid-cols-16 md:gap-0 gap-4 ${index > 0 ? "mt-[-1px]" : ""} ${snapshot.isDragging ? "bg-gray-50 shadow-md z-50" : ""}`}
+                                    className={`grid grid-cols-1 md:grid-cols-20 md:gap-0 gap-4 ${index > 0 ? "mt-[-1px]" : ""} ${snapshot.isDragging ? "bg-gray-50 shadow-md z-50" : ""}`}
                                   >
                                   
                                   {/* Mobile labels - only visible on small screens */}
@@ -1107,6 +1152,9 @@ export default function VeterinaryForm({
                                                   if (selectedItem) {
                                                     // Set the item name in a separate field
                                                     form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
+                                                    
+                                                    // Log for debugging
+                                                    console.log(`Set item name for line ${index} to ${selectedItem.label}`);
                                                   }
                                                 }}
                                                 placeholder="Select item"
@@ -1123,33 +1171,92 @@ export default function VeterinaryForm({
                                         )}
                                       />
                                       
-                                      <Label>Price (€)</Label>
-                                      <FormField
-                                        control={form.control}
-                                        name={`lineItems.${index}.price`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormControl>
-                                              <Input
-                                                type="number"
-                                                placeholder="0.00"
-                                                {...field}
-                                                value={field.value === undefined || field.value === null ? "" : field.value}
-                                                onChange={(e) => {
-                                                  const value = e.target.value;
-                                                  field.onChange(value === "" ? "" : parseFloat(value) || 0);
-                                                  
-                                                  // Force recalculation of totals by creating a new array reference
-                                                  const updatedItems = [...lineItems];
-                                                  setValue("lineItems", updatedItems);
-                                                }}
-                                                onFocus={(e) => e.target.select()}
-                                              />
-                                            </FormControl>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                          <Label>Quantity</Label>
+                                          <FormField
+                                            control={form.control}
+                                            name={`lineItems.${index}.quantity`}
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormControl>
+                                                  <Input
+                                                    type="number"
+                                                    placeholder="1"
+                                                    {...field}
+                                                    value={field.value === undefined || field.value === null ? "1" : field.value}
+                                                    onChange={(e) => {
+                                                      const value = e.target.value;
+                                                      field.onChange(value === "" ? "1" : parseFloat(value) || 1);
+                                                      
+                                                      // Force recalculation of totals
+                                                      const updatedItems = [...lineItems];
+                                                      setValue("lineItems", updatedItems);
+                                                    }}
+                                                    min="0.01"
+                                                    step="any"
+                                                    onFocus={(e) => e.target.select()}
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                        
+                                        <div>
+                                          <Label>Price (€)</Label>
+                                          <FormField
+                                            control={form.control}
+                                            name={`lineItems.${index}.price`}
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormControl>
+                                                  <Input
+                                                    type="number"
+                                                    placeholder="0.00"
+                                                    {...field}
+                                                    value={field.value === undefined || field.value === null ? "" : field.value}
+                                                    onChange={(e) => {
+                                                      const value = e.target.value;
+                                                      field.onChange(value === "" ? "" : parseFloat(value) || 0);
+                                                      
+                                                      // Force recalculation of totals
+                                                      const updatedItems = [...lineItems];
+                                                      setValue("lineItems", updatedItems);
+                                                    }}
+                                                    onFocus={(e) => e.target.select()}
+                                                  />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="mb-4">
+                                        <Label>Line Total</Label>
+                                        <div className="h-10 border rounded-md flex items-center px-3 mt-2 bg-gray-50">
+                                          {(() => {
+                                            const price = typeof lineItems[index].price === 'string'
+                                              ? (lineItems[index].price === "" ? 0 : parseFloat(lineItems[index].price) || 0)
+                                              : (Number(lineItems[index].price) || 0);
+                                            
+                                            const quantity = typeof lineItems[index].quantity === 'string'
+                                              ? (lineItems[index].quantity === "" ? 1 : parseFloat(lineItems[index].quantity) || 1)
+                                              : (Number(lineItems[index].quantity) || 1);
+                                            
+                                            const lineTotal = price * quantity;
+                                            
+                                            return (
+                                              <span className={`${lineTotal < 0 ? 'text-red-500' : ''}`}>
+                                                € {lineTotal.toFixed(2)}
+                                              </span>
+                                            );
+                                          })()}
+                                        </div>
+                                      </div>
                                       
                                       <div className="flex justify-end mt-2">
                                         <DropdownMenu>
@@ -1199,7 +1306,7 @@ export default function VeterinaryForm({
                                         </div>
                                       </div>
                                       
-                                      <div className="md:col-span-6 relative -ml-[1px]">
+                                      <div className="md:col-span-5 relative -ml-[1px]">
                                         <FormField
                                           control={form.control}
                                           name={`lineItems.${index}.description`}
@@ -1236,6 +1343,9 @@ export default function VeterinaryForm({
                                                     if (selectedItem) {
                                                       // Set the item name in a separate field
                                                       form.setValue(`lineItems.${index}.itemName`, selectedItem.label);
+                                                      
+                                                      // Log for debugging
+                                                      console.log(`Set item name for line ${index} to ${selectedItem.label}`);
                                                     }
                                                   }}
                                                   placeholder="Select item"
@@ -1245,6 +1355,38 @@ export default function VeterinaryForm({
                                                       : "No items found."
                                                   }
                                                   loading={loadingXeroItems}
+                                                  className="rounded-none relative"
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                      </div>
+
+                                      <div className="md:col-span-2 relative -ml-[1px]">
+                                        <FormField
+                                          control={form.control}
+                                          name={`lineItems.${index}.quantity`}
+                                          render={({ field }) => (
+                                            <FormItem className="[&:has(:focus)]:z-30 relative">
+                                              <FormControl>
+                                                <Input
+                                                  type="number"
+                                                  placeholder="1"
+                                                  {...field}
+                                                  value={field.value === undefined || field.value === null ? "1" : field.value}
+                                                  onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    field.onChange(value === "" ? "1" : parseFloat(value) || 1);
+                                                    
+                                                    // Force recalculation of totals by creating a new array reference
+                                                    const updatedItems = [...lineItems];
+                                                    setValue("lineItems", updatedItems);
+                                                  }}
+                                                  min="0.01"
+                                                  step="any"
+                                                  onFocus={(e) => e.target.select()}
                                                   className="rounded-none relative"
                                                 />
                                               </FormControl>
@@ -1284,8 +1426,31 @@ export default function VeterinaryForm({
                                         />
                                       </div>
 
+                                      <div className="md:col-span-3 relative -ml-[1px]">
+                                        {/* Calculate and display line total (price × quantity) */}
+                                        <div className="h-full border flex items-center px-4">
+                                          {(() => {
+                                            const price = typeof lineItems[index].price === 'string'
+                                              ? (lineItems[index].price === "" ? 0 : parseFloat(lineItems[index].price) || 0)
+                                              : (Number(lineItems[index].price) || 0);
+                                            
+                                            const quantity = typeof lineItems[index].quantity === 'string'
+                                              ? (lineItems[index].quantity === "" ? 1 : parseFloat(lineItems[index].quantity) || 1)
+                                              : (Number(lineItems[index].quantity) || 1);
+                                            
+                                            const lineTotal = price * quantity;
+                                            
+                                            return (
+                                              <span className={`${lineTotal < 0 ? 'text-red-500' : ''}`}>
+                                                € {lineTotal.toFixed(2)}
+                                              </span>
+                                            );
+                                          })()}
+                                        </div>
+                                      </div>
+
                                       <div className="md:col-span-1 relative -ml-[1px]">
-                                        <div className={`h-full border flex items-center justify-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
+                                        <div className={`h-full border flex items-center ${index === lineItems.length - 1 ? "rounded-br-md" : ""}`}>
                                           <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                               <Button

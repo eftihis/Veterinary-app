@@ -214,33 +214,46 @@ export function ViewInvoiceDialog({
                     <TableRow>
                       <TableHead>Item</TableHead>
                       <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
                       <TableHead className="text-right">Price</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {fullInvoiceData.line_items?.length > 0 ? (
-                      fullInvoiceData.line_items.map((item: any, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{item.itemName || item.item_name || '-'}</TableCell>
-                          <TableCell>{item.description || '-'}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(item.price) || 0)}</TableCell>
-                        </TableRow>
-                      ))
+                      fullInvoiceData.line_items.map((item: any, index: number) => {
+                        // Calculate line total
+                        const quantity = Number(item.quantity) || 1; // Default to 1 if not specified
+                        const price = Number(item.price) || 0;
+                        const lineTotal = quantity * price;
+                        
+                        return (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{item.itemName || item.item_name || '-'}</TableCell>
+                            <TableCell>{item.description || '-'}</TableCell>
+                            <TableCell className="text-right">{quantity}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(price)}</TableCell>
+                            <TableCell className={`text-right ${lineTotal < 0 ? 'text-red-600' : ''}`}>
+                              {formatCurrency(lineTotal)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center">No items found</TableCell>
+                        <TableCell colSpan={5} className="text-center">No items found</TableCell>
                       </TableRow>
                     )}
                     
                     {/* Subtotal, Discount and Total */}
                     <TableRow className="border-t-2">
-                      <TableCell colSpan={2} className="text-right font-medium">Subtotal</TableCell>
+                      <TableCell colSpan={4} className="text-right font-medium">Subtotal</TableCell>
                       <TableCell className="text-right">{formatCurrency(fullInvoiceData.subtotal)}</TableCell>
                     </TableRow>
                     
                     {fullInvoiceData.discount_total > 0 && (
                       <TableRow>
-                        <TableCell colSpan={2} className="text-right font-medium">
+                        <TableCell colSpan={4} className="text-right font-medium">
                           Discount Total
                         </TableCell>
                         <TableCell className="text-right">
@@ -249,8 +262,8 @@ export function ViewInvoiceDialog({
                       </TableRow>
                     )}
                     
-                    <TableRow className="font-bold text-lg">
-                      <TableCell colSpan={2} className="text-right">Total</TableCell>
+                    <TableRow className="font-bold">
+                      <TableCell colSpan={4} className="text-right">Total</TableCell>
                       <TableCell className="text-right">{formatCurrency(fullInvoiceData.total)}</TableCell>
                     </TableRow>
                   </TableBody>

@@ -70,6 +70,26 @@ export function EditInvoiceDialog({
         
         console.log("Raw invoice data from database:", data);
         
+        // Add more detailed logging for line items
+        if (data.line_items) {
+          console.log("Original line items:", data.line_items);
+          
+          // Log item properties for each line item
+          if (Array.isArray(data.line_items) && data.line_items.length > 0) {
+            console.log("Line item 0 properties:", Object.keys(data.line_items[0]));
+            console.log("Sample line item fields:", {
+              itemId: data.line_items[0].itemId,
+              item_id: data.line_items[0].item_id,
+              itemName: data.line_items[0].itemName,
+              item_name: data.line_items[0].item_name,
+              quantity: data.line_items[0].quantity,
+              price: data.line_items[0].price
+            });
+          } else if (data.line_items && typeof data.line_items === 'object') {
+            console.log("Single line item properties:", Object.keys(data.line_items));
+          }
+        }
+        
         // Process the data to match the expected format for the form
         const processedData = {
           ...data,
@@ -83,6 +103,23 @@ export function EditInvoiceDialog({
             type: data.animals.type
           } : null
         };
+        
+        // Ensure line items have consistent property names for the form
+        if (processedData.line_items && processedData.line_items.length > 0) {
+          processedData.line_items = processedData.line_items.map((item: any) => {
+            return {
+              ...item,
+              itemId: item.item_id || item.itemId || "",
+              itemName: item.item_name || item.itemName || "",
+              item_id: item.item_id || item.itemId || "",
+              item_name: item.item_name || item.itemName || "",
+              quantity: item.quantity || 1, // Default to 1 if quantity is missing
+              description: item.description || "",
+              price: item.price || 0,
+              type: item.type || "item"
+            };
+          });
+        }
         
         console.log("Processed invoice data for form:", processedData);
         setFullInvoiceData(processedData);
