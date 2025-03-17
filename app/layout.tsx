@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth-context";
 import { ProfileInitializer } from "@/components/profile-initializer";
+import { QuickActionButton } from "@/components/quick-action-button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,7 @@ export default function RootLayout({
             {children}
           </ProfileInitializer>
           <Toaster position="top-right" />
+          <QuickActionButton />
         </AuthProvider>
       </body>
     </html>
