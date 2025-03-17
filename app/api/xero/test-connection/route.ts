@@ -5,11 +5,24 @@ export async function GET(req: NextRequest) {
   try {
     console.log("Test connection endpoint called");
     
+    // Check if Xero is disabled in this environment
+    if (process.env.NEXT_PUBLIC_DISABLE_XERO === 'true') {
+      console.error("Xero integration is disabled in this environment");
+      return NextResponse.json(
+        { error: "Xero integration is disabled in this environment. Please use HTTPS/ngrok URL." },
+        { status: 400 }
+      );
+    }
+    
     try {
       // Use the callXeroApi utility which handles token refresh
       const result = await callXeroApi('Organisations');
       
       console.log('Connection successful');
+      
+      // Get the base URL to determine if we're in a secure environment
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+      const isSecureEnvironment = baseUrl.startsWith('https://');
       
       // Create response with the data
       const response = NextResponse.json(result.data);
@@ -18,12 +31,18 @@ export async function GET(req: NextRequest) {
       if (result.cookies && result.cookies.length > 0) {
         console.log('Setting new cookies from token refresh');
         result.cookies.forEach(cookie => {
-          response.cookies.set(cookie.name, cookie.value, cookie.options);
+          // Make sure to use the environment-aware secure flag
+          const cookieOptions = {
+            ...cookie.options,
+            secure: isSecureEnvironment,
+            sameSite: isSecureEnvironment ? 'none' as const : 'lax' as const
+          };
+          response.cookies.set(cookie.name, cookie.value, cookieOptions);
         });
       }
       
       return response;
-    } catch (apiError) {
+    } catch (apiError: any) {
       console.error("API error:", apiError);
       
       // Check if it's an authentication error
@@ -39,7 +58,7 @@ export async function GET(req: NextRequest) {
         details: apiError.message 
       }, { status: 500 });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Test connection error:', error);
     return NextResponse.json({ 
       error: 'Connection test failed', 

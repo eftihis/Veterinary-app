@@ -17,6 +17,15 @@ interface TokenRefreshResult {
  * If needed, it will refresh the token automatically
  */
 export async function ensureValidToken(): Promise<TokenRefreshResult> {
+  // Check if Xero is disabled in this environment
+  if (process.env.NEXT_PUBLIC_DISABLE_XERO === 'true') {
+    console.error("Xero integration is disabled in this environment");
+    return { 
+      success: false, 
+      error: 'Xero integration is disabled in this environment. Please use HTTPS/ngrok URL.' 
+    };
+  }
+
   const cookieStore = await cookies();
   const accessToken = cookieStore.get('xero_access_token')?.value;
   const refreshToken = cookieStore.get('xero_refresh_token')?.value;
@@ -72,6 +81,10 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
     // Calculate expiry time
     const expiryTime = Date.now() + tokens.expires_in * 1000;
     
+    // Get base URL to determine if we're in secure environment
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+    const isSecureEnvironment = baseUrl.startsWith('https://');
+    
     // Instead of setting cookies directly, return them to be set by the API route
     const newCookies = [
       {
@@ -80,8 +93,9 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
         options: {
           expires: new Date(expiryTime),
           httpOnly: true,
-          secure: true,
-          sameSite: 'lax'
+          secure: isSecureEnvironment,
+          sameSite: isSecureEnvironment ? 'none' : 'lax',
+          path: '/'
         }
       },
       {
@@ -90,8 +104,9 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
         options: {
           expires: new Date(expiryTime),
           httpOnly: true,
-          secure: true,
-          sameSite: 'lax'
+          secure: isSecureEnvironment,
+          sameSite: isSecureEnvironment ? 'none' : 'lax',
+          path: '/'
         }
       }
     ];
@@ -103,8 +118,9 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
         options: {
           expires: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
           httpOnly: true,
-          secure: true,
-          sameSite: 'lax'
+          secure: isSecureEnvironment,
+          sameSite: isSecureEnvironment ? 'none' : 'lax',
+          path: '/'
         }
       });
     }
@@ -114,9 +130,9 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
       accessToken: tokens.access_token,
       cookies: newCookies
     };
-  } catch (error) {
-    console.error('Error refreshing token:', error);
-    return { success: false, error: error.message };
+  } catch (error: any) {
+    console.error('Token refresh error:', error);
+    return { success: false, error: error.message || 'Token refresh failed' };
   }
 }
 
@@ -124,6 +140,11 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
  * Makes an authenticated call to the Xero API with automatic token refresh
  */
 export async function callXeroApi(endpoint: string, options: RequestInit = {}) {
+  // Check if Xero is disabled in this environment
+  if (process.env.NEXT_PUBLIC_DISABLE_XERO === 'true') {
+    throw new Error('Xero integration is disabled in this environment. Please use HTTPS/ngrok URL.');
+  }
+
   // First, ensure we have a valid token
   const tokenResult = await ensureValidToken();
   
