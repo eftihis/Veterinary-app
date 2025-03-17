@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { authService } from './auth-service';
 
 // Add a type for the profile data
 type Profile = {
@@ -68,67 +69,122 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get session from local storage
     const getSession = async () => {
       setIsLoading(true);
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Error getting session:', error);
-      }
-      
-      setSession(session);
-      
-      if (session?.user) {
-        setUser(session.user);
+      try {
+        // Use auth service to get session with timeout
+        const result = await authService.getSession();
+        const { data, error } = result;
         
-        // Fetch profile data when session is available
-        const profileData = await fetchProfile(session.user.id);
-        setProfile(profileData);
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-      
-      setIsLoading(false);
-    };
-
-    getSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+        if (error) {
+          console.error('Error getting session:', error);
+          setIsLoading(false);
+          return;
+        }
+        
+        const session = data.session;
         setSession(session);
         
         if (session?.user) {
           setUser(session.user);
           
-          // Fetch profile data when auth state changes
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
+          // Fetch profile data when session is available
+          try {
+            const profileData = await fetchProfile(session.user.id);
+            setProfile(profileData);
+          } catch (profileError) {
+            console.error('Error fetching profile:', profileError);
+            // Continue even if profile fetch fails
+          }
         } else {
           setUser(null);
           setProfile(null);
         }
-        
+      } catch (e) {
+        console.error('Unexpected error in getSession:', e);
+      } finally {
+        // Always set isLoading to false, even if there are errors
         setIsLoading(false);
       }
-    );
+    };
+
+    getSession();
+
+    // Set up a single authStateChange listener
+    let subscription: { unsubscribe: () => void } | null = null;
+    
+    try {
+      // This is the ONLY place in the app where we should call onAuthStateChange
+      const { data } = supabase.auth.onAuthStateChange(
+        async (_event, session) => {
+          setSession(session);
+          
+          if (session?.user) {
+            setUser(session.user);
+            
+            // IMPORTANT: Don't call any other Supabase functions inside this callback
+            // Instead, set state variables and use them in separate useEffect hooks
+            // This prevents the hanging issue with Supabase auth
+          } else {
+            setUser(null);
+            setProfile(null);
+          }
+          
+          setIsLoading(false);
+        }
+      );
+      
+      subscription = data.subscription;
+    } catch (error) {
+      console.error('Error setting up auth state listener:', error);
+      setIsLoading(false);
+    }
 
     return () => {
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  // Separate useEffect to handle profile fetching when user changes
+  // This prevents making Supabase calls directly in the auth state change handler
+  useEffect(() => {
+    if (user && !isLoading) {
+      const fetchUserProfile = async () => {
+        try {
+          const profileData = await fetchProfile(user.id);
+          if (profileData) {
+            setProfile(profileData);
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      };
+      
+      fetchUserProfile();
+    }
+  }, [user, isLoading]);
 
-    return { error };
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      return { error };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { error: error as Error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
+    try {
+      await authService.signOut();
+      setProfile(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   const value = {
