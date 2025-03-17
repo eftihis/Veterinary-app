@@ -1067,11 +1067,6 @@ export function InvoicesDataTable({
                     </PaginationItem>
                   </PaginationContent>
                 </Pagination>
-                
-                <div className="text-sm text-muted-foreground whitespace-nowrap">
-                  Page {table.getState().pagination.pageIndex + 1} of{" "}
-                  {table.getPageCount()}
-                </div>
               </div>
             </div>
           </div>
