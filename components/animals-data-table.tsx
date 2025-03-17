@@ -310,7 +310,7 @@ export function AnimalsDataTable({
 
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
+      <div className="flex items-center py-4 gap-2">
         <Input
           placeholder="Filter animals..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
