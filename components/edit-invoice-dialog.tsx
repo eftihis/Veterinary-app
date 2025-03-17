@@ -204,7 +204,7 @@ export function EditInvoiceDialog({
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : fullInvoiceData ? (
-            <div>
+            <div className="overflow-y-auto pr-1">
               <VeterinaryForm
                 editMode={true}
                 initialData={fullInvoiceData}

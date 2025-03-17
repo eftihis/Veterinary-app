@@ -51,6 +51,7 @@ export function AnimalCombobox({
   const [quickCreateName, setQuickCreateName] = React.useState<string | null>(null)
   const [highlightedIndex, setHighlightedIndex] = React.useState(-1)
   const itemsRef = React.useRef<(HTMLDivElement | null)[]>([])
+  const inputRef = React.useRef<HTMLInputElement>(null)
   
   // Find the selected animal
   const selectedAnimal = React.useMemo(() => 
@@ -104,19 +105,22 @@ export function AnimalCombobox({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open) return;
     
+    // Calculate the total number of items (filtered options + Add button if present)
+    const totalItems = onAddAnimal ? filteredOptions.length + 1 : filteredOptions.length;
+    
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
         e.stopPropagation(); // Stop event from bubbling up
         setHighlightedIndex(prev => 
-          prev < filteredOptions.length - 1 ? prev + 1 : 0
+          prev < totalItems - 1 ? prev + 1 : 0
         );
         break;
       case "ArrowUp":
         e.preventDefault();
         e.stopPropagation(); // Stop event from bubbling up
         setHighlightedIndex(prev => 
-          prev > 0 ? prev - 1 : filteredOptions.length - 1
+          prev > 0 ? prev - 1 : totalItems - 1
         );
         break;
       case "Enter":
@@ -126,6 +130,10 @@ export function AnimalCombobox({
           onSelect(filteredOptions[highlightedIndex]);
           setOpen(false);
           setInputValue("");
+        } else if (highlightedIndex === filteredOptions.length && onAddAnimal) {
+          // The "Add" option is highlighted
+          setShowAddDialog(true);
+          setOpen(false);
         } else if (inputValue && onAddAnimal) {
           handleQuickCreate();
         }
@@ -155,9 +163,19 @@ export function AnimalCombobox({
     }
   }, [highlightedIndex]);
 
+  // Focus the input when the dropdown opens
+  React.useEffect(() => {
+    if (open) {
+      // Focus the input with a slight delay to ensure the focus works
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 10);
+    }
+  }, [open]);
+
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={setOpen} modal={true}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -189,9 +207,14 @@ export function AnimalCombobox({
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="p-0 w-full min-w-[240px]" 
-          style={{ maxHeight: "calc(100vh - 180px)", overflowY: "auto" }}
+          className="z-[999] p-0 w-full min-w-[240px]"
+          style={{ maxWidth: "400px" }}
           align="start"
+          side="bottom"
+          sideOffset={4}
+          avoidCollisions={true}
+          collisionPadding={20}
+          forceMount={true}
         >
           <div className="flex items-center border-b px-3 sticky top-0 bg-background z-10">
             <Search className="h-4 w-4 shrink-0 opacity-50 mr-2" />
@@ -201,11 +224,17 @@ export function AnimalCombobox({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleInputKeyDown}
+              ref={inputRef}
             />
           </div>
           
-          {/* List container */}
-          <div className="overflow-y-auto p-1">
+          {/* Fixed height scrollable container */}
+          <div 
+            className="overflow-y-auto"
+            style={{ maxHeight: "300px" }}
+            tabIndex={-1}
+            onKeyDown={handleKeyDown}
+          >
             {loading ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -230,7 +259,7 @@ export function AnimalCombobox({
                 
                 {/* Animal options */}
                 {filteredOptions.length > 0 && (
-                  <div className="py-1">
+                  <div className="py-1 px-1">
                     {filteredOptions.map((animal, index) => (
                       <div
                         key={animal.value}
@@ -273,10 +302,10 @@ export function AnimalCombobox({
                 {/* Add option */}
                 {onAddAnimal && (
                   <>
-                    <div className="my-1 h-px bg-muted"></div>
+                    <div className="my-1 h-px bg-muted mx-1"></div>
                     <div
                       className={cn(
-                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-primary",
+                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-primary mx-1",
                         "hover:bg-accent hover:text-accent-foreground",
                         highlightedIndex === filteredOptions.length && "bg-accent text-accent-foreground"
                       )}
