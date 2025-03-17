@@ -5,7 +5,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { ProfileContent } from "./profile-content";
+import { ProfileContentWrapper } from "@/components/profile-content-wrapper";
 
 export default function ProfilesPage() {
   return (
@@ -25,7 +25,7 @@ export default function ProfilesPage() {
         <div className="flex flex-1 flex-col gap-4 p-4 pt-15 pb-15">
           <div className="flex justify-center">
             <div className="w-full max-w-4xl py-8">
-              <ProfileContent />
+              <ProfileContentWrapper />
             </div>
           </div>
         </div>
