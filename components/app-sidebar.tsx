@@ -13,6 +13,7 @@ import {
   Receipt,
   Settings2,
   SquareTerminal,
+  Dog,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -47,6 +48,17 @@ const data = {
         {
           title: "Overview",
           url: "/",
+        },
+      ],
+    },
+    {
+      title: "Animals",
+      url: "/animals",
+      icon: Dog,
+      items: [
+        {
+          title: "All Animals",
+          url: "/animals",
         },
       ],
     },
