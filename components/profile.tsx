@@ -127,23 +127,76 @@ export default function UserProfile({
   // Password form submission
   const onPasswordSubmit = async (values: z.infer<typeof passwordFormSchema>) => {
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: values.newPassword,
-      });
-
-      if (error) {
-        toast.error(`Failed to update password: ${error.message}`);
-      } else {
-        toast.success("Password updated successfully");
-        passwordForm.reset({
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
+      // Show loading toast that will persist until dismissed
+      const loadingToastId = toast.loading("Updating password...");
+      
+      let isTimedOut = false;
+      
+      // Create a timeout that doesn't reject the promise, but sets a flag instead
+      const timeoutId = setTimeout(() => {
+        isTimedOut = true;
+        toast.dismiss(loadingToastId);
+        toast.warning(
+          "The password update is taking longer than expected. This is normal and your password will still be updated. Please wait a moment and then try refreshing the page.",
+          { duration: 8000 }
+        );
+      }, 15000); // 15 seconds (increased from 10)
+      
+      try {
+        // Make the password update request
+        const { error } = await supabase.auth.updateUser({
+          password: values.newPassword,
         });
+        
+        // Clear the timeout since we got a response
+        clearTimeout(timeoutId);
+        
+        // Dismiss the loading toast if it hasn't been dismissed by the timeout
+        if (!isTimedOut) {
+          toast.dismiss(loadingToastId);
+        }
+        
+        if (error) {
+          toast.error(`Failed to update password: ${error.message}`);
+        } else {
+          toast.success("Password updated successfully. You will be signed out in a moment.");
+          
+          // Reset the form
+          passwordForm.reset({
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+          });
+          
+          // Wait 3 seconds to let the user see the success message, then sign out
+          setTimeout(async () => {
+            try {
+              await supabase.auth.signOut();
+              // No need to redirect here - the auth listener in auth-context will handle it
+              toast.info("You have been signed out. Please sign in with your new password.");
+            } catch (signOutError) {
+              console.error("Error during sign out:", signOutError);
+              toast.error("Failed to sign out automatically. Please sign out manually and log in with your new password.");
+            }
+          }, 3000);
+        }
+      } catch (requestError) {
+        // Clear the timeout if we got an error
+        clearTimeout(timeoutId);
+        
+        // Dismiss the loading toast if it hasn't been dismissed by the timeout
+        if (!isTimedOut) {
+          toast.dismiss(loadingToastId);
+        }
+        
+        console.error("Password update request error:", requestError);
+        toast.error("An error occurred while updating your password. The update may have succeeded - please try logging out and in again with your new password.");
+        
+        // Don't reset the form here as the user might want to try again
       }
-    } catch (error) {
-      toast.error("An unexpected error occurred");
-      console.error("Password update error:", error);
+    } catch (outerError) {
+      console.error("Unexpected error in password update:", outerError);
+      toast.error("An unexpected error occurred. Please try again later.");
     }
   };
 
