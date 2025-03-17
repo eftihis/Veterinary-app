@@ -191,7 +191,7 @@ export function EditInvoiceDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-6xl w-[95%] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl w-[95%] max-h-[90vh] overflow-y-auto edit-invoice-dialog">
           <DialogHeader>
             <DialogTitle>Edit Invoice {invoice?.document_number}</DialogTitle>
             <DialogDescription>
