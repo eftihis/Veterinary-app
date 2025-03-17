@@ -41,46 +41,12 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/dashboard",
+      url: "/",
       icon: PieChart,
       items: [
         {
           title: "Overview",
-          url: "/dashboard",
-        },
-        {
-          title: "Analytics",
-          url: "/dashboard/analytics",
-        },
-      ],
-    },
-    {
-      title: "Veterinary Form",
-      url: "/veterinary-form",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Create New Form",
-          url: "/veterinary-form",
-        },
-        {
-          title: "View Forms",
-          url: "/veterinary-forms",
-        },
-      ],
-    },
-    {
-      title: "Records",
-      url: "/records",
-      icon: Receipt,
-      items: [
-        {
-          title: "Patients",
-          url: "/records/patients",
-        },
-        {
-          title: "Treatments",
-          url: "/line-items",
+          url: "/",
         },
       ],
     },
@@ -94,27 +60,19 @@ const data = {
           url: "/invoices",
         },
         {
-          title: "Create New",
-          url: "/invoices/new",
+          title: "Line Items",
+          url: "/line-items",
         },
       ],
     },
     {
       title: "Settings",
-      url: "/settings",
+      url: "/profiles",
       icon: Settings2,
       items: [
         {
-          title: "General",
-          url: "/settings",
-        },
-        {
-          title: "Appearance",
-          url: "/settings/appearance",
-        },
-        {
-          title: "Notifications",
-          url: "/settings/notifications",
+          title: "Profile",
+          url: "/profiles",
         },
       ],
     },
