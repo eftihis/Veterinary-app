@@ -1,4 +1,4 @@
-import { LineItemsDataTable } from "@/components/line-items-data-table"
+import LineItemsDataTableWrapper from "@/components/line-items-data-table-wrapper"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -38,7 +38,7 @@ export default function LineItemsPage() {
         <h1 className="text-3xl font-bold tracking-tight">Line Items</h1>
         <p className="text-muted-foreground">View all invoice line items from your veterinary practice.</p>
         
-        <LineItemsDataTable />
+        <LineItemsDataTableWrapper />
       </div>
     </DashboardLayout>
   )

@@ -1,4 +1,4 @@
-import { InvoicesDataTable } from "@/components/invoices-data-table"
+import InvoicesDataTableWrapper from "@/components/invoices-data-table-wrapper"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -38,7 +38,7 @@ export default function InvoicesPage() {
         <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
         <p className="text-muted-foreground">View and manage your veterinary invoices.</p>
         
-        <InvoicesDataTable />
+        <InvoicesDataTableWrapper />
       </div>
     </DashboardLayout>
   )
