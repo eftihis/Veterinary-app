@@ -62,6 +62,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // Define our LineItem type based on our Supabase view structure
 export type LineItem = {
@@ -792,33 +799,37 @@ export function LineItemsDataTable({
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-between space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
+        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between py-4">
+          <div className="text-sm text-muted-foreground">
             Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
             {table.getFilteredRowModel().rows.length} results
           </div>
           
-          <div className="flex items-center gap-6">
-            <div className="flex items-center space-x-2">
+          <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
+            <div className="flex items-center justify-end sm:justify-start gap-2">
               <p className="text-sm text-muted-foreground whitespace-nowrap">
                 Rows per page
               </p>
-              <select
-                value={table.getState().pagination.pageSize}
-                onChange={e => {
-                  table.setPageSize(Number(e.target.value));
+              <Select
+                value={table.getState().pagination.pageSize.toString()}
+                onValueChange={(value) => {
+                  table.setPageSize(Number(value));
                 }}
-                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs"
               >
-                {[10, 20, 30, 50, 100].map(pageSize => (
-                  <option key={pageSize} value={pageSize}>
-                    {pageSize}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue placeholder={table.getState().pagination.pageSize.toString()} />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 30, 50, 100].map((pageSize) => (
+                    <SelectItem key={pageSize} value={pageSize.toString()}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
-            <div className="flex items-center gap-1">
+            <div className="flex items-center justify-end gap-2">
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
@@ -833,7 +844,8 @@ export function LineItemsDataTable({
                     />
                   </PaginationItem>
                   
-                  {/* Generate page buttons */}
+                  {/* Generate page buttons - hide on small screens */}
+                  <div className="hidden sm:flex">
                   {Array.from({ length: table.getPageCount() }).map((_, index) => {
                     // Show limited number of pages to avoid cluttering the UI
                     const pageNumber = index + 1;
@@ -884,6 +896,7 @@ export function LineItemsDataTable({
                     
                     return null;
                   })}
+                  </div>
                   
                   <PaginationItem>
                     <PaginationNext 
@@ -899,7 +912,7 @@ export function LineItemsDataTable({
                 </PaginationContent>
               </Pagination>
               
-              <div className="text-sm text-muted-foreground ml-2">
+              <div className="text-sm text-muted-foreground whitespace-nowrap">
                 Page {table.getState().pagination.pageIndex + 1} of{" "}
                 {table.getPageCount()}
               </div>
