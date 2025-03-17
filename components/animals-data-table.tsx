@@ -400,8 +400,8 @@ export function AnimalsDataTable({
       </div>
       <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between py-4">
         <div className="text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
+          {table.getFilteredRowModel().rows.length} results
         </div>
         
         <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
