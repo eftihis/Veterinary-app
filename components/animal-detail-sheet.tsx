@@ -140,14 +140,29 @@ export function AnimalDetailSheet({
   
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-xl overflow-y-auto">
+      <SheetContent className="sm:max-w-xl overflow-y-auto p-6">
         <SheetHeader className="pb-4">
-          <SheetTitle className="text-2xl font-bold flex items-center">
-            {!loading && animal && getAnimalTypeIcon(animal.type)}
-            {loading ? <Skeleton className="h-8 w-48" /> : animal?.name}
-          </SheetTitle>
+          <div className="flex justify-between items-center">
+            <SheetTitle className="text-2xl font-bold flex items-center">
+              {!loading && animal && getAnimalTypeIcon(animal.type)}
+              {loading ? <Skeleton className="h-8 w-48" /> : animal?.name}
+            </SheetTitle>
+            
+            {!loading && animal && onEdit && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handleEdit}
+                className="flex items-center gap-1"
+              >
+                <FileEdit className="h-3.5 w-3.5" />
+                <span className="sr-only md:not-sr-only">Edit</span>
+              </Button>
+            )}
+          </div>
+          
           {!loading && animal && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-1">
               <Badge variant={getStatusBadgeVariant(animal.status)}>
                 {animal.status || (animal.is_deceased ? 'Deceased' : 'Active')}
               </Badge>
@@ -159,12 +174,12 @@ export function AnimalDetailSheet({
         </SheetHeader>
         
         {loading ? (
-          <div className="space-y-6">
+          <div className="space-y-6 px-1">
             <Skeleton className="h-28 w-full" />
             <Skeleton className="h-40 w-full" />
           </div>
         ) : error ? (
-          <div className="rounded-md bg-destructive/10 p-4">
+          <div className="rounded-md bg-destructive/10 p-5 mx-1">
             <div className="flex items-center">
               <AlertCircle className="h-4 w-4 text-destructive mr-2" />
               <p className="text-sm text-destructive">Failed to load animal details</p>
@@ -179,7 +194,7 @@ export function AnimalDetailSheet({
             </Button>
           </div>
         ) : animal ? (
-          <div className="space-y-6">
+          <div className="space-y-6 px-1">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid grid-cols-3">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -187,15 +202,15 @@ export function AnimalDetailSheet({
                 <TabsTrigger value="medical">Medical</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="overview" className="space-y-4 mt-4">
-                <Card>
-                  <CardHeader className="py-3">
+              <TabsContent value="overview" className="space-y-5 mt-4">
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
                     <CardTitle className="text-base font-medium flex items-center">
                       <Clipboard className="h-4 w-4 mr-2" />
                       Basic Information
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="py-3">
+                  <CardContent className="py-4 px-5 pt-0">
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                       <div>
                         <dt className="text-muted-foreground">Type</dt>
@@ -235,16 +250,36 @@ export function AnimalDetailSheet({
                   </CardContent>
                 </Card>
                 
-                {animal.notes && (
-                  <Card>
-                    <CardHeader className="py-3">
-                      <CardTitle className="text-base font-medium">Notes</CardTitle>
-                    </CardHeader>
-                    <CardContent className="py-3">
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
+                    <CardTitle className="text-base font-medium">Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-4 px-5 pt-0">
+                    {animal.notes ? (
                       <p className="text-sm whitespace-pre-wrap">{animal.notes}</p>
-                    </CardContent>
-                  </Card>
-                )}
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">No notes available</p>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
+                    <CardTitle className="text-base font-medium flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      Owner Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-4 px-5 pt-0">
+                    <div className="text-sm">
+                      {animal.owner_id ? (
+                        <p className="font-medium">Owner information available</p>
+                      ) : (
+                        <p className="text-muted-foreground italic">No owner information available</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
                 
                 <Card>
                   <CardHeader className="py-3">
@@ -303,35 +338,28 @@ export function AnimalDetailSheet({
               </TabsContent>
               
               <TabsContent value="timeline" className="mt-4">
-                <AnimalTimeline
-                  animalId={animal.id}
-                  showAddButton={true}
-                  onAddEvent={() => {
-                    // Will be implemented in future step
-                    alert("Add event feature coming soon!");
-                  }}
-                />
+                <div className="px-1">
+                  <AnimalTimeline 
+                    animalId={animal.id}
+                    showAddButton={true}
+                  />
+                </div>
               </TabsContent>
               
-              <TabsContent value="medical" className="mt-4">
-                <Card className="mb-4">
-                  <CardHeader className="py-3">
+              <TabsContent value="medical" className="mt-4 space-y-5">
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
                     <CardTitle className="text-base font-medium flex items-center">
                       <Stethoscope className="h-4 w-4 mr-2" />
-                      Medical History
+                      Medical Records
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="py-3">
+                  <CardContent className="py-4 px-5 pt-0">
                     <p className="text-sm text-muted-foreground">
-                      Medical events from invoices and medical records
+                      Medical records will appear here.
                     </p>
                   </CardContent>
                 </Card>
-                
-                <AnimalTimeline
-                  animalId={animal.id}
-                  // Filter for medical events will be added later when we have the types
-                />
               </TabsContent>
             </Tabs>
           </div>
