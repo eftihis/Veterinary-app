@@ -33,7 +33,7 @@ export function QuickActionButton() {
   const handleAddAnimalShortcut = useCallback(() => {
     if (!user) return;
     setAddAnimalOpen(true);
-    toast.info("Add Animal keyboard shortcut activated (⌘A)", {
+    toast.info("Add Animal keyboard shortcut activated (⌘⇧A)", {
       duration: 2000
     });
   }, [user]);
@@ -41,7 +41,7 @@ export function QuickActionButton() {
   const handleCreateInvoiceShortcut = useCallback(() => {
     if (!user) return;
     router.push("/add-invoice");
-    toast.info("Create Invoice keyboard shortcut activated (⌘I)", {
+    toast.info("Create Invoice keyboard shortcut activated (⌘⇧I)", {
       duration: 2000
     });
   }, [router, user]);
@@ -49,21 +49,23 @@ export function QuickActionButton() {
   const handleQuickActionsShortcut = useCallback(() => {
     if (!user) return;
     setIsDropdownOpen(prev => !prev);
-    toast.info(`Quick Actions menu ${isDropdownOpen ? "closed" : "opened"} (Alt+Q)`, {
+    toast.info(`Quick Actions menu ${isDropdownOpen ? "closed" : "opened"} (⌘⇧U)`, {
       duration: 2000
     });
+    console.log("CMD+Shift+u shortcut triggered");
   }, [user, isDropdownOpen]);
 
   // Register keyboard shortcuts using our custom hook
-  useKeyboardShortcut('cmd+a', handleAddAnimalShortcut, { disableOnInput: true });
-  useKeyboardShortcut('cmd+i', handleCreateInvoiceShortcut, { disableOnInput: true });
-  useKeyboardShortcut('alt+q', handleQuickActionsShortcut, { disableOnInput: true });
+  useKeyboardShortcut('cmd+shift+a', handleAddAnimalShortcut, { disableOnInput: true });
+  useKeyboardShortcut('cmd+shift+i', handleCreateInvoiceShortcut, { disableOnInput: true });
+  useKeyboardShortcut('cmd+shift+u', handleQuickActionsShortcut, { disableOnInput: true });
 
   // Also register Ctrl+A and Ctrl+I for Windows/Linux users
-  useKeyboardShortcut('ctrl+a', handleAddAnimalShortcut, { disableOnInput: true });
-  useKeyboardShortcut('ctrl+i', handleCreateInvoiceShortcut, { disableOnInput: true });
+  useKeyboardShortcut('ctrl+shift+a', handleAddAnimalShortcut, { disableOnInput: true });
+  useKeyboardShortcut('ctrl+shift+i', handleCreateInvoiceShortcut, { disableOnInput: true });
+  useKeyboardShortcut('ctrl+shift+u', handleQuickActionsShortcut, { disableOnInput: true });
 
-  // Add a direct event listener as a fallback to ensure shortcuts work
+  // Add a direct event listener for keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Skip if user is not logged in
@@ -79,18 +81,22 @@ export function QuickActionButton() {
         return;
       }
       
-      // CMD/Ctrl + A for Add Animal
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
+      // CMD/Ctrl+Shift+Plus for Quick Actions
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === '+' || e.key === 'Equal')) {
         e.preventDefault();
-        handleAddAnimalShortcut();
-        console.log("CMD+A shortcut triggered directly");
+        setIsDropdownOpen(prev => !prev);
+        console.log("CMD/Ctrl+Shift+Plus shortcut triggered directly");
       }
       
-      // CMD/Ctrl + I for Create Invoice
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
-        e.preventDefault();
-        handleCreateInvoiceShortcut();
-        console.log("CMD+I shortcut triggered directly");
+      // Log key combinations for debugging
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) {
+        console.log("Key combination pressed:", {
+          key: e.key,
+          altKey: e.altKey,
+          ctrlKey: e.ctrlKey,
+          metaKey: e.metaKey,
+          shiftKey: e.shiftKey
+        });
       }
     };
     
@@ -100,7 +106,7 @@ export function QuickActionButton() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [user, handleAddAnimalShortcut, handleCreateInvoiceShortcut]);
+  }, [user, setIsDropdownOpen]);
 
   const handleAddAnimal = (animalData: any) => {
     // Handle the added animal data if needed
@@ -118,7 +124,7 @@ export function QuickActionButton() {
         <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button 
-              className="h-14 w-14 rounded-full bg-black text-white hover:bg-black/90 shadow-lg" 
+              className="h-12 w-12 rounded-full bg-black text-white hover:bg-black/90 shadow-lg" 
               size="icon"
               aria-label="Quick Actions"
             >
@@ -128,7 +134,7 @@ export function QuickActionButton() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Quick Actions (Alt+Q)
+              Quick Actions (⌘⇧U)
             </DropdownMenuLabel>
             <DropdownMenuItem 
               onClick={() => {
@@ -141,7 +147,7 @@ export function QuickActionButton() {
                 <Plus className="size-4" />
               </div>
               <div className="ml-2 font-medium">Add Animal</div>
-              <DropdownMenuShortcut>⌘A</DropdownMenuShortcut>
+              <DropdownMenuShortcut>⌘⇧A</DropdownMenuShortcut>
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={() => {
@@ -154,7 +160,7 @@ export function QuickActionButton() {
                 <Plus className="size-4" />
               </div>
               <div className="ml-2 font-medium">Create Invoice</div>
-              <DropdownMenuShortcut>⌘I</DropdownMenuShortcut>
+              <DropdownMenuShortcut>⌘⇧I</DropdownMenuShortcut>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

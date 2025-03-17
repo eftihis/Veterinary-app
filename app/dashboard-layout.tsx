@@ -9,7 +9,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { QuickActionButton } from "@/components/quick-action-button";
 
 export default function DashboardLayout({
   children,
@@ -50,7 +49,6 @@ export default function DashboardLayout({
       <SidebarInset>
         {children}
       </SidebarInset>
-      <QuickActionButton />
     </SidebarProvider>
   );
 } 
