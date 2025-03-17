@@ -53,6 +53,15 @@ import {
 import { cn } from "@/lib/utils"
 import { StatusFilter } from "@/components/status-filter"
 import { ItemFilter } from "@/components/item-filter"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 // Define our LineItem type based on our Supabase view structure
 export type LineItem = {
@@ -783,26 +792,119 @@ export function LineItemsDataTable({
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="flex items-center justify-between space-x-2 py-4">
           <div className="flex-1 text-sm text-muted-foreground">
-            {table.getFilteredRowModel().rows.length} line item(s) total.
+            Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
+            {table.getFilteredRowModel().rows.length} results
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+          
+          <div className="flex items-center gap-6">
+            <div className="flex items-center space-x-2">
+              <p className="text-sm text-muted-foreground whitespace-nowrap">
+                Rows per page
+              </p>
+              <select
+                value={table.getState().pagination.pageSize}
+                onChange={e => {
+                  table.setPageSize(Number(e.target.value));
+                }}
+                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs"
+              >
+                {[10, 20, 30, 50, 100].map(pageSize => (
+                  <option key={pageSize} value={pageSize}>
+                    {pageSize}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => table.previousPage()} 
+                      aria-disabled={!table.getCanPreviousPage()}
+                      className={!table.getCanPreviousPage() 
+                        ? "pointer-events-none opacity-50" 
+                        : "cursor-pointer"
+                      }
+                      tabIndex={!table.getCanPreviousPage() ? -1 : undefined}
+                    />
+                  </PaginationItem>
+                  
+                  {/* Generate page buttons */}
+                  {Array.from({ length: table.getPageCount() }).map((_, index) => {
+                    // Show limited number of pages to avoid cluttering the UI
+                    const pageNumber = index + 1;
+                    const isCurrent = table.getState().pagination.pageIndex === index;
+                    
+                    // Logic to determine which page numbers to show
+                    const shouldShowPageNumber =
+                      pageNumber === 1 || // First page
+                      pageNumber === table.getPageCount() || // Last page
+                      Math.abs(pageNumber - (table.getState().pagination.pageIndex + 1)) <= 1; // Pages around current
+                    
+                    // Show ellipsis when needed
+                    const showEllipsisBefore =
+                      index === 1 && table.getState().pagination.pageIndex > 2;
+                    const showEllipsisAfter =
+                      index === table.getPageCount() - 2 && 
+                      table.getState().pagination.pageIndex < table.getPageCount() - 3;
+                    
+                    if (showEllipsisBefore) {
+                      return (
+                        <PaginationItem key={`ellipsis-before`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    if (showEllipsisAfter) {
+                      return (
+                        <PaginationItem key={`ellipsis-after`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    if (shouldShowPageNumber) {
+                      return (
+                        <PaginationItem key={index}>
+                          <PaginationLink
+                            isActive={isCurrent}
+                            onClick={() => table.setPageIndex(index)}
+                            className="cursor-pointer"
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    return null;
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => table.nextPage()} 
+                      aria-disabled={!table.getCanNextPage()}
+                      className={!table.getCanNextPage() 
+                        ? "pointer-events-none opacity-50" 
+                        : "cursor-pointer"
+                      }
+                      tabIndex={!table.getCanNextPage() ? -1 : undefined}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+              
+              <div className="text-sm text-muted-foreground ml-2">
+                Page {table.getState().pagination.pageIndex + 1} of{" "}
+                {table.getPageCount()}
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
