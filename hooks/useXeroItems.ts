@@ -22,6 +22,15 @@ export function useXeroItems() {
 
   const fetchItems = async () => {
     try {
+      // Check if we're in local development mode with Xero disabled
+      if (process.env.NEXT_PUBLIC_DISABLE_XERO === 'true') {
+        console.log("Xero is disabled in local development mode, skipping API call");
+        setItems([]);
+        setAllItems([]);
+        setLoading(false);
+        return;
+      }
+
       // Check client-side cache first
       const currentTime = Date.now();
       if (clientCache && (currentTime - clientCacheTimestamp) < CLIENT_CACHE_TTL) {
@@ -35,7 +44,13 @@ export function useXeroItems() {
       setError(null);
       setNeedsReauth(false);
       
-      const response = await fetch('/api/xero/filtered-items');
+      // Add a timeout to prevent hanging forever
+      const timeoutPromise = new Promise<Response>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out')), 10000);
+      });
+      
+      const fetchPromise = fetch('/api/xero/filtered-items');
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
       const data = await response.json();
       
       if (!response.ok) {
@@ -59,6 +74,15 @@ export function useXeroItems() {
     } catch (err) {
       console.error('Error fetching Xero items:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch items');
+      
+      // Ensure we clear loading state even on error
+      setLoading(false);
+      
+      // Provide empty items to prevent UI issues
+      if (items.length === 0) {
+        setItems([]);
+        setAllItems([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -69,7 +93,20 @@ export function useXeroItems() {
   };
 
   useEffect(() => {
+    // Set a loading timeout as a safety net
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log("Loading timeout triggered for Xero items");
+        setLoading(false);
+        setError("Loading timed out");
+        setItems([]);
+        setAllItems([]);
+      }
+    }, 15000); // 15 second timeout
+    
     fetchItems();
+    
+    return () => clearTimeout(loadingTimeout);
   }, []);
 
   return { 

@@ -165,6 +165,37 @@ export default function VeterinaryForm({
   const [discountTotal, setDiscountTotal] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
   const { user } = useAuth(); // Get the authenticated user
+  const [isXeroDisabled, setIsXeroDisabled] = useState(false);
+  
+  useEffect(() => {
+    const disableXero = process.env.NEXT_PUBLIC_DISABLE_XERO === 'true';
+    setIsXeroDisabled(disableXero);
+    if (disableXero) {
+      console.log("Xero integration is disabled in local development mode");
+    }
+  }, []);
+
+  // Xero items hook - only use if Xero is enabled
+  const { 
+    items: xeroItems, 
+    loading: loadingXeroItems, 
+    error: xeroItemsError, 
+    needsReauth: xeroNeedsReauth,
+    reauth: xeroReauth,
+    allItems: allXeroItems
+  } = useXeroItems();
+
+  // Use a timeout to ensure we don't get stuck in loading state
+  useEffect(() => {
+    const componentTimeout = setTimeout(() => {
+      // If we're still loading after timeout, force component to render
+      if (loadingXeroItems) {
+        console.log("VeterinaryForm timeout triggered - forcing render");
+      }
+    }, 5000);
+    
+    return () => clearTimeout(componentTimeout);
+  }, [loadingXeroItems]);
 
   // Create a ref to store the calculateTotals function to avoid dependency issues
   const calculateTotalsRef = useRef<Function | null>(null);
@@ -204,16 +235,6 @@ export default function VeterinaryForm({
   const lineItems = watch("lineItems");
   const animalType = watch("animalType");
 
-  // Fetch Xero items with automatic token management and filtering by animal type
-  const {
-    items: xeroItems, 
-    loading: loadingXeroItems, 
-    error: xeroItemsError,
-    needsReauth: xeroNeedsReauth,
-    reauth: xeroReauth,
-    allItems: allXeroItems
-  } = useXeroItems();
-  
   // Fetch animals with filtering by type
   const {
     animals: filteredAnimals,
