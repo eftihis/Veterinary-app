@@ -153,12 +153,14 @@ export default function VeterinaryForm({
   editMode = false,
   initialData = null,
   onSuccess,
-  onFormChange
+  onFormChange,
+  suppressLoadingMessage = false
 }: {
   editMode?: boolean;
   initialData?: any;
   onSuccess?: () => void;
   onFormChange?: () => void;
+  suppressLoadingMessage?: boolean;
 }) {
   const [showComment, setShowComment] = useState(false);
   const [subtotal, setSubtotal] = useState<number>(0);
@@ -338,14 +340,119 @@ export default function VeterinaryForm({
   }, [form, onFormChange]);
 
   // Add a new line item
-  const addLineItem = () => {
+  const addLineItem = useCallback(() => {
     const timestamp = Date.now();
     const newId = `item-${timestamp}-${lineItems.length}`;
-    setValue("lineItems", [
+    
+    // Use form.setValue instead of setValue to reduce re-renders
+    const newLineItems = [
       ...lineItems,
-      { id: newId, description: "", itemId: "", itemName: "", quantity: 1, price: "", type: "item" },
-    ]);
-  };
+      { id: newId, description: "", itemId: "", itemName: "", quantity: 1, price: "", type: "item" as const },
+    ];
+    
+    // Batch updates to prevent flicker
+    form.setValue("lineItems", newLineItems, { 
+      shouldDirty: true,
+      shouldTouch: false,
+      shouldValidate: false
+    });
+    
+    // Calculate totals without triggering extra renders
+    if (calculateTotalsRef.current) {
+      calculateTotalsRef.current(newLineItems);
+    }
+  }, [form, lineItems]);
+  
+  // Add multiple line items
+  const addFiveLineItems = useCallback(() => {
+    const newItems = [...lineItems];
+    const timestamp = Date.now();
+    
+    for (let i = 0; i < 5; i++) {
+      const newId = `item-${timestamp}-${lineItems.length + i}`;
+      newItems.push({ 
+        id: newId, 
+        description: "", 
+        itemId: "", 
+        itemName: "", 
+        quantity: 1, 
+        price: "", 
+        type: "item" as const 
+      });
+    }
+    
+    // Batch updates to prevent flicker
+    form.setValue("lineItems", newItems, { 
+      shouldDirty: true,
+      shouldTouch: false,
+      shouldValidate: false
+    });
+    
+    // Calculate totals without triggering extra renders
+    if (calculateTotalsRef.current) {
+      calculateTotalsRef.current(newItems);
+    }
+  }, [form, lineItems]);
+  
+  const addTenLineItems = useCallback(() => {
+    const newItems = [...lineItems];
+    const timestamp = Date.now();
+    
+    for (let i = 0; i < 10; i++) {
+      const newId = `item-${timestamp}-${lineItems.length + i}`;
+      newItems.push({ 
+        id: newId, 
+        description: "", 
+        itemId: "", 
+        itemName: "", 
+        quantity: 1, 
+        price: "", 
+        type: "item" as const 
+      });
+    }
+    
+    // Batch updates to prevent flicker
+    form.setValue("lineItems", newItems, { 
+      shouldDirty: true,
+      shouldTouch: false,
+      shouldValidate: false
+    });
+    
+    // Calculate totals without triggering extra renders
+    if (calculateTotalsRef.current) {
+      calculateTotalsRef.current(newItems);
+    }
+  }, [form, lineItems]);
+  
+  const addTwentyLineItems = useCallback(() => {
+    const newItems = [...lineItems];
+    const timestamp = Date.now();
+    
+    for (let i = 0; i < 20; i++) {
+      const newId = `item-${timestamp}-${lineItems.length + i}`;
+      newItems.push({ 
+        id: newId, 
+        description: "", 
+        itemId: "", 
+        itemName: "", 
+        quantity: 1, 
+        price: "", 
+        type: "item" as const 
+      });
+    }
+    
+    // Batch updates to prevent flicker
+    form.setValue("lineItems", newItems, { 
+      shouldDirty: true,
+      shouldTouch: false,
+      shouldValidate: false
+    });
+    
+    // Calculate totals without triggering extra renders
+    if (calculateTotalsRef.current) {
+      calculateTotalsRef.current(newItems);
+    }
+  }, [form, lineItems]);
 
   // Remove a line item
   const removeLineItem = (index: number) => {
@@ -402,48 +509,6 @@ export default function VeterinaryForm({
     
     // Use form.setValue instead of setValue to ensure proper update
     form.setValue("lineItems", itemsCopy);
-  };
-
-  // Add 5 line items
-  const addFiveLineItems = () => {
-    const newItems = Array(5).fill(null).map((_, i) => ({
-      id: `item-${Date.now()}-${lineItems.length + i}`,
-      description: "",
-      itemId: "",
-      itemName: "",
-      quantity: 1,
-      price: "",
-      type: "item" as const
-    }));
-    setValue("lineItems", [...lineItems, ...newItems]);
-  };
-  
-  // Add 10 line items
-  const addTenLineItems = () => {
-    const newItems = Array(10).fill(null).map((_, i) => ({
-      id: `item-${Date.now()}-${lineItems.length + i}`,
-      description: "",
-      itemId: "",
-      itemName: "",
-      quantity: 1,
-      price: "",
-      type: "item" as const
-    }));
-    setValue("lineItems", [...lineItems, ...newItems]);
-  };
-  
-  // Add 20 line items
-  const addTwentyLineItems = () => {
-    const newItems = Array(20).fill(null).map((_, i) => ({
-      id: `item-${Date.now()}-${lineItems.length + i}`,
-      description: "",
-      itemId: "",
-      itemName: "",
-      quantity: 1,
-      price: "",
-      type: "item" as const
-    }));
-    setValue("lineItems", [...lineItems, ...newItems]);
   };
 
   // Handle form submission
@@ -787,8 +852,8 @@ export default function VeterinaryForm({
             </div>
           )}
           
-          {/* Show loading state if animals are being fetched */}
-          {loadingAnimals && (
+          {/* Show loading state if animals are being fetched - only on first load */}
+          {loadingAnimals && !suppressLoadingMessage && (
             <div className="bg-blue-50 text-blue-700 p-4 rounded-md mb-4">
               <p>Loading animals from database...</p>
             </div>

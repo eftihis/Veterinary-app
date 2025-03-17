@@ -163,133 +163,142 @@ export function AnimalCombobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className={cn("w-full justify-between", className)}
-            onClick={() => setOpen(true)}
-          >
-            {selectedAnimal
-              ? selectedAnimal.label
-              : placeholder}
-            {loading ? (
-              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            className={cn(
+              "w-full justify-between",
+              !selectedAnimal && "text-muted-foreground",
+              className
             )}
+            onClick={() => setOpen(!open)}
+          >
+            {selectedAnimal ? (
+              <div className="flex items-center justify-between w-full mr-2 overflow-hidden">
+                <span className="truncate">
+                  {selectedAnimal.label}
+                  {selectedAnimal.isDeceased && " (Deceased)"}
+                </span>
+                {selectedAnimal.type && (
+                  <span className="text-xs text-muted-foreground ml-2 mr-auto">
+                    {selectedAnimal.type.charAt(0).toUpperCase() + selectedAnimal.type.slice(1)}
+                  </span>
+                )}
+              </div>
+            ) : (
+              placeholder
+            )}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="p-0" 
-          style={{ width: "var(--radix-popover-trigger-width)" }}
-          onKeyDown={handleKeyDown}
+          className="p-0 w-full min-w-[240px]" 
+          style={{ maxHeight: "calc(100vh - 180px)", overflowY: "auto" }}
+          align="start"
         >
-          <div className="bg-popover text-popover-foreground flex flex-col overflow-hidden rounded-md">
-            {/* Search input */}
-            <div className="flex items-center border-b px-3 py-2">
-              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-              <Input
-                placeholder="Search animals..."
-                className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleInputKeyDown}
-              />
-            </div>
-            
-            {/* List container */}
-            <div className="max-h-[300px] overflow-y-auto p-1">
-              {loading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <>
-                  {/* Empty state */}
-                  {filteredOptions.length === 0 && (
-                    <div className="py-6 text-center text-sm text-muted-foreground">
-                      {emptyMessage}
-                      {inputValue && onAddAnimal && (
-                        <Button
-                          variant="ghost"
-                          className="mt-2 w-full justify-start"
-                          onClick={handleQuickCreate}
-                        >
-                          Create &quot;{inputValue}&quot;
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Animal options */}
-                  {filteredOptions.length > 0 && (
-                    <div className="py-1">
-                      {filteredOptions.map((animal, index) => (
-                        <div
-                          key={animal.value}
-                          ref={(el) => {
-                            itemsRef.current[index] = el;
-                            return undefined;
-                          }}
-                          className={cn(
-                            "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none",
-                            "hover:bg-accent hover:text-accent-foreground",
-                            (selectedId === animal.value || highlightedIndex === index) && "bg-accent text-accent-foreground"
-                          )}
-                          onClick={() => {
-                            onSelect(animal);
-                            setOpen(false);
-                            setInputValue("");
-                          }}
-                          onMouseEnter={() => setHighlightedIndex(index)}
-                          tabIndex={0}
-                          role="option"
-                          aria-selected={selectedId === animal.value}
-                        >
-                          <div className="flex flex-col">
-                            <span>{animal.label}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {animal.type.charAt(0).toUpperCase() + animal.type.slice(1)} • {animal.breed} {animal.gender && `• ${animal.gender.charAt(0).toUpperCase() + animal.gender.slice(1)}`}
-                            </span>
-                          </div>
-                          <Check
-                            className={cn(
-                              "ml-auto h-4 w-4",
-                              selectedId === animal.value ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Add option */}
-                  {onAddAnimal && (
-                    <>
-                      <div className="my-1 h-px bg-muted"></div>
+          <div className="flex items-center border-b px-3 sticky top-0 bg-background z-10">
+            <Search className="h-4 w-4 shrink-0 opacity-50 mr-2" />
+            <Input
+              placeholder="Search animals..."
+              className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleInputKeyDown}
+            />
+          </div>
+          
+          {/* List container */}
+          <div className="overflow-y-auto p-1">
+            {loading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                {/* Empty state */}
+                {filteredOptions.length === 0 && (
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    {emptyMessage}
+                    {inputValue && onAddAnimal && (
+                      <Button
+                        variant="ghost"
+                        className="mt-2 w-full justify-start"
+                        onClick={handleQuickCreate}
+                      >
+                        Create &quot;{inputValue}&quot;
+                      </Button>
+                    )}
+                  </div>
+                )}
+                
+                {/* Animal options */}
+                {filteredOptions.length > 0 && (
+                  <div className="py-1">
+                    {filteredOptions.map((animal, index) => (
                       <div
-                        className={cn(
-                          "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-primary",
-                          "hover:bg-accent hover:text-accent-foreground",
-                          highlightedIndex === filteredOptions.length && "bg-accent text-accent-foreground"
-                        )}
-                        onClick={() => {
-                          setShowAddDialog(true);
-                          setOpen(false);
-                        }}
-                        onMouseEnter={() => setHighlightedIndex(filteredOptions.length)}
-                        tabIndex={0}
-                        role="option"
+                        key={animal.value}
                         ref={(el) => {
-                          itemsRef.current[filteredOptions.length] = el;
+                          itemsRef.current[index] = el;
                           return undefined;
                         }}
+                        className={cn(
+                          "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none",
+                          "hover:bg-accent hover:text-accent-foreground",
+                          (selectedId === animal.value || highlightedIndex === index) && "bg-accent text-accent-foreground"
+                        )}
+                        onClick={() => {
+                          onSelect(animal);
+                          setOpen(false);
+                          setInputValue("");
+                        }}
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                        tabIndex={0}
+                        role="option"
+                        aria-selected={selectedId === animal.value}
                       >
-                        <Plus className="mr-2 h-4 w-4" />
-                        <span>Add</span>
+                        <div className="flex flex-col">
+                          <span>{animal.label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {animal.type.charAt(0).toUpperCase() + animal.type.slice(1)} • {animal.breed} {animal.gender && `• ${animal.gender.charAt(0).toUpperCase() + animal.gender.slice(1)}`}
+                          </span>
+                        </div>
+                        <Check
+                          className={cn(
+                            "ml-auto h-4 w-4",
+                            selectedId === animal.value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
                       </div>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Add option */}
+                {onAddAnimal && (
+                  <>
+                    <div className="my-1 h-px bg-muted"></div>
+                    <div
+                      className={cn(
+                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-primary",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        highlightedIndex === filteredOptions.length && "bg-accent text-accent-foreground"
+                      )}
+                      onClick={() => {
+                        setShowAddDialog(true);
+                        setOpen(false);
+                      }}
+                      onMouseEnter={() => setHighlightedIndex(filteredOptions.length)}
+                      tabIndex={0}
+                      role="option"
+                      ref={(el) => {
+                        itemsRef.current[filteredOptions.length] = el;
+                        return undefined;
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      <span>Add</span>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </PopoverContent>
       </Popover>

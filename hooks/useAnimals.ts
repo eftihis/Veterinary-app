@@ -23,7 +23,7 @@ type AnimalOption = {
 export type NewAnimalData = {
   name: string;
   type: string;
-  gender: string;
+  gender?: string;
   breed?: string;
   date_of_birth?: Date;
   weight?: number;
