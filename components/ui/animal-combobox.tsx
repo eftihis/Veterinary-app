@@ -11,8 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
-import { AddAnimalDialog } from "./add-animal-dialog"
-import { NewAnimalData } from "@/hooks/useAnimals"
+import { AddAnimalDialog, NewAnimalData } from "@/components/add-animal-dialog"
 
 export type AnimalOption = {
   value: string // ID

@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useState } from "react"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -57,23 +58,47 @@ const animalFormSchema = z.object({
   notes: z.string().optional(),
 })
 
-type AnimalFormValues = z.infer<typeof animalFormSchema>
+export type AnimalFormValues = z.infer<typeof animalFormSchema>
+
+// Define the NewAnimalData type if it's not imported
+export type NewAnimalData = AnimalFormValues 
 
 interface AddAnimalDialogProps {
-  children: React.ReactNode
-  onSuccess?: () => void
+  children?: React.ReactNode; // Make children optional
+  onSuccess?: () => void;
+  
+  // New props to support the other components
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onAnimalAdded?: (animal: NewAnimalData) => void | Promise<any>;
+  defaultAnimalType?: string;
+  defaultAnimalName?: string | null;
 }
 
-export function AddAnimalDialog({ children, onSuccess }: AddAnimalDialogProps) {
-  const [open, setOpen] = useState(false)
+export function AddAnimalDialog({ 
+  children, 
+  onSuccess,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+  onAnimalAdded,
+  defaultAnimalType = '',
+  defaultAnimalName = ''
+}: AddAnimalDialogProps) {
+  // Internal state for uncontrolled mode
+  const [internalOpen, setInternalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Determine if we're in controlled or uncontrolled mode
+  const isControlled = controlledOpen !== undefined && setControlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? setControlledOpen : setInternalOpen
   
   // Define the form
   const form = useForm<AnimalFormValues>({
     resolver: zodResolver(animalFormSchema),
     defaultValues: {
-      name: "",
-      type: "",
+      name: defaultAnimalName || "",
+      type: defaultAnimalType || "",
       breed: "",
       gender: "",
       weight: undefined,
@@ -82,24 +107,45 @@ export function AddAnimalDialog({ children, onSuccess }: AddAnimalDialogProps) {
     },
   })
   
+  // Reset form when dialog opens with default values
+  React.useEffect(() => {
+    if (open) {
+      form.reset({
+        name: defaultAnimalName || "",
+        type: defaultAnimalType || "",
+        breed: "",
+        gender: "",
+        weight: undefined,
+        microchip_number: "",
+        notes: "",
+      });
+    }
+  }, [open, form, defaultAnimalType, defaultAnimalName]);
+  
   // Handle form submission
   async function onSubmit(data: AnimalFormValues) {
     try {
       setIsSubmitting(true)
       
-      const { error } = await supabase.from("animals").insert({
-        name: data.name,
-        type: data.type,
-        breed: data.breed || null,
-        gender: data.gender || null,
-        date_of_birth: data.date_of_birth ? data.date_of_birth.toISOString() : null,
-        weight: data.weight || null,
-        microchip_number: data.microchip_number || null,
-        notes: data.notes || null,
-        status: "active",
-      })
-      
-      if (error) throw error
+      // If onAnimalAdded is provided, use that instead of direct DB insert
+      if (onAnimalAdded) {
+        await onAnimalAdded(data);
+      } else {
+        // Default behavior - insert directly to DB
+        const { error } = await supabase.from("animals").insert({
+          name: data.name,
+          type: data.type,
+          breed: data.breed || null,
+          gender: data.gender || null,
+          date_of_birth: data.date_of_birth ? data.date_of_birth.toISOString() : null,
+          weight: data.weight || null,
+          microchip_number: data.microchip_number || null,
+          notes: data.notes || null,
+          status: "active",
+        })
+        
+        if (error) throw error
+      }
       
       toast.success("Animal added successfully")
       form.reset()

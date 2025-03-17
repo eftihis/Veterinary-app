@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { AddAnimalDialog } from "@/components/ui/add-animal-dialog"
+import { AddAnimalDialog } from "@/components/add-animal-dialog"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useKeyboardShortcut } from "@/lib/useKeyboardShortcut"
