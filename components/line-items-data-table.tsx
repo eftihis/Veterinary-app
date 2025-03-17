@@ -270,10 +270,21 @@ const ActiveFilters = ({
   );
 }
 
-export function LineItemsDataTable() {
-  const [lineItems, setLineItems] = React.useState<LineItem[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
+// Update the props interface to include preloadedData
+interface LineItemsDataTableProps {
+  skipLoadingState?: boolean;
+  initialFetchComplete?: boolean;
+  preloadedData?: LineItem[];
+}
+
+export function LineItemsDataTable({ 
+  skipLoadingState = false,
+  initialFetchComplete = false,
+  preloadedData = []
+}: LineItemsDataTableProps) {
+  const [lineItems, setLineItems] = React.useState<LineItem[]>(preloadedData);
+  const [loading, setLoading] = React.useState(!initialFetchComplete);
+  const [error, setError] = React.useState<string | null>(null);
   
   const [sorting, setSorting] = React.useState<SortingState>([
     {
@@ -309,9 +320,16 @@ export function LineItemsDataTable() {
   
   // Function to refresh line items
   const refreshLineItems = React.useCallback(async () => {
+    // If we already have preloaded data and this is the initial mount, skip the fetch
+    if (preloadedData.length > 0 && lineItems === preloadedData) {
+      // Update filtered data with preloaded data
+      setFilteredData(preloadedData);
+      return;
+    }
+
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
       
       const { data, error } = await supabase
         .from('line_items_view')
@@ -330,30 +348,35 @@ export function LineItemsDataTable() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [preloadedData]);
 
-  // Fetch line items from Supabase
+  // Fetch line items from Supabase only if we don't have preloaded data
   React.useEffect(() => {
-    refreshLineItems()
-  }, [refreshLineItems])
+    if (preloadedData.length > 0) {
+      // Use preloaded data instead of fetching
+      setFilteredData(preloadedData);
+      setLoading(false);
 
-  // Extract unique item options after fetching line items
-  React.useEffect(() => {
-    if (lineItems.length > 0) {
-      // Get unique items
-      const uniqueItems = Array.from(
-        new Set(lineItems.map(item => item.item_name))
-      ).sort();
-      
-      // Format as options
-      const options = uniqueItems.map(item => ({
-        value: item,
-        label: item
-      }));
-      
-      setItemOptions(options);
+      // Extract item options from preloaded data
+      if (preloadedData.length > 0) {
+        // Get unique items
+        const uniqueItems = Array.from(
+          new Set(preloadedData.map(item => item.item_name))
+        ).sort();
+        
+        // Format as options
+        const options = uniqueItems.map(item => ({
+          value: item,
+          label: item
+        }));
+        
+        setItemOptions(options);
+      }
+    } else {
+      // Fetch data normally
+      refreshLineItems();
     }
-  }, [lineItems]);
+  }, [preloadedData, refreshLineItems]);
 
   // Update the filtering effect to include item filtering
   React.useEffect(() => {
@@ -589,7 +612,8 @@ export function LineItemsDataTable() {
     },
   });
 
-  if (loading) {
+  // Modify the loading condition to respect skipLoadingState
+  if (loading && !skipLoadingState) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -598,7 +622,7 @@ export function LineItemsDataTable() {
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   if (error) {

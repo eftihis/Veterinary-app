@@ -194,10 +194,21 @@ function DateRangePicker({
   )
 }
 
-export function InvoicesDataTable() {
-  const [invoices, setInvoices] = React.useState<Invoice[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
+// Update the props interface to include preloadedData
+interface InvoicesDataTableProps {
+  skipLoadingState?: boolean;
+  initialFetchComplete?: boolean;
+  preloadedData?: Invoice[];
+}
+
+export function InvoicesDataTable({ 
+  skipLoadingState = false,
+  initialFetchComplete = false,
+  preloadedData = []
+}: InvoicesDataTableProps) {
+  const [invoices, setInvoices] = React.useState<Invoice[]>(preloadedData);
+  const [loading, setLoading] = React.useState(!initialFetchComplete);
+  const [error, setError] = React.useState<string | null>(null);
   
   const [sorting, setSorting] = React.useState<SortingState>([
     {
@@ -248,6 +259,13 @@ export function InvoicesDataTable() {
   
   // Function to refresh invoices after an update
   const refreshInvoices = React.useCallback(async () => {
+    // If we already have preloaded data and this is the initial mount, skip the fetch
+    if (preloadedData.length > 0 && invoices === preloadedData) {
+      // Update filtered data with preloaded data
+      setFilteredData(preloadedData);
+      return;
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -389,12 +407,19 @@ export function InvoicesDataTable() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [preloadedData]);
 
-  // Fetch invoices from Supabase
+  // Fetch invoices from Supabase only if we don't have preloaded data
   React.useEffect(() => {
-    refreshInvoices()
-  }, [refreshInvoices])
+    if (preloadedData.length > 0) {
+      // Use preloaded data instead of fetching
+      setFilteredData(preloadedData);
+      setLoading(false);
+    } else {
+      // Fetch data normally
+      refreshInvoices();
+    }
+  }, [preloadedData, refreshInvoices]);
 
   // Update the filter effect to include status filtering
   React.useEffect(() => {
@@ -714,7 +739,7 @@ export function InvoicesDataTable() {
     },
   })
 
-  if (loading) {
+  if (loading && !skipLoadingState) {
     return (
       <Card>
         <CardContent className="p-6">

@@ -80,7 +80,7 @@ const data = {
         },
         {
           title: "Treatments",
-          url: "/records/treatments",
+          url: "/line-items",
         },
       ],
     },
