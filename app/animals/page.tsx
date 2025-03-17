@@ -5,6 +5,7 @@ import { Animal } from "@/components/animals-data-table"
 import { AnimalsDataTableWrapper } from "@/components/animals-data-table-wrapper"
 import { AnimalDetailSheet } from "@/components/animal-detail-sheet"
 import { AddAnimalDialog } from "@/components/add-animal-dialog"
+import { EditAnimalDialog } from "@/components/edit-animal-dialog"
 import { Button } from "@/components/ui/button"
 import { Dog, Plus } from "lucide-react"
 import DashboardLayout from "../dashboard-layout"
@@ -22,6 +23,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 export default function AnimalsPage() {
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null)
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   
   // Open detail sheet when an animal is clicked
@@ -30,8 +33,14 @@ export default function AnimalsPage() {
     setDetailSheetOpen(true)
   }
   
-  // Refresh the data table when an animal is added
-  const handleAnimalAdded = () => {
+  // Handle edit button click from the detail sheet
+  const handleEditAnimal = (animal: Animal) => {
+    setSelectedAnimal(animal)
+    setEditDialogOpen(true)
+  }
+  
+  // Refresh the data after changes
+  const handleDataChanged = () => {
     setRefreshKey(prev => prev + 1)
   }
   
@@ -66,7 +75,7 @@ export default function AnimalsPage() {
             </p>
           </div>
           
-          <AddAnimalDialog onSuccess={handleAnimalAdded}>
+          <AddAnimalDialog onSuccess={handleDataChanged}>
             <Button size="sm" className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Add Animal
@@ -83,6 +92,14 @@ export default function AnimalsPage() {
           open={detailSheetOpen}
           onOpenChange={setDetailSheetOpen}
           animalId={selectedAnimalId}
+          onEdit={handleEditAnimal}
+        />
+        
+        <EditAnimalDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          animal={selectedAnimal}
+          onAnimalUpdated={handleDataChanged}
         />
       </div>
     </DashboardLayout>

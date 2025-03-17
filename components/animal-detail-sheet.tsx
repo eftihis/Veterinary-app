@@ -142,24 +142,10 @@ export function AnimalDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-xl overflow-y-auto p-6">
         <SheetHeader className="pb-4">
-          <div className="flex justify-between items-center">
-            <SheetTitle className="text-2xl font-bold flex items-center">
-              {!loading && animal && getAnimalTypeIcon(animal.type)}
-              {loading ? <Skeleton className="h-8 w-48" /> : animal?.name}
-            </SheetTitle>
-            
-            {!loading && animal && onEdit && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleEdit}
-                className="flex items-center gap-1"
-              >
-                <FileEdit className="h-3.5 w-3.5" />
-                <span className="sr-only md:not-sr-only">Edit</span>
-              </Button>
-            )}
-          </div>
+          <SheetTitle className="text-2xl font-bold flex items-center">
+            {!loading && animal && getAnimalTypeIcon(animal.type)}
+            {loading ? <Skeleton className="h-8 w-48" /> : animal?.name}
+          </SheetTitle>
           
           {!loading && animal && (
             <div className="flex items-center gap-2 mt-1">
