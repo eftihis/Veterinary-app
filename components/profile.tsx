@@ -231,7 +231,7 @@ export default function UserProfile({
       
       // Upload to Supabase storage
       const { error: uploadError } = await supabase.storage
-        .from('profiles')
+        .from('profile-avatars')
         .upload(filePath, file);
       
       if (uploadError) {
@@ -240,7 +240,7 @@ export default function UserProfile({
       
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('profiles')
+        .from('profile-avatars')
         .getPublicUrl(filePath);
       
       // Update profile with new avatar URL
@@ -282,41 +282,55 @@ export default function UserProfile({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Avatar Section */}
-            <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={profileAvatar} alt={initialFullName} />
-                <AvatarFallback>
-                  {initialFullName.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col space-y-2">
-                <h3 className="text-sm font-medium">Your avatar</h3>
-                <div className="flex items-center gap-2">
-                  <Button asChild size="sm" variant="outline" disabled={isUpdatingAvatar}>
-                    <label className="cursor-pointer">
-                      {isUpdatingAvatar ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload Image
-                        </>
-                      )}
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
-                        onChange={handleAvatarUpload} 
-                        disabled={isUpdatingAvatar}
-                      />
-                    </label>
-                  </Button>
+            {/* Avatar */}
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={profileAvatar} alt={initialFullName} />
+                  <AvatarFallback>
+                    {initialFullName
+                      ? initialFullName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                      : "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <label htmlFor="avatar-upload" className="cursor-pointer">
+                    <Upload className="h-7 w-7 text-white" />
+                  </label>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  className="hidden"
+                  accept="image/png, image/jpeg, image/gif"
+                  onChange={handleAvatarUpload}
+                  disabled={isUpdatingAvatar}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-foreground">{initialFullName || 'Your Profile'}</p>
+                <p className="text-xs text-muted-foreground">{initialEmail}</p>
+                <label 
+                  htmlFor="avatar-upload" 
+                  className="text-xs text-primary hover:underline cursor-pointer mt-1"
+                >
+                  {isUpdatingAvatar ? (
+                    <div className="flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span>Uploading...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Upload className="h-3 w-3" />
+                      <span>Change avatar</span>
+                    </div>
+                  )}
+                </label>
+                <p className="text-[10px] text-muted-foreground">
                   JPG, GIF or PNG. 1MB max.
                 </p>
               </div>
