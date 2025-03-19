@@ -63,6 +63,17 @@ const data = {
       ],
     },
     {
+      title: "Contacts",
+      url: "/contacts",
+      icon: BookOpen,
+      items: [
+        {
+          title: "All Contacts",
+          url: "/contacts",
+        },
+      ],
+    },
+    {
       title: "Invoices",
       url: "/invoices",
       icon: Receipt,
