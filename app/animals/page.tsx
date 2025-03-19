@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
+import { supabase } from "@/lib/supabase"
+import { toast } from "sonner"
 
 export default function AnimalsPage() {
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null)
@@ -27,6 +30,9 @@ export default function AnimalsPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null)
   const [addEventDialogOpen, setAddEventDialogOpen] = useState(false)
+  const [animalToDelete, setAnimalToDelete] = useState<Animal | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   
   // Open detail sheet when an animal is clicked
@@ -39,6 +45,64 @@ export default function AnimalsPage() {
   const handleEditAnimal = (animal: Animal) => {
     setSelectedAnimal(animal)
     setEditDialogOpen(true)
+  }
+  
+  // Handle delete button click
+  const handleDeleteAnimal = (animal: Animal) => {
+    setAnimalToDelete(animal)
+    setDeleteDialogOpen(true)
+  }
+  
+  // Handle confirming animal deletion
+  const confirmDeleteAnimal = async () => {
+    if (!animalToDelete) return
+    
+    try {
+      setIsDeleting(true)
+      
+      // Check if animal has any events
+      const { data: events, error: eventsError } = await supabase
+        .from('animal_events')
+        .select('id')
+        .eq('animal_id', animalToDelete.id)
+        .limit(1)
+      
+      if (eventsError) throw eventsError
+      
+      // If animal has events, ask for confirmation to delete them too
+      if (events && events.length > 0) {
+        // Delete all related events first
+        const { error: deleteEventsError } = await supabase
+          .from('animal_events')
+          .delete()
+          .eq('animal_id', animalToDelete.id)
+        
+        if (deleteEventsError) throw deleteEventsError
+      }
+      
+      // Delete the animal
+      const { error } = await supabase
+        .from('animals')
+        .delete()
+        .eq('id', animalToDelete.id)
+      
+      if (error) throw error
+      
+      toast.success("Animal deleted successfully")
+      
+      // Refresh the animal list
+      setRefreshKey(prev => prev + 1)
+    } catch (error) {
+      console.error("Error deleting animal:", error)
+      toast.error(
+        error instanceof Error 
+          ? `Failed to delete animal: ${error.message}`
+          : "Failed to delete animal. Please try again."
+      )
+    } finally {
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
+    }
   }
   
   // Handle add event button click
@@ -102,6 +166,7 @@ export default function AnimalsPage() {
           onViewAnimal={handleViewAnimal}
           onEditAnimal={handleEditAnimal}
           onAddEvent={handleAddEvent}
+          onDeleteAnimal={handleDeleteAnimal}
         />
         
         <AnimalDetailSheet
@@ -116,6 +181,19 @@ export default function AnimalsPage() {
           onOpenChange={setEditDialogOpen}
           animal={selectedAnimal}
           onAnimalUpdated={handleDataChanged}
+        />
+        
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={confirmDeleteAnimal}
+          isDeleting={isDeleting}
+          title="Delete Animal"
+          description={animalToDelete 
+            ? `Are you sure you want to delete ${animalToDelete.name}? This will also delete all events and records for this animal. This action cannot be undone.`
+            : "Are you sure you want to delete this animal? This action cannot be undone."
+          }
+          entityName="animal"
         />
         
         {selectedAnimal && (

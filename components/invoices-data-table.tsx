@@ -210,17 +210,19 @@ function DateRangePicker({
   )
 }
 
-// Update the props interface to include preloadedData
-interface InvoicesDataTableProps {
+// Define interface for the component props
+export interface InvoicesDataTableProps {
   skipLoadingState?: boolean;
   initialFetchComplete?: boolean;
   preloadedData?: Invoice[];
+  onDeleteInvoice?: (invoice: Invoice) => void;
 }
 
 export function InvoicesDataTable({ 
   skipLoadingState = false,
   initialFetchComplete = false,
-  preloadedData = []
+  preloadedData = [],
+  onDeleteInvoice
 }: InvoicesDataTableProps) {
   const [invoices, setInvoices] = React.useState<Invoice[]>(preloadedData);
   const [loading, setLoading] = React.useState(!initialFetchComplete);
@@ -484,6 +486,13 @@ export function InvoicesDataTable({
     )
   }
 
+  // Function to handle deleting an invoice
+  const handleDeleteInvoice = (invoice: Invoice) => {
+    if (onDeleteInvoice) {
+      onDeleteInvoice(invoice);
+    }
+  }
+
   // Define columns with access to component state/functions
   const columns: ColumnDef<Invoice>[] = [
     {
@@ -701,10 +710,18 @@ export function InvoicesDataTable({
                 {!["draft", "submitted"].includes(invoice.status.toLowerCase())
                 }
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete invoice
-              </DropdownMenuItem>
+              {onDeleteInvoice && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => handleDeleteInvoice(invoice)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete invoice
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )

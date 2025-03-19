@@ -18,12 +18,18 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
+import { supabase } from "@/lib/supabase"
+import { toast } from "sonner"
 
 export default function ContactsPage() {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [formDialogOpen, setFormDialogOpen] = useState(false)
   const [contactToEdit, setContactToEdit] = useState<Contact | undefined>(undefined)
+  const [contactToDelete, setContactToDelete] = useState<Contact | undefined>(undefined)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   
   function handleViewContact(contact: Contact) {
@@ -37,8 +43,45 @@ export default function ContactsPage() {
   }
   
   function handleDeleteContact(contact: Contact) {
-    // Will implement delete functionality later
-    console.log("Delete contact:", contact)
+    setContactToDelete(contact)
+    setDeleteDialogOpen(true)
+  }
+  
+  async function confirmDeleteContact() {
+    if (!contactToDelete) return
+    
+    try {
+      setIsDeleting(true)
+      
+      // First check if this contact is linked to a profile
+      if (contactToDelete.profile_id) {
+        toast.error("Cannot delete a contact that is linked to a user profile")
+        return
+      }
+      
+      // Delete the contact
+      const { error } = await supabase
+        .from("contacts")
+        .delete()
+        .eq("id", contactToDelete.id)
+      
+      if (error) throw error
+      
+      toast.success("Contact deleted successfully")
+      
+      // Refresh the contact list
+      setRefreshKey(prev => prev + 1)
+    } catch (error) {
+      console.error("Error deleting contact:", error)
+      toast.error(
+        error instanceof Error 
+          ? `Failed to delete contact: ${error.message}`
+          : "Failed to delete contact. Please try again."
+      )
+    } finally {
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
+    }
   }
   
   function handleAddContact() {
@@ -113,6 +156,16 @@ export default function ContactsPage() {
           onOpenChange={setFormDialogOpen}
           contact={contactToEdit}
           onSuccess={handleFormSuccess}
+        />
+        
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={confirmDeleteContact}
+          isDeleting={isDeleting}
+          title="Delete Contact"
+          description={`Are you sure you want to delete ${contactToDelete?.first_name} ${contactToDelete?.last_name}? This action cannot be undone.`}
+          entityName="contact"
         />
       </div>
     </DashboardLayout>

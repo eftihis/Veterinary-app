@@ -5,7 +5,13 @@ import { DataTableSkeleton } from "@/components/skeletons/data-table-skeleton";
 import { InvoicesDataTable } from "@/components/invoices-data-table";
 import { supabase } from "@/lib/supabase";
 
-export default function InvoicesDataTableWrapper() {
+interface InvoicesDataTableWrapperProps {
+  onDeleteInvoice?: (invoice: any) => void;
+}
+
+export default function InvoicesDataTableWrapper({
+  onDeleteInvoice,
+}: InvoicesDataTableWrapperProps = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [preloadedInvoices, setPreloadedInvoices] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -116,5 +122,6 @@ export default function InvoicesDataTableWrapper() {
     skipLoadingState={true} 
     initialFetchComplete={true}
     preloadedData={preloadedInvoices}
+    onDeleteInvoice={onDeleteInvoice}
   />;
 } 

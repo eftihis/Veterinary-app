@@ -16,13 +16,76 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import DashboardLayout from "../dashboard-layout"
 import Link from "next/link"
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
+import { supabase } from "@/lib/supabase"
+import { toast } from "sonner"
 
 export default function InvoicesPage() {
   const [refreshKey, setRefreshKey] = useState(0)
+  const [invoiceToDelete, setInvoiceToDelete] = useState<any | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   
   // Refresh the data after changes
   const handleDataChanged = () => {
     setRefreshKey(prev => prev + 1)
+  }
+  
+  // Handle delete button click
+  const handleDeleteInvoice = (invoice: any) => {
+    setInvoiceToDelete(invoice)
+    setDeleteDialogOpen(true)
+  }
+  
+  // Handle confirming invoice deletion
+  const confirmDeleteInvoice = async () => {
+    if (!invoiceToDelete) return
+    
+    try {
+      setIsDeleting(true)
+      
+      // Check if invoice has line items
+      const { data: lineItems, error: lineItemsError } = await supabase
+        .from('invoice_line_items')
+        .select('id')
+        .eq('invoice_id', invoiceToDelete.id)
+        .limit(1)
+      
+      if (lineItemsError) throw lineItemsError
+      
+      // Delete line items first if they exist
+      if (lineItems && lineItems.length > 0) {
+        const { error: deleteLineItemsError } = await supabase
+          .from('invoice_line_items')
+          .delete()
+          .eq('invoice_id', invoiceToDelete.id)
+        
+        if (deleteLineItemsError) throw deleteLineItemsError
+      }
+      
+      // Delete the invoice
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invoiceToDelete.id)
+      
+      if (error) throw error
+      
+      toast.success("Invoice deleted successfully")
+      
+      // Refresh the invoice list
+      handleDataChanged()
+    } catch (error) {
+      console.error("Error deleting invoice:", error)
+      toast.error(
+        error instanceof Error 
+          ? `Failed to delete invoice: ${error.message}`
+          : "Failed to delete invoice. Please try again."
+      )
+    } finally {
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
+    }
   }
   
   return (
@@ -64,7 +127,23 @@ export default function InvoicesPage() {
           </Link>
         </div>
         
-        <InvoicesDataTableWrapper key={refreshKey} />
+        <InvoicesDataTableWrapper 
+          key={refreshKey} 
+          onDeleteInvoice={handleDeleteInvoice}
+        />
+        
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={confirmDeleteInvoice}
+          isDeleting={isDeleting}
+          title="Delete Invoice"
+          description={invoiceToDelete 
+            ? `Are you sure you want to delete invoice #${invoiceToDelete.document_number}? This will also delete all line items for this invoice. This action cannot be undone.`
+            : "Are you sure you want to delete this invoice? This action cannot be undone."
+          }
+          entityName="invoice"
+        />
       </div>
     </DashboardLayout>
   )
