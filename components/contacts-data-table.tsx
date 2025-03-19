@@ -106,6 +106,7 @@ export function ContactsDataTable({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+  const [globalFilter, setGlobalFilter] = React.useState("")
 
   const columns: ColumnDef<Contact>[] = [
     {
@@ -309,6 +310,25 @@ export function ContactsDataTable({
     },
   ];
 
+  // Custom filter function to search across multiple columns
+  const fuzzyFilter = (row: any, columnId: string, filterValue: string) => {
+    const searchValue = filterValue.toLowerCase();
+    
+    // Get the values to search in
+    const firstName = row.original.first_name?.toString().toLowerCase() || "";
+    const lastName = row.original.last_name?.toString().toLowerCase() || "";
+    const email = row.getValue("email")?.toString().toLowerCase() || "";
+    const phone = row.getValue("phone")?.toString().toLowerCase() || "";
+    
+    // Check if any of the values match the search term
+    return (
+      firstName.includes(searchValue) ||
+      lastName.includes(searchValue) ||
+      email.includes(searchValue) ||
+      phone.includes(searchValue)
+    );
+  };
+
   const table = useReactTable({
     data,
     columns,
@@ -320,11 +340,14 @@ export function ContactsDataTable({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    globalFilterFn: fuzzyFilter,
+    onGlobalFilterChange: setGlobalFilter,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      globalFilter,
     },
   });
 
@@ -332,11 +355,9 @@ export function ContactsDataTable({
     <div className="w-full">
       <div className="flex items-center py-4 gap-2">
         <Input
-          placeholder="Filter contacts..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
+          placeholder="Search contacts..."
+          value={globalFilter ?? ""}
+          onChange={(event) => setGlobalFilter(event.target.value)}
           className="max-w-sm"
         />
         <DropdownMenu>

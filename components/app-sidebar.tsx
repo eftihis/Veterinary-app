@@ -68,9 +68,9 @@ const data = {
       icon: BookOpen,
       items: [
         {
-          title: "All Contacts",
+          title: "View All",
           url: "/contacts",
-        },
+        }
       ],
     },
     {
