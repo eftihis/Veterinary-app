@@ -89,6 +89,7 @@ export type Contact = {
   is_active: boolean
   created_at: string
   updated_at: string
+  profile_id: string | null  // Reference to auth.users for contacts that are also users
 }
 
 export function ContactsDataTable({

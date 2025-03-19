@@ -120,6 +120,48 @@ export function ContactFormDialog({
         },
   })
   
+  // Update form values when contact changes
+  useEffect(() => {
+    if (contact) {
+      console.log('Updating form with contact:', contact)
+      // Reset the form with the new contact data
+      form.reset({
+        ...contact,
+        // Convert null values to empty strings
+        email: contact.email || "",
+        phone: contact.phone || "",
+        address: contact.address || "",
+        city: contact.city || "",
+        state: contact.state || "",
+        postal_code: contact.postal_code || "",
+        country: contact.country || "",
+        notes: contact.notes || "",
+        roles: contact.roles || [],
+        is_active: contact.is_active
+      })
+      
+      // Update selected roles
+      setSelectedRoles(contact.roles || [])
+    } else {
+      // Reset the form to defaults when no contact is provided
+      form.reset({
+        first_name: "",
+        last_name: "",
+        email: "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        postal_code: "",
+        country: "",
+        roles: [],
+        notes: "",
+        is_active: true,
+      })
+      setSelectedRoles([])
+    }
+  }, [contact, form])
+  
   // Add debugging useEffect
   useEffect(() => {
     console.log('Available roles updated:', availableRoles)
@@ -293,8 +335,14 @@ export function ContactFormDialog({
                                 placeholder="john.doe@example.com" 
                                 {...field} 
                                 value={field.value || ""}
+                                disabled={contact?.profile_id !== undefined && contact?.profile_id !== null}
                               />
                             </FormControl>
+                            {contact?.profile_id && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Email cannot be changed for contacts linked to user profiles.
+                              </p>
+                            )}
                             <FormMessage />
                           </FormItem>
                         )}
