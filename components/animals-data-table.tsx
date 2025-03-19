@@ -31,7 +31,7 @@ import {
   Rat,
   HelpCircle
 } from "lucide-react"
-import { format, formatDistanceToNow, parseISO } from "date-fns"
+import { format, formatDistanceToNow, parseISO, differenceInMonths, differenceInYears } from "date-fns"
 import { supabase } from "@/lib/supabase"
 
 import { Button } from "@/components/ui/button"
@@ -218,6 +218,28 @@ export function AnimalsDataTable({
         ) : (
           "-"
         )
+      },
+    },
+    {
+      accessorKey: "date_of_birth",
+      header: "Age",
+      cell: ({ row }) => {
+        const dob = row.getValue("date_of_birth") as string | null
+        
+        if (!dob) return "-"
+        
+        const birthDate = parseISO(dob)
+        const now = new Date()
+        const years = differenceInYears(now, birthDate)
+        const months = differenceInMonths(now, birthDate) % 12
+        
+        if (years > 0) {
+          return months > 0 
+            ? `${years} ${years === 1 ? 'year' : 'years'}, ${months} ${months === 1 ? 'month' : 'months'}`
+            : `${years} ${years === 1 ? 'year' : 'years'}`
+        } else {
+          return `${months} ${months === 1 ? 'month' : 'months'}`
+        }
       },
     },
     {

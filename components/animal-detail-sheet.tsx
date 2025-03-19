@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { format, parseISO, formatDistanceToNow } from "date-fns"
+import { format, parseISO, formatDistanceToNow, differenceInMonths, differenceInYears } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import { Animal } from "@/components/animals-data-table"
 import { AnimalTimeline } from "@/components/animal-timeline"
@@ -221,10 +221,22 @@ export function AnimalDetailSheet({
                       <div>
                         <dt className="text-muted-foreground">Age</dt>
                         <dd className="font-medium">
-                          {animal.date_of_birth ? 
-                            formatDistanceToNow(parseISO(animal.date_of_birth)) : 
-                            '-'
-                          }
+                          {animal.date_of_birth ? (
+                            (() => {
+                              const birthDate = parseISO(animal.date_of_birth)
+                              const now = new Date()
+                              const years = differenceInYears(now, birthDate)
+                              const months = differenceInMonths(now, birthDate) % 12
+                              
+                              if (years > 0) {
+                                return months > 0 
+                                  ? `${years} ${years === 1 ? 'year' : 'years'}, ${months} ${months === 1 ? 'month' : 'months'}`
+                                  : `${years} ${years === 1 ? 'year' : 'years'}`
+                              } else {
+                                return `${months} ${months === 1 ? 'month' : 'months'}`
+                              }
+                            })()
+                          ) : '-'}
                         </dd>
                       </div>
                       
