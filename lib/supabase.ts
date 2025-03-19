@@ -4,9 +4,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Log for debugging
-console.log('Supabase URL:', supabaseUrl ? 'Found' : 'Missing');
-console.log('Supabase Anon Key:', supabaseAnonKey ? 'Found' : 'Missing');
+// Log for debugging (more detailed)
+console.log('Supabase initialization:');
+console.log('URL:', supabaseUrl ? supabaseUrl.substring(0, 15) + '...' : 'Missing');
+console.log('Anon Key:', supabaseAnonKey ? supabaseAnonKey.substring(0, 5) + '...' : 'Missing');
 
 // Check if we're in development and provide helpful messages
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -23,8 +24,24 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
-// Create the Supabase client
+// Create the Supabase client with additional options for debugging
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder-url.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
-); 
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    },
+    global: {
+      fetch: (...args) => {
+        console.log('Supabase API request:', args[0]);
+        return fetch(...args);
+      }
+    }
+  }
+);
+
+// Log on initialization to make sure the client was created
+console.log('Supabase client initialized'); 

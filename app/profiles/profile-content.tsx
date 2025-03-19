@@ -62,7 +62,7 @@ export function ProfileContent() {
       <div className="grid gap-8">
         {profile ? (
           <UserProfile
-            initialFullName={profile.full_name || ""}
+            initialFullName={profile.display_name || ""}
             initialEmail={profile.email}
             avatarUrl={profile.avatar_url || "/placeholder.svg"}
             role="User"

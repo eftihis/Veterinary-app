@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 
 export type ProfileUpdateData = {
-  full_name?: string;
+  display_name?: string;
   avatar_url?: string;
   // Add other profile fields as needed
 };
@@ -30,17 +30,43 @@ export function useProfile() {
         updated_at: new Date().toISOString()
       };
       
-      const { error: updateError } = await supabase
+      console.log('Updating profile with data:', updateData);
+      console.log('User ID:', user.id);
+      
+      // Get current profile data for comparison
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      console.log('Current profile before update:', currentProfile, fetchError ? `Error: ${JSON.stringify(fetchError)}` : '');
+      
+      const { data: updateResult, error: updateError } = await supabase
         .from('profiles')
         .update(updateData)
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select('*')
+        .single();
+
+      console.log('Update result:', updateResult, updateError ? `Error: ${JSON.stringify(updateError)}` : '');
 
       if (updateError) {
+        console.error('Supabase update error:', updateError);
         throw updateError;
       }
 
       // Refresh the profile in auth context
       await refreshProfile();
+      
+      // Verify the update by fetching the profile again
+      const { data: verifyProfile, error: verifyError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      console.log('Profile after refresh:', verifyProfile, verifyError ? `Error: ${JSON.stringify(verifyError)}` : '');
 
       return { success: true };
     } catch (err) {
@@ -79,7 +105,7 @@ export function useProfile() {
           .insert({
             id: user.id,
             email: user.email,
-            full_name: user.user_metadata?.full_name || null,
+            display_name: user.user_metadata?.full_name || null,
             avatar_url: user.user_metadata?.avatar_url || null,
             updated_at: new Date().toISOString()
           });

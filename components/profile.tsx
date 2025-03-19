@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -96,6 +96,14 @@ export default function UserProfile({
     },
   });
 
+  // Reset form when initialFullName changes
+  useEffect(() => {
+    profileForm.reset({
+      fullName: initialFullName,
+      email: initialEmail,
+    });
+  }, [initialFullName, initialEmail, profileForm]);
+
   // Password form
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
@@ -110,7 +118,7 @@ export default function UserProfile({
   const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     try {
       const { success, error } = await updateProfile({
-        full_name: values.fullName,
+        display_name: values.fullName,
       });
 
       if (success) {
@@ -296,9 +304,9 @@ export default function UserProfile({
                   name="fullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name</FormLabel>
+                      <FormLabel>Display Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your full name" {...field} />
+                        <Input placeholder="Enter your display name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -322,13 +330,13 @@ export default function UserProfile({
                   )}
                 />
                 
-                <div>
+                <FormItem>
                   <FormLabel>User Role</FormLabel>
-                  <Input value={role} disabled />
+                    <Input value={role} disabled />
                   <FormDescription>
                     Your role determines what features you can access.
                   </FormDescription>
-                </div>
+                </FormItem>
                 
                 <Button type="submit" className="mt-4" disabled={profileForm.formState.isSubmitting}>
                   {profileForm.formState.isSubmitting ? (

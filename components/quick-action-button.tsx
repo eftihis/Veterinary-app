@@ -152,7 +152,7 @@ export function QuickActionButton() {
             <DropdownMenuItem 
               onClick={() => {
                 setIsDropdownOpen(false);
-                router.push("/add-invoice");
+                router.push("/invoices/create-new");
               }}
               className="cursor-pointer"
             >

@@ -9,9 +9,10 @@ import { authService } from './auth-service';
 type Profile = {
   id: string;
   email: string;
-  full_name: string | null;
+  display_name: string | null;
   avatar_url: string | null;
   updated_at: string | null;
+  contact_id?: string;
 };
 
 type AuthContextType = {
@@ -37,6 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Add a function to fetch profile data
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -44,10 +47,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         return null;
       }
 
+      console.log('Profile data:', data);
       return data as Profile;
     } catch (err) {
       console.error('Error in fetchProfile:', err);
@@ -59,9 +68,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshProfile = async () => {
     if (!user) return;
     
-    const profileData = await fetchProfile(user.id);
-    if (profileData) {
-      setProfile(profileData);
+    console.log('Refreshing profile data for user:', user.id);
+    
+    // Clear any cached data
+    try {
+      // Use a timestamp to force fresh fetch
+      const ts = new Date().getTime();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      console.log('Refresh profile result:', data ? 'Profile found' : 'No profile found', error ? `Error: ${JSON.stringify(error)}` : '');
+      
+      if (data) {
+        console.log('Setting refreshed profile data:', data);
+        setProfile(data as Profile);
+      } else if (error) {
+        console.error('Error in refreshProfile:', error);
+      }
+    } catch (err) {
+      console.error('Exception in refreshProfile:', err);
     }
   };
 
@@ -151,9 +179,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user && !isLoading) {
       const fetchUserProfile = async () => {
         try {
+          console.log('Auth state: User logged in, attempting to fetch profile with ID:', user.id);
+          
+          // First, check if the user can access the profiles table at all
+          const { data: testData, error: testError } = await supabase
+            .from('profiles')
+            .select('count(*)')
+            .limit(1);
+            
+          console.log('Test access to profiles table:', testData ? 'Success' : 'Failed', testError ? `Error: ${JSON.stringify(testError)}` : '');
+          
           const profileData = await fetchProfile(user.id);
           if (profileData) {
+            console.log('Profile loaded successfully:', profileData);
             setProfile(profileData);
+          } else {
+            console.error('Profile loading failed but no error was thrown.');
+            
+            // Try a more direct approach to fetch the profile
+            console.log('Attempting direct profile fetch without using fetchProfile helper');
+            const { data: directData, error: directError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single();
+              
+            console.log('Direct profile fetch result:', 
+              directData ? 'Found data' : 'No data', 
+              directError ? `Error: ${JSON.stringify(directError)}` : 'No error'
+            );
+            
+            if (directData && !directError) {
+              console.log('Setting profile from direct query', directData);
+              setProfile(directData as Profile);
+            }
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
