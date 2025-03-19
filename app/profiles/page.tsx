@@ -24,7 +24,7 @@ export default function ProfilesPage() {
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-15 pb-15">
           <div className="flex justify-center">
-            <div className="w-full max-w-4xl py-8">
+            <div className="w-full max-w-3xl py-8">
               <ProfileContentWrapper />
             </div>
           </div>

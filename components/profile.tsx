@@ -318,25 +318,25 @@ export default function UserProfile({
 
   return (
     <Tabs defaultValue="profile" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-2 mb-6">
         <TabsTrigger value="profile">Profile</TabsTrigger>
         <TabsTrigger value="password">Password</TabsTrigger>
       </TabsList>
       
       {/* Profile Tab */}
       <TabsContent value="profile">
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile Information</CardTitle>
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">Profile Information</CardTitle>
             <CardDescription>
               Update your account information and how your profile appears
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Avatar */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col items-center md:flex-row md:items-start gap-6 pb-6 border-b">
               <div className="relative group">
-                <Avatar className="h-20 w-20">
+                <Avatar className="h-24 w-24 md:h-28 md:w-28 border-2 border-border">
                   <AvatarImage src={profileAvatar} alt={initialFullName} />
                   <AvatarFallback>
                     {initialFullName
@@ -362,34 +362,69 @@ export default function UserProfile({
                   disabled={isUpdatingAvatar}
                 />
               </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium text-foreground">{initialFullName || 'Your Profile'}</p>
-                <p className="text-xs text-muted-foreground">{initialEmail}</p>
-                <label 
-                  htmlFor="avatar-upload" 
-                  className="text-xs text-primary hover:underline cursor-pointer mt-1"
-                >
-                  {isUpdatingAvatar ? (
-                    <div className="flex items-center gap-1">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      <span>Uploading...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <Upload className="h-3 w-3" />
-                      <span>Change avatar</span>
-                    </div>
-                  )}
-                </label>
-                <p className="text-[10px] text-muted-foreground">
-                  JPG, GIF or PNG.
-                </p>
+              <div className="flex flex-col gap-1 text-center md:text-left">
+                <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+                  <h3 className="text-lg font-semibold text-foreground">{initialFullName || 'Your Profile'}</h3>
+                  <span className="inline-block px-2 py-0.5 bg-muted rounded-sm text-xs font-medium self-center md:self-auto">{role}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">{initialEmail}</p>
+                <div className="mt-2">
+                  <label 
+                    htmlFor="avatar-upload" 
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md text-xs font-medium cursor-pointer transition-colors"
+                  >
+                    {isUpdatingAvatar ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-3.5 w-3.5" />
+                        <span>Change avatar</span>
+                      </>
+                    )}
+                  </label>
+                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                    JPG, GIF or PNG. 200KB max.
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Profile Form */}
             <Form {...profileForm}>
-              <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+              <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-5">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <FormField
+                    control={profileForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your first name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={profileForm.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your last name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <FormField
                   control={profileForm.control}
                   name="fullName"
@@ -398,34 +433,6 @@ export default function UserProfile({
                       <FormLabel>Display Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter your display name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={profileForm.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter your first name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={profileForm.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter your last name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -457,7 +464,7 @@ export default function UserProfile({
                   </FormDescription>
                 </FormItem>
                 
-                <Button type="submit" className="mt-4" disabled={profileForm.formState.isSubmitting}>
+                <Button type="submit" className="mt-6 w-full sm:w-auto" disabled={profileForm.formState.isSubmitting}>
                   {profileForm.formState.isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -475,9 +482,9 @@ export default function UserProfile({
       
       {/* Password Tab */}
       <TabsContent value="password">
-        <Card>
-          <CardHeader>
-            <CardTitle>Change Password</CardTitle>
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">Change Password</CardTitle>
             <CardDescription>
               Update your password to maintain account security
             </CardDescription>
@@ -578,7 +585,7 @@ export default function UserProfile({
                   )}
                 />
                 
-                <Button type="submit" className="mt-4" disabled={passwordForm.formState.isSubmitting}>
+                <Button type="submit" className="mt-6 w-full sm:w-auto" disabled={passwordForm.formState.isSubmitting}>
                   {passwordForm.formState.isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -591,7 +598,7 @@ export default function UserProfile({
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="border-t bg-muted/50 px-6 py-3">
+          <CardFooter className="border-t bg-muted/20 px-6 py-4">
             <p className="text-xs text-muted-foreground">
               For security purposes, you'll be required to log in again after changing your password.
             </p>
