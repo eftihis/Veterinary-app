@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/hooks/useProfile';
-import { Loader2, Upload, User } from 'lucide-react';
+import { Loader2, Upload, User, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -96,6 +96,14 @@ export default function UserProfile({
   const { updateProfile } = useProfile();
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState(avatarUrl);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Toggle functions for password visibility
+  const toggleCurrentPassword = () => setShowCurrentPassword(!showCurrentPassword);
+  const toggleNewPassword = () => setShowNewPassword(!showNewPassword);
+  const toggleConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
 
   // Profile form
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -419,7 +427,23 @@ export default function UserProfile({
                     <FormItem>
                       <FormLabel>Current Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Enter current password" {...field} />
+                        <div className="relative">
+                          <Input 
+                            type={showCurrentPassword ? "text" : "password"} 
+                            placeholder="Enter current password" 
+                            {...field} 
+                          />
+                          <button
+                            type="button"
+                            onClick={toggleCurrentPassword}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                          >
+                            {showCurrentPassword ? 
+                              <EyeOff className="h-4 w-4" /> : 
+                              <Eye className="h-4 w-4" />
+                            }
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -433,7 +457,23 @@ export default function UserProfile({
                     <FormItem>
                       <FormLabel>New Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Enter new password" {...field} />
+                        <div className="relative">
+                          <Input 
+                            type={showNewPassword ? "text" : "password"} 
+                            placeholder="Enter new password" 
+                            {...field} 
+                          />
+                          <button
+                            type="button"
+                            onClick={toggleNewPassword}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                          >
+                            {showNewPassword ? 
+                              <EyeOff className="h-4 w-4" /> : 
+                              <Eye className="h-4 w-4" />
+                            }
+                          </button>
+                        </div>
                       </FormControl>
                       <FormDescription>
                         Password must be at least 8 characters.
@@ -450,7 +490,23 @@ export default function UserProfile({
                     <FormItem>
                       <FormLabel>Confirm New Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Confirm new password" {...field} />
+                        <div className="relative">
+                          <Input 
+                            type={showConfirmPassword ? "text" : "password"} 
+                            placeholder="Confirm new password" 
+                            {...field} 
+                          />
+                          <button
+                            type="button"
+                            onClick={toggleConfirmPassword}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                          >
+                            {showConfirmPassword ? 
+                              <EyeOff className="h-4 w-4" /> : 
+                              <Eye className="h-4 w-4" />
+                            }
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
