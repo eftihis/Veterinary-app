@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -60,18 +60,6 @@ const contactFormSchema = z.object({
 
 type ContactFormValues = z.infer<typeof contactFormSchema>
 
-// Define preset roles that can be added to contacts
-const PRESET_ROLES = [
-  "adopter",
-  "board member",
-  "donor",
-  "foster",
-  "owner",
-  "vendor",
-  "veterinarian",
-  "volunteer",
-]
-
 interface ContactFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -88,6 +76,8 @@ export function ContactFormDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedRoles, setSelectedRoles] = useState<string[]>(contact?.roles || [])
   const [activeTab, setActiveTab] = useState("basic")
+  const [availableRoles, setAvailableRoles] = useState<string[]>([])
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true)
   
   const title = contact ? "Edit Contact" : "Add Contact"
   const description = contact
@@ -126,6 +116,29 @@ export function ContactFormDialog({
           is_active: true,
         },
   })
+  
+  // Fetch roles from Supabase when component mounts
+  useEffect(() => {
+    async function fetchRoles() {
+      try {
+        const { data, error } = await supabase
+          .from('roles')
+          .select('name')
+          .order('name')
+        
+        if (error) throw error
+        
+        setAvailableRoles(data.map(role => role.name))
+      } catch (error) {
+        console.error('Error fetching roles:', error)
+        toast.error('Failed to load roles')
+      } finally {
+        setIsLoadingRoles(false)
+      }
+    }
+    
+    fetchRoles()
+  }, [])
   
   async function onSubmit(data: ContactFormValues) {
     try {
@@ -318,12 +331,12 @@ export function ContactFormDialog({
                             </div>
                           )}
                         </div>
-                        <Select onValueChange={handleSelectRole}>
+                        <Select onValueChange={handleSelectRole} disabled={isLoadingRoles}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Add a role" />
+                            <SelectValue placeholder={isLoadingRoles ? "Loading roles..." : "Add a role"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {PRESET_ROLES
+                            {availableRoles
                               .filter((role) => !selectedRoles.includes(role))
                               .map((role) => (
                                 <SelectItem key={role} value={role} className="capitalize">
