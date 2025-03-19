@@ -40,6 +40,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { toast } from 'sonner';
 import { authService } from '@/lib/auth-service';
+import imageCompression from 'browser-image-compression';
 
 // Profile form schema
 const profileFormSchema = z.object({
@@ -225,8 +226,28 @@ export default function UserProfile({
       
       // Check file size (200KB = 200 * 1024 bytes)
       const MAX_FILE_SIZE = 200 * 1024; // 200KB
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error("File size must be less than 200KB");
+      
+      // Configure compression options
+      const options = {
+        maxSizeMB: 0.2, // 200KB
+        maxWidthOrHeight: 400, // Max width/height of 400px
+        useWebWorker: true,
+        fileType: file.type,
+        initialQuality: 0.8,
+        alwaysKeepResolution: true,
+        signal: undefined,
+        onProgress: undefined,
+        onStart: undefined,
+        onEnd: undefined,
+        onError: undefined,
+      };
+
+      // Compress the image
+      const compressedFile = await imageCompression(file, options);
+      
+      // Check if compression was successful
+      if (compressedFile.size > MAX_FILE_SIZE) {
+        toast.error("Image is too large even after compression. Please try a smaller image.");
         return;
       }
 
@@ -237,10 +258,10 @@ export default function UserProfile({
       const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
       
-      // Upload to Supabase storage
+      // Upload to Supabase storage using the compressed file
       const { error: uploadError } = await supabase.storage
         .from('profile-avatars')
-        .upload(filePath, file);
+        .upload(filePath, compressedFile);
       
       if (uploadError) {
         throw uploadError;
