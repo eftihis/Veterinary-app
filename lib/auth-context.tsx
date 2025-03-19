@@ -12,7 +12,14 @@ type Profile = {
   display_name: string | null;
   avatar_url: string | null;
   updated_at: string | null;
-  contact_id?: string;
+  contact_id: string;
+  contacts?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    phone: string | null;
+  };
 };
 
 type AuthContextType = {
@@ -35,14 +42,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null); // Add profile state
   const [isLoading, setIsLoading] = useState(true);
 
-  // Add a function to fetch profile data
+  // Function to fetch profile data
   const fetchProfile = async (userId: string) => {
     try {
       console.log('Fetching profile for user:', userId);
       
+      // Query profile with contact join
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          contacts:contact_id (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone
+          )
+        `)
         .eq('id', userId)
         .single();
 
@@ -72,11 +89,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Clear any cached data
     try {
-      // Use a timestamp to force fresh fetch
-      const ts = new Date().getTime();
+      // Use same query format as fetchProfile to ensure contacts are included
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          contacts:contact_id (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone
+          )
+        `)
         .eq('id', user.id)
         .single();
       
@@ -182,12 +207,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('Auth state: User logged in, attempting to fetch profile with ID:', user.id);
           
           // First, check if the user can access the profiles table at all
-          const { data: testData, error: testError } = await supabase
+          const { count, error: testError } = await supabase
             .from('profiles')
-            .select('count(*)')
+            .select('id', { count: 'exact', head: true })
             .limit(1);
             
-          console.log('Test access to profiles table:', testData ? 'Success' : 'Failed', testError ? `Error: ${JSON.stringify(testError)}` : '');
+          console.log('Test access to profiles table:', count !== null ? 'Success' : 'Failed', testError ? `Error: ${JSON.stringify(testError)}` : '');
           
           const profileData = await fetchProfile(user.id);
           if (profileData) {

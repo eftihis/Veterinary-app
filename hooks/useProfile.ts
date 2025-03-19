@@ -6,6 +6,10 @@ export type ProfileUpdateData = {
   display_name?: string;
   avatar_url?: string;
   // Add other profile fields as needed
+  contact?: {
+    first_name?: string;
+    last_name?: string;
+  }
 };
 
 export function useProfile() {
@@ -24,49 +28,94 @@ export function useProfile() {
     setError(null);
 
     try {
-      // Add updated_at timestamp automatically
-      const updateData = {
-        ...data,
-        updated_at: new Date().toISOString()
-      };
-      
-      console.log('Updating profile with data:', updateData);
-      console.log('User ID:', user.id);
-      
-      // Get current profile data for comparison
-      const { data: currentProfile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      // Extract contact data if present
+      const contactData = data.contact;
+      const profileData = { ...data };
+      delete profileData.contact;
+
+      // Start transaction
+      let success = true;
+      let errorMessage = '';
+
+      // 1. Update profile data if needed
+      if (Object.keys(profileData).length > 0) {
+        // Add updated_at timestamp automatically
+        const updateData = {
+          ...profileData,
+          updated_at: new Date().toISOString()
+        };
         
-      console.log('Current profile before update:', currentProfile, fetchError ? `Error: ${JSON.stringify(fetchError)}` : '');
-      
-      const { data: updateResult, error: updateError } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', user.id)
-        .select('*')
-        .single();
+        console.log('Updating profile with data:', updateData);
+        
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', user.id);
 
-      console.log('Update result:', updateResult, updateError ? `Error: ${JSON.stringify(updateError)}` : '');
+        if (updateError) {
+          console.error('Supabase profile update error:', updateError);
+          success = false;
+          errorMessage = updateError.message;
+        }
+      }
 
-      if (updateError) {
-        console.error('Supabase update error:', updateError);
-        throw updateError;
+      // 2. Update contact data if needed
+      if (contactData && success && profile?.contact_id) {
+        console.log('Updating contact data:', contactData);
+        console.log('Contact ID:', profile.contact_id);
+        
+        try {
+          // First check if the contact exists
+          const { data: existingContact, error: checkError } = await supabase
+            .from('contacts')
+            .select('*')
+            .eq('id', profile.contact_id)
+            .single();
+            
+          console.log('Existing contact:', existingContact, checkError ? `Check error: ${JSON.stringify(checkError)}` : '');
+          
+          if (checkError) {
+            console.error('Error checking contact:', checkError);
+            success = false;
+            errorMessage = `Contact check error: ${checkError.message}`;
+          } else {
+            // Now update the contact
+            const contactUpdateData = {
+              ...contactData,
+              updated_at: new Date().toISOString()
+            };
+            
+            console.log('Contact update data:', contactUpdateData);
+            
+            const { data: updatedContact, error: contactError } = await supabase
+              .from('contacts')
+              .update(contactUpdateData)
+              .eq('id', profile.contact_id)
+              .select('*')
+              .single();
+              
+            console.log('Updated contact:', updatedContact, contactError ? `Contact error: ${JSON.stringify(contactError)}` : '');
+
+            if (contactError) {
+              console.error('Supabase contact update error:', contactError);
+              success = false;
+              errorMessage = contactError.message;
+            }
+          }
+        } catch (err) {
+          console.error('Exception updating contact:', err);
+          success = false;
+          errorMessage = err instanceof Error ? err.message : 'Unknown contact update error';
+        }
+      }
+
+      // If any step failed, throw error
+      if (!success) {
+        throw new Error(errorMessage || 'Failed to update profile or contact data');
       }
 
       // Refresh the profile in auth context
       await refreshProfile();
-      
-      // Verify the update by fetching the profile again
-      const { data: verifyProfile, error: verifyError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-        
-      console.log('Profile after refresh:', verifyProfile, verifyError ? `Error: ${JSON.stringify(verifyError)}` : '');
 
       return { success: true };
     } catch (err) {

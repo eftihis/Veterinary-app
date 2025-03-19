@@ -46,6 +46,12 @@ const profileFormSchema = z.object({
   fullName: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
+  firstName: z.string().min(1, {
+    message: "First name is required.",
+  }),
+  lastName: z.string().min(1, {
+    message: "Last name is required.",
+  }),
   email: z.string().email({
     message: "Please enter a valid email address.",
   }).optional(),
@@ -69,6 +75,8 @@ const passwordFormSchema = z.object({
 
 interface UserProfileProps {
   initialFullName: string;
+  initialFirstName: string;
+  initialLastName: string;
   initialEmail: string;
   avatarUrl: string;
   role: string;
@@ -77,6 +85,8 @@ interface UserProfileProps {
 
 export default function UserProfile({
   initialFullName,
+  initialFirstName,
+  initialLastName,
   initialEmail,
   avatarUrl,
   role,
@@ -92,6 +102,8 @@ export default function UserProfile({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       fullName: initialFullName,
+      firstName: initialFirstName,
+      lastName: initialLastName,
       email: initialEmail,
     },
   });
@@ -100,9 +112,11 @@ export default function UserProfile({
   useEffect(() => {
     profileForm.reset({
       fullName: initialFullName,
+      firstName: initialFirstName,
+      lastName: initialLastName,
       email: initialEmail,
     });
-  }, [initialFullName, initialEmail, profileForm]);
+  }, [initialFullName, initialFirstName, initialLastName, initialEmail, profileForm]);
 
   // Password form
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
@@ -119,6 +133,10 @@ export default function UserProfile({
     try {
       const { success, error } = await updateProfile({
         display_name: values.fullName,
+        contact: {
+          first_name: values.firstName,
+          last_name: values.lastName
+        }
       });
 
       if (success) {
@@ -307,6 +325,34 @@ export default function UserProfile({
                       <FormLabel>Display Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter your display name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={profileForm.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your first name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={profileForm.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your last name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

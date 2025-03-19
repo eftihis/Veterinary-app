@@ -63,6 +63,8 @@ export function ProfileContent() {
         {profile ? (
           <UserProfile
             initialFullName={profile.display_name || ""}
+            initialFirstName={profile.contacts?.first_name || ""}
+            initialLastName={profile.contacts?.last_name || ""}
             initialEmail={profile.email}
             avatarUrl={profile.avatar_url || "/placeholder.svg"}
             role="User"
