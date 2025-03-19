@@ -45,6 +45,7 @@ export function ContactsDataTableWrapper({
       const minLoadingTime = 800
       const startTime = Date.now()
       
+      // Fetch contacts directly, without trying to join with contact_roles
       const { data, error } = await supabase
         .from('contacts')
         .select('*')
@@ -61,6 +62,7 @@ export function ContactsDataTableWrapper({
         await new Promise(resolve => setTimeout(resolve, remainingTime))
       }
       
+      console.log('Fetched contacts:', data)
       setContacts(data || [])
     } catch (err) {
       console.error("Error fetching contacts:", err)

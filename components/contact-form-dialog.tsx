@@ -73,6 +73,9 @@ export function ContactFormDialog({
   contact,
   onSuccess,
 }: ContactFormDialogProps) {
+  console.log('Contact object:', contact)
+  console.log('Contact roles:', contact?.roles)
+  
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedRoles, setSelectedRoles] = useState<string[]>(contact?.roles || [])
   const [activeTab, setActiveTab] = useState("basic")
@@ -117,17 +120,23 @@ export function ContactFormDialog({
         },
   })
   
+  // Add debugging useEffect
+  useEffect(() => {
+    console.log('Available roles updated:', availableRoles)
+  }, [availableRoles])
+  
   // Fetch roles from Supabase when component mounts
   useEffect(() => {
     async function fetchRoles() {
       try {
         const { data, error } = await supabase
           .from('roles')
-          .select('name')
+          .select('id, name, description')
           .order('name')
         
         if (error) throw error
         
+        console.log('Roles fetched from database:', data)
         setAvailableRoles(data.map(role => role.name))
       } catch (error) {
         console.error('Error fetching roles:', error)
@@ -336,6 +345,7 @@ export function ContactFormDialog({
                             <SelectValue placeholder={isLoadingRoles ? "Loading roles..." : "Add a role"} />
                           </SelectTrigger>
                           <SelectContent>
+                            {/* Debugging roles */}
                             {availableRoles
                               .filter((role) => !selectedRoles.includes(role))
                               .map((role) => (
