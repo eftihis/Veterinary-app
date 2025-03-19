@@ -221,10 +221,18 @@ export default function UserProfile({
     }
 
     try {
+      const file = files[0];
+      
+      // Check file size (200KB = 200 * 1024 bytes)
+      const MAX_FILE_SIZE = 200 * 1024; // 200KB
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error("File size must be less than 200KB");
+        return;
+      }
+
       setIsUpdatingAvatar(true);
       
       // Upload file to storage
-      const file = files[0];
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
@@ -331,7 +339,7 @@ export default function UserProfile({
                   )}
                 </label>
                 <p className="text-[10px] text-muted-foreground">
-                  JPG, GIF or PNG. 1MB max.
+                  JPG, GIF or PNG. 200KB max.
                 </p>
               </div>
             </div>
