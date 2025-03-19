@@ -169,7 +169,15 @@ export function AnimalsDataTable({
       },
       cell: ({ row }) => (
         <div className="flex items-center">
-          <span className="font-medium">{row.getValue("name")}</span>
+          <span 
+            className="font-medium hover:underline cursor-pointer" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewAnimal(row.original);
+            }}
+          >
+            {row.getValue("name")}
+          </span>
         </div>
       ),
     },
@@ -372,8 +380,6 @@ export function AnimalsDataTable({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="cursor-pointer"
-                  onClick={() => onViewAnimal(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
