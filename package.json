@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "dev:local": "[ -f .env.local.backup ] && cp .env.local.backup .env.local || true; cp .env.local .env && next dev --turbopack",
-    "dev:ngrok": "[ -f .env.ngrok.backup ] && cp .env.ngrok.backup .env.ngrok || true; cp .env.ngrok .env && next dev --turbopack",
+    "dev:local": "NEXT_PUBLIC_BASE_URL=http://localhost:3000 NEXT_PUBLIC_SITE_URL=http://localhost:3000 NEXT_PUBLIC_DISABLE_XERO=true next dev --turbopack",
+    "dev:ngrok": "NEXT_PUBLIC_BASE_URL=https://2e35-2a02-587-c41f-ed7a-9915-4148-64bd-10f.ngrok-free.app NEXT_PUBLIC_SITE_URL=https://2e35-2a02-587-c41f-ed7a-9915-4148-64bd-10f.ngrok-free.app NEXT_PUBLIC_DISABLE_XERO=false next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
