@@ -6,6 +6,7 @@ import { AnimalsDataTableWrapper } from "@/components/animals-data-table-wrapper
 import { AnimalDetailSheet } from "@/components/animal-detail-sheet"
 import { AddAnimalDialog } from "@/components/add-animal-dialog"
 import { EditAnimalDialog } from "@/components/edit-animal-dialog"
+import { AddEventDialog } from "@/components/add-event-dialog"
 import { Button } from "@/components/ui/button"
 import { Dog, Plus } from "lucide-react"
 import DashboardLayout from "../dashboard-layout"
@@ -25,6 +26,7 @@ export default function AnimalsPage() {
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null)
+  const [addEventDialogOpen, setAddEventDialogOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   
   // Open detail sheet when an animal is clicked
@@ -33,10 +35,22 @@ export default function AnimalsPage() {
     setDetailSheetOpen(true)
   }
   
-  // Handle edit button click from the detail sheet
+  // Handle edit button click
   const handleEditAnimal = (animal: Animal) => {
     setSelectedAnimal(animal)
     setEditDialogOpen(true)
+  }
+  
+  // Handle add event button click
+  const handleAddEvent = (animal: Animal) => {
+    setSelectedAnimal(animal)
+    // Trigger the hidden button click
+    setTimeout(() => {
+      const triggerButton = document.getElementById('add-event-trigger');
+      if (triggerButton) {
+        triggerButton.click();
+      }
+    }, 0);
   }
   
   // Refresh the data after changes
@@ -86,6 +100,8 @@ export default function AnimalsPage() {
         <AnimalsDataTableWrapper 
           key={refreshKey}
           onViewAnimal={handleViewAnimal}
+          onEditAnimal={handleEditAnimal}
+          onAddEvent={handleAddEvent}
         />
         
         <AnimalDetailSheet
@@ -101,6 +117,21 @@ export default function AnimalsPage() {
           animal={selectedAnimal}
           onAnimalUpdated={handleDataChanged}
         />
+        
+        {selectedAnimal && (
+          <AddEventDialog
+            animalId={selectedAnimal.id}
+            onSuccess={handleDataChanged}
+          >
+            <Button
+              id="add-event-trigger"
+              className="hidden"
+              variant="outline"
+            >
+              Add Event
+            </Button>
+          </AddEventDialog>
+        )}
       </div>
     </DashboardLayout>
   )

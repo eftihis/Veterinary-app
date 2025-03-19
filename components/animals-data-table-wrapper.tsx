@@ -10,12 +10,14 @@ interface AnimalsDataTableWrapperProps {
   onViewAnimal: (animal: Animal) => void
   onEditAnimal?: (animal: Animal) => void
   onDeleteAnimal?: (animal: Animal) => void
+  onAddEvent?: (animal: Animal) => void
 }
 
 export function AnimalsDataTableWrapper({
   onViewAnimal,
   onEditAnimal = () => {},
   onDeleteAnimal = () => {},
+  onAddEvent,
 }: AnimalsDataTableWrapperProps) {
   const [animals, setAnimals] = useState<Animal[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,6 +87,7 @@ export function AnimalsDataTableWrapper({
       onViewAnimal={onViewAnimal}
       onEditAnimal={onEditAnimal}
       onDeleteAnimal={onDeleteAnimal}
+      onAddEvent={onAddEvent}
     />
   )
 } 

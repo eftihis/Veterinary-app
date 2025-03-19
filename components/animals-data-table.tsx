@@ -29,7 +29,8 @@ import {
   Bird,
   Rabbit,
   Rat,
-  HelpCircle
+  HelpCircle,
+  Plus
 } from "lucide-react"
 import { format, formatDistanceToNow, parseISO, differenceInMonths, differenceInYears } from "date-fns"
 import { supabase } from "@/lib/supabase"
@@ -120,11 +121,13 @@ export function AnimalsDataTable({
   onViewAnimal,
   onEditAnimal,
   onDeleteAnimal,
+  onAddEvent,
 }: {
   data: Animal[]
   onViewAnimal: (animal: Animal) => void
   onEditAnimal: (animal: Animal) => void
   onDeleteAnimal: (animal: Animal) => void
+  onAddEvent?: (animal: Animal) => void
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -304,6 +307,12 @@ export function AnimalsDataTable({
                 <FileEdit className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
+              {onAddEvent && (
+                <DropdownMenuItem onClick={() => onAddEvent(animal)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add event
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={() => onDeleteAnimal(animal)}
