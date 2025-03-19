@@ -1301,13 +1301,38 @@ export default function VeterinaryForm({
                                                 <FormItem>
                                                   <FormControl>
                                                     <Input
-                                                      type="number"
+                                                      type="text"
                                                       placeholder="1"
                                                       {...field}
                                                       value={field.value === undefined || field.value === null ? "1" : field.value}
                                                       onChange={(e) => {
+                                                        // Pass the raw string value through
+                                                        field.onChange(e.target.value);
+                                                      }}
+                                                      onBlur={(e) => {
                                                         const value = e.target.value;
-                                                        field.onChange(value === "" ? "1" : parseFloat(value) || 1);
+                                                        
+                                                        // Skip calculation if empty
+                                                        if (value === '') {
+                                                          field.onChange('1');
+                                                          return;
+                                                        }
+                                                        
+                                                        // Check if the value contains any operators
+                                                        if (/[+\-*/]/.test(value)) {
+                                                          try {
+                                                            // Evaluate the expression
+                                                            const result = evaluateExpression(value);
+                                                            // Format the result to 2 decimal places
+                                                            field.onChange(parseFloat(result.toFixed(2)));
+                                                          } catch (error) {
+                                                            console.error('Failed to evaluate expression:', error);
+                                                            field.onChange(parseFloat(value) || 1);
+                                                          }
+                                                        } else {
+                                                          // Just convert to number if no operators
+                                                          field.onChange(parseFloat(value) || 1);
+                                                        }
                                                         
                                                         // Force recalculation of totals
                                                         const updatedItems = [...lineItems];
@@ -1519,13 +1544,38 @@ export default function VeterinaryForm({
                                               <FormItem className="[&:has(:focus)]:z-30 relative">
                                                 <FormControl>
                                                   <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="1"
                                                     {...field}
                                                     value={field.value === undefined || field.value === null ? "1" : field.value}
                                                     onChange={(e) => {
+                                                      // Pass the raw string value through
+                                                      field.onChange(e.target.value);
+                                                    }}
+                                                    onBlur={(e) => {
                                                       const value = e.target.value;
-                                                      field.onChange(value === "" ? "1" : parseFloat(value) || 1);
+                                                      
+                                                      // Skip calculation if empty
+                                                      if (value === '') {
+                                                        field.onChange('1');
+                                                        return;
+                                                      }
+                                                      
+                                                      // Check if the value contains any operators
+                                                      if (/[+\-*/]/.test(value)) {
+                                                        try {
+                                                          // Evaluate the expression
+                                                          const result = evaluateExpression(value);
+                                                          // Format the result to 2 decimal places
+                                                          field.onChange(parseFloat(result.toFixed(2)));
+                                                        } catch (error) {
+                                                          console.error('Failed to evaluate expression:', error);
+                                                          field.onChange(parseFloat(value) || 1);
+                                                        }
+                                                      } else {
+                                                        // Just convert to number if no operators
+                                                        field.onChange(parseFloat(value) || 1);
+                                                      }
                                                       
                                                       // Force recalculation of totals
                                                       const updatedItems = [...lineItems];
@@ -1742,13 +1792,38 @@ export default function VeterinaryForm({
                                               <FormItem>
                                                 <FormControl>
                                                   <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="1"
                                                     {...field}
                                                     value={field.value === undefined || field.value === null ? "1" : field.value}
                                                     onChange={(e) => {
+                                                      // Pass the raw string value through
+                                                      field.onChange(e.target.value);
+                                                    }}
+                                                    onBlur={(e) => {
                                                       const value = e.target.value;
-                                                      field.onChange(value === "" ? "1" : parseFloat(value) || 1);
+                                                      
+                                                      // Skip calculation if empty
+                                                      if (value === '') {
+                                                        field.onChange('1');
+                                                        return;
+                                                      }
+                                                      
+                                                      // Check if the value contains any operators
+                                                      if (/[+\-*/]/.test(value)) {
+                                                        try {
+                                                          // Evaluate the expression
+                                                          const result = evaluateExpression(value);
+                                                          // Format the result to 2 decimal places
+                                                          field.onChange(parseFloat(result.toFixed(2)));
+                                                        } catch (error) {
+                                                          console.error('Failed to evaluate expression:', error);
+                                                          field.onChange(parseFloat(value) || 1);
+                                                        }
+                                                      } else {
+                                                        // Just convert to number if no operators
+                                                        field.onChange(parseFloat(value) || 1);
+                                                      }
                                                       
                                                       // Force recalculation of totals
                                                       const updatedItems = [...lineItems];
@@ -1757,6 +1832,7 @@ export default function VeterinaryForm({
                                                     min="0.01"
                                                     step="any"
                                                     onFocus={(e) => e.target.select()}
+                                                    className="rounded-none relative"
                                                   />
                                                 </FormControl>
                                                 <FormMessage />
@@ -1960,13 +2036,38 @@ export default function VeterinaryForm({
                                             <FormItem className="[&:has(:focus)]:z-30 relative">
                                               <FormControl>
                                                 <Input
-                                                  type="number"
+                                                  type="text"
                                                   placeholder="1"
                                                   {...field}
                                                   value={field.value === undefined || field.value === null ? "1" : field.value}
                                                   onChange={(e) => {
+                                                    // Pass the raw string value through
+                                                    field.onChange(e.target.value);
+                                                  }}
+                                                  onBlur={(e) => {
                                                     const value = e.target.value;
-                                                    field.onChange(value === "" ? "1" : parseFloat(value) || 1);
+                                                    
+                                                    // Skip calculation if empty
+                                                    if (value === '') {
+                                                      field.onChange('1');
+                                                      return;
+                                                    }
+                                                    
+                                                    // Check if the value contains any operators
+                                                    if (/[+\-*/]/.test(value)) {
+                                                      try {
+                                                        // Evaluate the expression
+                                                        const result = evaluateExpression(value);
+                                                        // Format the result to 2 decimal places
+                                                        field.onChange(parseFloat(result.toFixed(2)));
+                                                      } catch (error) {
+                                                        console.error('Failed to evaluate expression:', error);
+                                                        field.onChange(parseFloat(value) || 1);
+                                                      }
+                                                    } else {
+                                                      // Just convert to number if no operators
+                                                      field.onChange(parseFloat(value) || 1);
+                                                    }
                                                     
                                                     // Force recalculation of totals
                                                     const updatedItems = [...lineItems];
