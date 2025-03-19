@@ -252,6 +252,28 @@ export default function UserProfile({
       }
 
       setIsUpdatingAvatar(true);
+
+      // Delete previous avatar if it exists
+      if (profileAvatar && !profileAvatar.includes('/placeholder.svg')) {
+        try {
+          // Extract the file path from the URL
+          const urlParts = profileAvatar.split('/');
+          const filePath = urlParts.slice(urlParts.indexOf('avatars')).join('/');
+          
+          // Delete the previous avatar
+          const { error: deleteError } = await supabase.storage
+            .from('profile-avatars')
+            .remove([filePath]);
+
+          if (deleteError) {
+            console.warn('Failed to delete previous avatar:', deleteError);
+            // Continue with upload even if deletion fails
+          }
+        } catch (error) {
+          console.warn('Error deleting previous avatar:', error);
+          // Continue with upload even if deletion fails
+        }
+      }
       
       // Upload file to storage
       const fileExt = file.name.split('.').pop();
@@ -360,7 +382,7 @@ export default function UserProfile({
                   )}
                 </label>
                 <p className="text-[10px] text-muted-foreground">
-                  JPG, GIF or PNG. 200KB max.
+                  JPG, GIF or PNG.
                 </p>
               </div>
             </div>
