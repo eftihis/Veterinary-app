@@ -215,7 +215,16 @@ export function AnimalDetailSheet({
                       
                       <div>
                         <dt className="text-muted-foreground">Weight</dt>
-                        <dd className="font-medium">{animal.weight ? `${animal.weight} kg` : '-'}</dd>
+                        <dd className="font-medium">
+                          {animal.weight ? (
+                            <>
+                              {animal.weight} kg 
+                              <span className="text-xs text-muted-foreground ml-1">
+                                as of {format(parseISO(animal.updated_at), 'PP')}
+                              </span>
+                            </>
+                          ) : '-'}
+                        </dd>
                       </div>
                       
                       <div>
