@@ -294,8 +294,8 @@ export function AnimalTimeline({
         </div>
       ) : (
         <div className="space-y-4">
-          {events.map(event => (
-            <Card key={event.id}>
+          {events.map((event, eventIndex) => (
+            <Card key={event.id || `event-${eventIndex}`}>
               <CardHeader className="py-3">
                 <div className="flex justify-between">
                   <CardTitle className="text-base font-medium flex items-center">
