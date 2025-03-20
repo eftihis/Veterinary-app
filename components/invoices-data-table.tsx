@@ -79,7 +79,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TableSkeleton } from "@/components/table-skeleton"
+import { TableSkeleton } from "@/components/skeletons/table-skeleton"
 
 // Define our Invoice type based on our Supabase table structure
 export type Invoice = {

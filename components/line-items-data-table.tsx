@@ -75,7 +75,7 @@ import { ViewInvoiceDialog } from "@/components/view-invoice-dialog"
 import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
 import { Invoice } from "@/components/invoices-data-table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TableSkeleton } from "@/components/table-skeleton"
+import { TableSkeleton } from "@/components/skeletons/table-skeleton"
 
 // Define our LineItem type based on our Supabase view structure
 export type LineItem = {

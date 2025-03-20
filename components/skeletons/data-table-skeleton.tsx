@@ -24,10 +24,15 @@ export function DataTableSkeleton({
       {/* Table filters skeleton */}
       {showFilters && (
         <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-          <Skeleton className="h-9 w-full md:w-[350px]" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-24" />
-            <Skeleton className="h-9 w-24" />
+          <div className="flex flex-col md:flex-row md:items-center gap-4 w-full">
+            <Skeleton className="h-10 w-full md:w-[350px]" />
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-2 md:mt-0">
+              <Skeleton className="h-10 w-full sm:w-[150px] md:w-[180px]" />
+              <Skeleton className="h-10 w-full sm:w-[150px] md:w-[180px]" />
+            </div>
+          </div>
+          <div className="self-end mt-2 md:mt-0">
+            <Skeleton className="h-10 w-[130px]" />
           </div>
         </div>
       )}
@@ -37,15 +42,27 @@ export function DataTableSkeleton({
         <div className="rounded-md border w-full min-w-full overflow-hidden">
           {/* Table header skeleton */}
           <div className="bg-muted/50 border-b">
-            <div className="flex p-3 gap-2">
+            <div className="flex p-4 gap-2">
               {Array.from({ length: effectiveColumnCount }).map((_, i) => (
                 <Skeleton 
                   key={`header-${i}`} 
-                  className={`h-5 ${
-                    i === effectiveColumnCount - 1 && showActionsColumn 
-                      ? "w-8 ml-auto" 
-                      : i === 0 ? "w-6" : "w-24 flex-1"
-                  } ${i > 3 ? 'hidden lg:block' : i > 2 ? 'hidden md:block' : ''}`} 
+                  className={`h-6 ${
+                    i === 0 
+                      ? 'w-6' 
+                      : i === effectiveColumnCount - 1 && showActionsColumn 
+                        ? 'w-10 ml-auto' 
+                        : i === 1 
+                          ? 'w-32 flex-1' 
+                          : 'w-24 flex-1'
+                  } ${
+                    i > 4 
+                      ? 'hidden lg:block' 
+                      : i > 2 
+                        ? 'hidden md:block' 
+                        : i === 2 
+                          ? 'hidden sm:block' 
+                          : ''
+                  }`} 
                 />
               ))}
             </div>
@@ -56,7 +73,7 @@ export function DataTableSkeleton({
             {Array.from({ length: rowCount }).map((_, rowIndex) => (
               <div 
                 key={`row-${rowIndex}`} 
-                className="flex p-3 border-b items-center gap-2"
+                className="flex p-4 border-b items-center gap-2"
               >
                 {Array.from({ length: effectiveColumnCount }).map((_, colIndex) => {
                   // Determine if this is the actions column
@@ -70,15 +87,25 @@ export function DataTableSkeleton({
                   return (
                     <Skeleton 
                       key={`cell-${rowIndex}-${colIndex}`}
-                      className={`h-4 ${
+                      className={`h-5 ${
                         isActionsColumn
-                          ? "w-8 ml-auto"
+                          ? 'w-10 ml-auto'
                           : isFirstColumn
-                            ? "w-4"
-                            : colIndex === effectiveColumnCount - 2
-                              ? "w-16"
-                              : "w-24 flex-1"
-                      } ${colIndex > 3 ? 'hidden lg:block' : colIndex > 2 ? 'hidden md:block' : ''}`} 
+                            ? 'w-5'
+                            : colIndex === 1
+                              ? 'w-32 flex-1'
+                              : colIndex === effectiveColumnCount - 2
+                                ? 'w-16 flex-1'
+                                : 'w-24 flex-1'
+                      } ${
+                        colIndex > 4 
+                          ? 'hidden lg:block' 
+                          : colIndex > 2 
+                            ? 'hidden md:block' 
+                            : colIndex === 2 
+                              ? 'hidden sm:block' 
+                              : ''
+                      }`} 
                     />
                   );
                 })}
@@ -90,20 +117,20 @@ export function DataTableSkeleton({
 
       {/* Pagination skeleton */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-5 w-36" />
         
-        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-[70px]" />
+        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full justify-between sm:w-auto sm:justify-start">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-9 w-[70px]" />
           </div>
           
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8" />
-            <Skeleton className="h-8 w-8 hidden sm:block" />
-            <Skeleton className="h-8 w-8 hidden sm:block" />
-            <Skeleton className="h-8 w-8 hidden sm:block" />
-            <Skeleton className="h-8 w-8" />
+          <div className="flex items-center gap-2 w-full justify-between sm:w-auto sm:justify-start">
+            <Skeleton className="h-9 w-9" />
+            <Skeleton className="h-9 w-9 hidden sm:block" />
+            <Skeleton className="h-9 w-9 hidden sm:block" />
+            <Skeleton className="h-9 w-9 hidden sm:block" />
+            <Skeleton className="h-9 w-9" />
           </div>
         </div>
       </div>
