@@ -30,6 +30,7 @@ export default function AnimalsPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null)
   const [addEventDialogOpen, setAddEventDialogOpen] = useState(false)
+  const [addAnimalDialogOpen, setAddAnimalDialogOpen] = useState(false)
   const [animalToDelete, setAnimalToDelete] = useState<Animal | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -105,16 +106,16 @@ export default function AnimalsPage() {
     }
   }
   
-  // Handle add event button click
-  const handleAddEvent = (animal: Animal) => {
+  // Handle add animal button click in the UI header
+  const handleAddAnimalClick = () => {
+    setAddAnimalDialogOpen(true);
+  }
+  
+  // Handle add event for an existing animal
+  const handleAddAnimalEvent = (animal: Animal) => {
     setSelectedAnimal(animal)
     // Trigger the hidden button click
-    setTimeout(() => {
-      const triggerButton = document.getElementById('add-event-trigger');
-      if (triggerButton) {
-        triggerButton.click();
-      }
-    }, 0);
+    setAddEventDialogOpen(true)
   }
   
   // Refresh the data after changes
@@ -144,30 +145,34 @@ export default function AnimalsPage() {
           </Breadcrumb>
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-hidden">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <h2 className="text-2xl font-bold tracking-tight">Animals</h2>
             <p className="text-muted-foreground">
-              Manage your animals and their records.
+              Manage your animals and their health records.
             </p>
           </div>
           
-          <AddAnimalDialog onSuccess={handleDataChanged}>
-            <Button size="sm" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Animal
-            </Button>
-          </AddAnimalDialog>
+          <Button 
+            onClick={handleAddAnimalClick}
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Animal
+          </Button>
         </div>
         
-        <AnimalsDataTableWrapper 
-          key={refreshKey}
-          onViewAnimal={handleViewAnimal}
-          onEditAnimal={handleEditAnimal}
-          onAddEvent={handleAddEvent}
-          onDeleteAnimal={handleDeleteAnimal}
-        />
+        <div className="w-full overflow-hidden">
+          <AnimalsDataTableWrapper 
+            key={refreshKey}
+            onViewAnimal={handleViewAnimal}
+            onEditAnimal={handleEditAnimal}
+            onDeleteAnimal={handleDeleteAnimal}
+            onAddEvent={handleAddAnimalEvent}
+          />
+        </div>
         
         <AnimalDetailSheet
           open={detailSheetOpen}
@@ -194,6 +199,12 @@ export default function AnimalsPage() {
             : "Are you sure you want to delete this animal? This action cannot be undone."
           }
           entityName="animal"
+        />
+        
+        <AddAnimalDialog
+          open={addAnimalDialogOpen}
+          onOpenChange={setAddAnimalDialogOpen}
+          onSuccess={handleDataChanged}
         />
         
         {selectedAnimal && (

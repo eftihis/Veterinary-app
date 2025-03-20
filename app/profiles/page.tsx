@@ -22,9 +22,9 @@ export default function ProfilesPage() {
             <h1 className="text-l font-bold">Account Settings</h1>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-15 pb-15">
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-15 pb-15 overflow-hidden">
           <div className="flex justify-center">
-            <div className="w-full max-w-3xl py-8">
+            <div className="w-full max-w-3xl py-8 overflow-hidden">
               <ProfileContentWrapper />
             </div>
           </div>

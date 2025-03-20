@@ -116,7 +116,7 @@ export default function ContactsPage() {
           </Breadcrumb>
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-hidden">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <h2 className="text-2xl font-bold tracking-tight">Contacts</h2>
@@ -135,7 +135,7 @@ export default function ContactsPage() {
           </Button>
         </div>
         
-        <div data-contacts-table-wrapper>
+        <div className="w-full overflow-hidden">
           <ContactsDataTableWrapper 
             key={refreshKey}
             onViewContact={handleViewContact}

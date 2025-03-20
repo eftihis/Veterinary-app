@@ -131,8 +131,110 @@ export function AnimalsDataTable({
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
+    // Hide less important columns by default
+    breed: false,
+    microchip_number: false,
+    weight: false,
+    created_at: false,
+    updated_at: false,
+  })
   const [rowSelection, setRowSelection] = React.useState({})
+  const [globalFilter, setGlobalFilter] = React.useState("")
+
+  // Adjust column visibility based on screen size
+  React.useEffect(() => {
+    // Function to update column visibility based on screen width
+    const updateColumnVisibility = () => {
+      const width = window.innerWidth;
+      
+      if (width < 768) {
+        // Mobile view - show minimal columns
+        setColumnVisibility({
+          select: true,
+          name: true,
+          type: true,
+          gender: false,
+          date_of_birth: false,
+          is_deceased: true,
+          owner: false,
+          microchip_number: false,
+          weight: false,
+          breed: false,
+          status: true,
+          actions: true,
+          created_at: false,
+          updated_at: false,
+        });
+      } else if (width < 1024) {
+        // Tablet view - show more columns but still limited
+        setColumnVisibility({
+          select: true,
+          name: true,
+          type: true,
+          gender: true,
+          date_of_birth: true,
+          is_deceased: true,
+          owner: true,
+          microchip_number: false,
+          weight: false,
+          breed: false,
+          status: true,
+          actions: true,
+          created_at: false,
+          updated_at: false,
+        });
+      } else {
+        // Desktop view - show most columns
+        setColumnVisibility({
+          select: true,
+          name: true,
+          type: true,
+          gender: true,
+          date_of_birth: true,
+          is_deceased: true,
+          owner: true,
+          microchip_number: false,
+          weight: false,
+          breed: true,
+          status: true,
+          actions: true,
+          created_at: false,
+          updated_at: false,
+        });
+      }
+    };
+    
+    // Set initial column visibility
+    updateColumnVisibility();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', updateColumnVisibility);
+    
+    // Remove event listener on cleanup
+    return () => window.removeEventListener('resize', updateColumnVisibility);
+  }, []);
+
+  // Fuzzy filter implementation
+  const fuzzyFilter = (row: any, columnId: string, filterValue: string) => {
+    const searchValue = filterValue.toLowerCase();
+    
+    // Get the values to search in
+    const name = row.getValue("name")?.toString().toLowerCase() || "";
+    const type = row.getValue("type")?.toString().toLowerCase() || "";
+    const breed = row.getValue("breed")?.toString().toLowerCase() || "";
+    const gender = row.getValue("gender")?.toString().toLowerCase() || "";
+    const microchip = row.getValue("microchip_number")?.toString().toLowerCase() || "";
+    
+    // Check if any of the values match the search term
+    return (
+      name.includes(searchValue) ||
+      type.includes(searchValue) ||
+      breed.includes(searchValue) ||
+      gender.includes(searchValue) ||
+      microchip.includes(searchValue)
+    );
+  };
 
   const columns: ColumnDef<Animal>[] = [
     {
@@ -331,6 +433,9 @@ export function AnimalsDataTable({
   const table = useReactTable({
     data,
     columns,
+    filterFns: {
+      fuzzy: fuzzyFilter,
+    },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -339,28 +444,40 @@ export function AnimalsDataTable({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    globalFilterFn: fuzzyFilter,
+    onGlobalFilterChange: setGlobalFilter,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      globalFilter,
     },
   })
 
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4 gap-2">
-        <Input
-          placeholder="Filter animals..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+    <div className="space-y-4 overflow-hidden">
+      <div className="flex items-center justify-between pb-2 gap-4">
+        <div className="flex w-full max-w-sm items-center space-x-2">
+          <Input
+            placeholder="Search animals..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="h-9"
+          />
+          {globalFilter && (
+            <Button 
+              variant="ghost" 
+              onClick={() => setGlobalFilter("")}
+              className="h-9 px-2"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
+            <Button variant="outline" className="h-9">
               Columns <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -385,8 +502,8 @@ export function AnimalsDataTable({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border w-full min-w-full overflow-hidden">
+        <Table className="w-full">
           <TableHeader className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

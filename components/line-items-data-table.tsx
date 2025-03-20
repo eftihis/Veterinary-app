@@ -318,7 +318,10 @@ export function LineItemsDataTable({
   ])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = React.useState<string>("")
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
+    // Hide less important columns by default
+    description: false,
+  })
   const [rowSelection, setRowSelection] = React.useState({})
   
   // Status filter state
@@ -349,6 +352,61 @@ export function LineItemsDataTable({
     { value: "voided", label: "Voided" }
   ]
 
+  // Adjust column visibility based on screen size
+  React.useEffect(() => {
+    // Function to update column visibility based on screen width
+    const updateColumnVisibility = () => {
+      const width = window.innerWidth;
+      
+      if (width < 768) {
+        // Mobile view - show minimal columns
+        setColumnVisibility({
+          document_number: true,
+          status: true,
+          animal_name: false,
+          item_name: true,
+          price: true,
+          description: false,
+          created_at: false,
+          actions: true,
+        });
+      } else if (width < 1024) {
+        // Tablet view - show more columns but still limited
+        setColumnVisibility({
+          document_number: true,
+          status: true,
+          animal_name: true,
+          item_name: true,
+          price: true,
+          description: false,
+          created_at: true,
+          actions: true,
+        });
+      } else {
+        // Desktop view - show most columns
+        setColumnVisibility({
+          document_number: true,
+          status: true,
+          animal_name: true,
+          item_name: true,
+          price: true,
+          description: true,
+          created_at: true,
+          actions: true,
+        });
+      }
+    };
+    
+    // Set initial column visibility
+    updateColumnVisibility();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', updateColumnVisibility);
+    
+    // Remove event listener on cleanup
+    return () => window.removeEventListener('resize', updateColumnVisibility);
+  }, []);
+
   // Function to handle opening the edit dialog
   const handleEditInvoice = (lineItem: LineItem) => {
     // Convert LineItem to Invoice format required by EditInvoiceDialog
@@ -364,6 +422,8 @@ export function LineItemsDataTable({
         name: lineItem.animal_name || '',
         type: lineItem.animal_type || ''
       } : null,
+      veterinarian_id: null,
+      veterinarian: null,
       check_in_date: null,
       check_out_date: null,
       subtotal: 0,
@@ -390,6 +450,8 @@ export function LineItemsDataTable({
         name: lineItem.animal_name || '',
         type: lineItem.animal_type || ''
       } : null,
+      veterinarian_id: null,
+      veterinarian: null,
       check_in_date: null,
       check_out_date: null,
       subtotal: 0,
@@ -773,7 +835,7 @@ export function LineItemsDataTable({
   return (
     <>
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-6 overflow-x-auto">
           <div className="flex flex-col gap-4 py-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -836,7 +898,7 @@ export function LineItemsDataTable({
                           key={column.id}
                           className="capitalize"
                           checked={column.getIsVisible()}
-                          onCheckedChange={(value: boolean) =>
+                          onCheckedChange={(value) =>
                             column.toggleVisibility(!!value)
                           }
                         >
@@ -866,8 +928,8 @@ export function LineItemsDataTable({
               clearAllFilters={clearAllFilters}
             />
           </div>
-          <div className="rounded-md border">
-            <Table>
+          <div className="rounded-md border w-full min-w-full overflow-hidden">
+            <Table className="w-full">
               <TableHeader className="bg-muted/50">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>

@@ -105,9 +105,84 @@ export function ContactsDataTable({
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
+    // Hide less important columns by default
+    address: false,
+    created_at: false,
+    updated_at: false,
+  })
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
+
+  // Adjust column visibility based on screen size
+  React.useEffect(() => {
+    // Function to update column visibility based on screen width
+    const updateColumnVisibility = () => {
+      const width = window.innerWidth;
+      
+      if (width < 768) {
+        // Mobile view - show minimal columns
+        setColumnVisibility({
+          select: true,
+          name: true,
+          email: false,
+          phone: true,
+          roles: true,
+          is_active: true,
+          actions: true,
+          address: false,
+          city: false, 
+          state: false,
+          country: false,
+          created_at: false,
+          updated_at: false,
+        });
+      } else if (width < 1024) {
+        // Tablet view - show more columns but still limited
+        setColumnVisibility({
+          select: true,
+          name: true,
+          email: true,
+          phone: true,
+          roles: true,
+          is_active: true,
+          actions: true,
+          address: false,
+          city: false,
+          state: false,
+          country: false,
+          created_at: false,
+          updated_at: false,
+        });
+      } else {
+        // Desktop view - show most columns
+        setColumnVisibility({
+          select: true,
+          name: true,
+          email: true,
+          phone: true,
+          roles: true,
+          is_active: true,
+          actions: true,
+          address: false,
+          city: false,
+          state: false,
+          country: false,
+          created_at: false,
+          updated_at: false,
+        });
+      }
+    };
+    
+    // Set initial column visibility
+    updateColumnVisibility();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', updateColumnVisibility);
+    
+    // Remove event listener on cleanup
+    return () => window.removeEventListener('resize', updateColumnVisibility);
+  }, []);
 
   const columns: ColumnDef<Contact>[] = [
     {
@@ -353,17 +428,28 @@ export function ContactsDataTable({
   });
 
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4 gap-2">
-        <Input
-          placeholder="Search contacts..."
-          value={globalFilter ?? ""}
-          onChange={(event) => setGlobalFilter(event.target.value)}
-          className="max-w-sm"
-        />
+    <div className="space-y-4 overflow-hidden">
+      <div className="flex items-center justify-between pb-2 gap-4">
+        <div className="flex w-full max-w-sm items-center space-x-2">
+          <Input
+            placeholder="Search contacts..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="h-9"
+          />
+          {globalFilter && (
+            <Button 
+              variant="ghost" 
+              onClick={() => setGlobalFilter("")}
+              className="h-9 px-2"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
+            <Button variant="outline" className="h-9">
               Columns <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -388,8 +474,8 @@ export function ContactsDataTable({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border w-full min-w-full overflow-hidden">
+        <Table className="w-full">
           <TableHeader className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
