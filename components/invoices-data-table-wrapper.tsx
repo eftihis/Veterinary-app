@@ -7,10 +7,12 @@ import { supabase } from "@/lib/supabase";
 
 interface InvoicesDataTableWrapperProps {
   onDeleteInvoice?: (invoice: any | any[]) => void;
+  onUpdateInvoiceStatus?: (invoices: any[], newStatus: string) => void;
 }
 
 export default function InvoicesDataTableWrapper({
   onDeleteInvoice,
+  onUpdateInvoiceStatus,
 }: InvoicesDataTableWrapperProps = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [preloadedInvoices, setPreloadedInvoices] = useState<any[]>([]);
@@ -181,5 +183,6 @@ export default function InvoicesDataTableWrapper({
     initialFetchComplete={true}
     preloadedData={preloadedInvoices}
     onDeleteInvoice={onDeleteInvoice}
+    onUpdateInvoiceStatus={onUpdateInvoiceStatus}
   />;
 } 

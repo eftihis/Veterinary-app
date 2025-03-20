@@ -627,6 +627,26 @@ export function InvoicesDataTable({
     return selectedInvoices.some(invoice => invoice.status.toLowerCase() === 'draft');
   }
 
+  // Function to check if any selected invoices can be submitted (must be in draft status)
+  const hasSubmittableDrafts = () => {
+    const selectedInvoices = Object.keys(rowSelection).map(
+      idx => filteredData[parseInt(idx)]
+    );
+    
+    // Always return true if any invoices are selected - filtering will happen later
+    return selectedInvoices.length > 0;
+  }
+
+  // Function to check if selected invoices can be reverted to draft (must be in submitted status)
+  const hasRevertableSubmitted = () => {
+    const selectedInvoices = Object.keys(rowSelection).map(
+      idx => filteredData[parseInt(idx)]
+    );
+    
+    // Always return true if any invoices are selected - filtering will happen later
+    return selectedInvoices.length > 0;
+  }
+
   // Function to handle batch status change
   const handleBatchStatusChange = (newStatus: string) => {
     if (onUpdateInvoiceStatus) {
@@ -885,7 +905,76 @@ export function InvoicesDataTable({
                 }
               </DropdownMenuItem>
               
-              {/* Delete Action */}
+              {/* Status Change Sub-menu */}
+              {onUpdateInvoiceStatus && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="w-full" asChild>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start font-normal px-2 cursor-default"
+                      disabled={!canChangeStatus()}
+                    >
+                      <div className="flex items-center w-full justify-between">
+                        <div className="flex items-center">
+                          <FileEdit className="mr-2 h-4 w-4" />
+                          Change Status
+                        </div>
+                        <ChevronDown className="h-4 w-4" />
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="right">
+                    {statusOptions.map(status => (
+                      <DropdownMenuItem
+                        key={status.value}
+                        onClick={() => handleBatchStatusChange(status.value)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(status.value)}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              
+              {/* Submit Invoice - Only for draft invoices */}
+              {onUpdateInvoiceStatus && (
+                <DropdownMenuItem 
+                  onClick={() => onUpdateInvoiceStatus([invoice], "submitted")}
+                  disabled={invoice.status.toLowerCase() !== "draft"}
+                  className={invoice.status.toLowerCase() !== "draft" 
+                    ? "text-muted-foreground cursor-not-allowed" 
+                    : ""
+                  }
+                >
+                  <Check className="mr-2 h-4 w-4" />
+                  Submit Invoice
+                  {invoice.status.toLowerCase() !== "draft" && (
+                    <span className="ml-1 text-xs">(Draft only)</span>
+                  )}
+                </DropdownMenuItem>
+              )}
+              
+              {/* Revert to Draft - Only for submitted invoices */}
+              {onUpdateInvoiceStatus && (
+                <DropdownMenuItem 
+                  onClick={() => onUpdateInvoiceStatus([invoice], "draft")}
+                  disabled={invoice.status.toLowerCase() !== "submitted"}
+                  className={invoice.status.toLowerCase() !== "submitted" 
+                    ? "text-muted-foreground cursor-not-allowed" 
+                    : ""
+                  }
+                >
+                  <PencilIcon className="mr-2 h-4 w-4" />
+                  Revert to Draft
+                  {invoice.status.toLowerCase() !== "submitted" && (
+                    <span className="ml-1 text-xs">(Submitted only)</span>
+                  )}
+                </DropdownMenuItem>
+              )}
+              
+              {/* Delete Option */}
               {onDeleteInvoice && (
                 <>
                   <DropdownMenuSeparator />
@@ -1075,12 +1164,42 @@ export function InvoicesDataTable({
                     </DropdownMenu>
                   )}
                   
+                  {/* Submit Invoices - Only for draft invoices */}
+                  {onUpdateInvoiceStatus && (
+                    <DropdownMenuItem 
+                      onClick={() => handleBatchStatusChange("submitted")}
+                      disabled={!hasSubmittableDrafts()}
+                      className={!hasSubmittableDrafts() 
+                        ? "text-muted-foreground cursor-not-allowed" 
+                        : ""
+                      }
+                    >
+                      <Check className="mr-2 h-4 w-4" />
+                      Submit Invoices
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {/* Revert to Draft - Only for submitted invoices */}
+                  {onUpdateInvoiceStatus && (
+                    <DropdownMenuItem 
+                      onClick={() => handleBatchStatusChange("draft")}
+                      disabled={!hasRevertableSubmitted()}
+                      className={!hasRevertableSubmitted() 
+                        ? "text-muted-foreground cursor-not-allowed" 
+                        : ""
+                      }
+                    >
+                      <PencilIcon className="mr-2 h-4 w-4" />
+                      Revert to Draft
+                    </DropdownMenuItem>
+                  )}
+                  
                   {/* Delete Option */}
                   {onDeleteInvoice && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
-                        onClick={handleBatchDelete}
+                        onClick={() => handleBatchDelete()}
                         disabled={!hasDeleteableDrafts()}
                         className={!hasDeleteableDrafts() 
                           ? "text-muted-foreground cursor-not-allowed" 

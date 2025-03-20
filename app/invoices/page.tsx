@@ -47,6 +47,62 @@ export default function InvoicesPage() {
     setDeleteDialogOpen(true)
   }
   
+  // Handle updating invoice status
+  const handleUpdateInvoiceStatus = async (invoices: any[], newStatus: string) => {
+    try {
+      // Validation logic: only draft can be submitted, only submitted can be reverted to draft
+      const validStatusTransitions = {
+        'draft': ['submitted'],
+        'submitted': ['draft', 'authorised'],
+        'authorised': ['paid', 'voided'],
+      };
+      
+      // Filter out invoices with invalid status transitions
+      const eligibleInvoices = invoices.filter(invoice => {
+        const currentStatus = invoice.status.toLowerCase();
+        const allowedTransitions = validStatusTransitions[currentStatus as keyof typeof validStatusTransitions] || [];
+        return allowedTransitions.includes(newStatus);
+      });
+      
+      // Count of invoices that can't be updated
+      const ineligibleCount = invoices.length - eligibleInvoices.length;
+      
+      // If no eligible invoices, show message but don't block the operation
+      if (eligibleInvoices.length === 0) {
+        toast.error(`None of the selected invoices can be changed to ${newStatus} status.`);
+        return;
+      }
+      
+      // Get IDs of eligible invoices
+      const invoiceIds = eligibleInvoices.map(invoice => invoice.id);
+      
+      // Update the status in the database
+      const { error } = await supabase
+        .from('invoices')
+        .update({ status: newStatus })
+        .in('id', invoiceIds);
+      
+      if (error) {
+        console.error(`Error updating invoices to ${newStatus}:`, error);
+        toast.error(`Failed to update invoice status: ${error.message}`);
+        return;
+      }
+      
+      // Show success message
+      let successMessage = `${eligibleInvoices.length} invoice(s) updated to ${newStatus} status`;
+      
+      if (ineligibleCount > 0) {
+        successMessage += `. ${ineligibleCount} invoice(s) could not be updated due to invalid status transition.`;
+      }
+      
+      toast.success(successMessage);
+      handleDataChanged(); // Refresh the data to show updated statuses
+    } catch (error) {
+      console.error(`Error in handleUpdateInvoiceStatus:`, error);
+      toast.error(`An unexpected error occurred while updating invoice status.`);
+    }
+  };
+  
   // Handle confirming invoice deletion
   const confirmDeleteInvoice = async () => {
     try {
@@ -206,6 +262,7 @@ export default function InvoicesPage() {
           <InvoicesDataTableWrapper 
             key={refreshKey} 
             onDeleteInvoice={handleDeleteInvoice}
+            onUpdateInvoiceStatus={handleUpdateInvoiceStatus}
           />
         </div>
         
