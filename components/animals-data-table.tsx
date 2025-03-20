@@ -352,22 +352,17 @@ export function AnimalsDataTable({
       id: "status",
       header: "Status",
       cell: ({ row }) => {
-        const isDeceased = row.getValue("is_deceased") as boolean
         const animal = row.original
         
-        // If animal is deceased, just show that status
-        if (isDeceased) {
-          return (
-            <Badge variant="destructive">Deceased</Badge>
-          )
-        }
-        
-        // If animal has a specific status that's not just "Active", show that
-        if (animal.status && animal.status.toLowerCase() !== "active") {
+        // If animal has a specific status, show that
+        if (animal.status) {
           let variant: "default" | "secondary" | "outline" | "destructive" | "status" = "outline"
           
           // Determine badge variant based on status
           switch(animal.status.toLowerCase()) {
+            case 'deceased':
+              variant = "destructive"
+              break
             case 'critical':
             case 'emergency':
               variant = "destructive"
@@ -402,12 +397,12 @@ export function AnimalsDataTable({
       },
       filterFn: (row, id, value) => {
         if (value.includes("all")) return true
-        const isDeceased = row.original.is_deceased as boolean
-        if (value.includes("deceased") && isDeceased) return true
-        if (value.includes("active") && !isDeceased) return true
+        const status = row.original.status?.toLowerCase() || "active"
+        if (value.includes("deceased") && status === "deceased") return true
+        if (value.includes("active") && status !== "deceased") return true
         return false
       },
-      accessorFn: (row) => row.is_deceased,
+      accessorFn: (row) => row.status,
     },
     {
       accessorKey: "created_at",
