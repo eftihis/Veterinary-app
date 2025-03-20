@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { AddAnimalDialog } from "@/components/add-animal-dialog"
+import { ContactFormDialog } from "@/components/contact-form-dialog"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useKeyboardShortcut } from "@/lib/useKeyboardShortcut"
@@ -24,6 +25,7 @@ export function QuickActionButton() {
   const pathname = usePathname()
   const { user } = useAuth()
   const [addAnimalOpen, setAddAnimalOpen] = useState(false)
+  const [addContactOpen, setAddContactOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   // Do not render button on login pages or when user is not authenticated
@@ -38,9 +40,17 @@ export function QuickActionButton() {
     });
   }, [user]);
 
+  const handleAddContactShortcut = useCallback(() => {
+    if (!user) return;
+    setAddContactOpen(true);
+    toast.info("Add Contact keyboard shortcut activated (⌘⇧C)", {
+      duration: 2000
+    });
+  }, [user]);
+
   const handleCreateInvoiceShortcut = useCallback(() => {
     if (!user) return;
-    router.push("/add-invoice");
+    router.push("/invoices/create-new");
     toast.info("Create Invoice keyboard shortcut activated (⌘⇧I)", {
       duration: 2000
     });
@@ -57,11 +67,13 @@ export function QuickActionButton() {
 
   // Register keyboard shortcuts using our custom hook
   useKeyboardShortcut('cmd+shift+a', handleAddAnimalShortcut, { disableOnInput: true });
+  useKeyboardShortcut('cmd+shift+c', handleAddContactShortcut, { disableOnInput: true });
   useKeyboardShortcut('cmd+shift+i', handleCreateInvoiceShortcut, { disableOnInput: true });
   useKeyboardShortcut('cmd+shift+u', handleQuickActionsShortcut, { disableOnInput: true });
 
-  // Also register Ctrl+A and Ctrl+I for Windows/Linux users
+  // Also register Ctrl+A, Ctrl+C and Ctrl+I for Windows/Linux users
   useKeyboardShortcut('ctrl+shift+a', handleAddAnimalShortcut, { disableOnInput: true });
+  useKeyboardShortcut('ctrl+shift+c', handleAddContactShortcut, { disableOnInput: true });
   useKeyboardShortcut('ctrl+shift+i', handleCreateInvoiceShortcut, { disableOnInput: true });
   useKeyboardShortcut('ctrl+shift+u', handleQuickActionsShortcut, { disableOnInput: true });
 
@@ -113,6 +125,10 @@ export function QuickActionButton() {
     console.log("Animal added:", animalData);
   }
   
+  const handleContactSuccess = () => {
+    console.log("Contact added/updated successfully");
+  }
+  
   // If this is a login page or user is not logged in, don't render the button
   if (isLoginPage || !user) {
     return null;
@@ -152,6 +168,19 @@ export function QuickActionButton() {
             <DropdownMenuItem 
               onClick={() => {
                 setIsDropdownOpen(false);
+                setAddContactOpen(true);
+              }}
+              className="cursor-pointer"
+            >
+              <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
+                <Plus className="size-4" />
+              </div>
+              <div className="ml-2 font-medium">Add Contact</div>
+              <DropdownMenuShortcut>⌘⇧C</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => {
+                setIsDropdownOpen(false);
                 router.push("/invoices/create-new");
               }}
               className="cursor-pointer"
@@ -171,6 +200,13 @@ export function QuickActionButton() {
         open={addAnimalOpen}
         onOpenChange={setAddAnimalOpen}
         onAnimalAdded={handleAddAnimal}
+      />
+
+      {/* Add Contact Dialog */}
+      <ContactFormDialog
+        open={addContactOpen}
+        onOpenChange={setAddContactOpen}
+        onSuccess={handleContactSuccess}
       />
     </>
   );
