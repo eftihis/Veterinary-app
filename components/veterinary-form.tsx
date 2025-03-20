@@ -46,8 +46,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { Combobox } from "@/components/ui/combobox";
 import { AnimalCombobox } from "@/components/ui/animal-combobox";
+import { ContactCombobox } from "@/components/ui/contact-combobox";
 import { useXeroItems } from '@/hooks/useXeroItems';
 import { useAnimals } from '@/hooks/useAnimals';
+import { useContacts } from '@/hooks/useContacts';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 
@@ -76,6 +78,7 @@ const formSchema = z.object({
   reference: z.string().optional(),
   animalName: z.string().min(1, "Animal name is required"),
   animalId: z.string().optional(),
+  veterinarianId: z.string().optional(),
   checkInDate: z.date().optional().refine(date => !!date, { 
     message: "Check-in date is required" 
   }),
@@ -111,6 +114,7 @@ type LineItem = {
 type FormValues = Omit<z.infer<typeof formSchema>, 'lineItems'> & {
   lineItems: LineItem[];
   animalId?: string;
+  veterinarianId?: string;
 };
 
 // Add a helper function to evaluate mathematical expressions safely
@@ -210,6 +214,7 @@ export default function VeterinaryForm({
       reference: "",
       animalName: "",
       animalId: "",
+      veterinarianId: "",
       checkInDate: undefined,
       checkOutDate: undefined,
       lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", quantity: 1, price: "", type: "item" }],
@@ -235,7 +240,7 @@ export default function VeterinaryForm({
   const { watch, setValue } = form;
   const lineItems = watch("lineItems");
 
-  // Fetch animals without filtering by type
+  // Fetch animals
   const {
     animals: filteredAnimals,
     allAnimals: animalOptions, 
@@ -244,6 +249,14 @@ export default function VeterinaryForm({
     addAnimal
   } = useAnimals();
   
+  // Fetch contacts (veterinarians)
+  const {
+    contacts: contactOptions,
+    loading: loadingContacts,
+    error: contactsError,
+    addContact
+  } = useContacts();
+
   // Update filtered animals when animal type changes
   useEffect(() => {
     // Skip if we don't have animal data loaded yet
@@ -559,6 +572,7 @@ export default function VeterinaryForm({
           reference: initialData.reference || '',
           animalName: animalName,
           animalId: animalId,
+          veterinarianId: initialData.veterinarian_id || '',
           checkInDate: checkInDate,
           checkOutDate: checkOutDate,
           lineItems: formattedLineItems,
@@ -596,6 +610,7 @@ export default function VeterinaryForm({
         reference: data.reference || null,
         animal_name: data.animalName,
         animal_id: data.animalId || null,
+        veterinarian_id: data.veterinarianId || null,
         check_in_date: data.checkInDate,
         check_out_date: data.checkOutDate,
         line_items: preparedLineItems,
@@ -619,6 +634,7 @@ export default function VeterinaryForm({
             reference: data.reference || null,
             animal_name: data.animalName,
             animal_id: data.animalId || null,
+            veterinarian_id: data.veterinarianId || null,
             check_in_date: data.checkInDate,
             check_out_date: data.checkOutDate,
             subtotal: subtotal,
@@ -643,6 +659,7 @@ export default function VeterinaryForm({
             reference: data.reference || null,
             animal_name: data.animalName,
             animal_id: data.animalId || null,
+            veterinarian_id: data.veterinarianId || null,
             check_in_date: data.checkInDate,
             check_out_date: data.checkOutDate,
             subtotal: subtotal,
@@ -872,6 +889,41 @@ export default function VeterinaryForm({
                   )}
                 />
 
+                <FormField
+                  control={form.control}
+                  name="veterinarianId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Veterinarian</FormLabel>
+                      <FormControl>
+                        <ContactCombobox
+                          options={contactOptions}
+                          selectedId={field.value || ""}
+                          onSelect={(contact) => {
+                            if (contact) {
+                              field.onChange(contact.value);
+                            }
+                          }}
+                          placeholder="Select or type veterinarian name"
+                          emptyMessage={
+                            loadingContacts 
+                              ? "Loading veterinarians..." 
+                              : "No veterinarians found. Type to create new."
+                          }
+                          loading={loadingContacts}
+                          onAddContact={addContact}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      {contactsError && (
+                        <p className="text-sm text-red-500 mt-1">{contactsError}</p>
+                      )}
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="checkInDate"
@@ -1347,7 +1399,6 @@ export default function VeterinaryForm({
                                                         : "No items found."
                                                     }
                                                     loading={loadingXeroItems}
-                                                    className="rounded-none relative"
                                                   />
                                                 </FormControl>
                                                 <FormMessage />
