@@ -20,17 +20,11 @@ import {
   Eye, 
   FileEdit, 
   Trash2,
-  Plus,
-  User,
   Mail,
   Phone,
-  MapPin,
-  Tag,
-  Check,
   X
 } from "lucide-react"
 import { format, formatDistanceToNow, parseISO } from "date-fns"
-import { supabase } from "@/lib/supabase"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -53,8 +47,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "sonner"
-import { cn } from "@/lib/utils"
 import {
   Pagination,
   PaginationContent,

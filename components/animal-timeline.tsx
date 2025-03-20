@@ -13,13 +13,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  Calendar,
   Activity,
   Weight,
-  User,
   FileText,
-  BarChart,
-  Heart,
   AlertCircle,
   AlertTriangle,
   Pill,

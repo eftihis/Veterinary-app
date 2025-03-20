@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { Eye, Calendar, Tag, User, User2, Hash, FileText, DollarSign, AlertCircle, FileEdit } from "lucide-react"
+import { User, User2, Hash, FileText, DollarSign, AlertCircle, FileEdit } from "lucide-react"
 import { 
   Sheet, 
   SheetContent, 
@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { getInvoiceById, InvoiceWithJoins } from "@/hooks/useInvoiceWithJoins"
 import { Invoice } from "@/components/invoices-data-table"
-import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {

@@ -24,11 +24,9 @@ import {
   Calendar as CalendarIcon,
   X,
   Check,
-  ChevronsUpDown,
   PencilIcon,
-  Trash,
 } from "lucide-react"
-import { format, isAfter, isBefore, isValid, parseISO } from "date-fns"
+import { format, isAfter, isBefore, parseISO } from "date-fns"
 import { supabase } from "@/lib/supabase"
 
 import { Button } from "@/components/ui/button"
@@ -78,7 +76,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
 import { TableSkeleton } from "@/components/skeletons/table-skeleton"
 
 // Define our Invoice type based on our Supabase table structure
