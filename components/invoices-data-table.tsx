@@ -905,39 +905,6 @@ export function InvoicesDataTable({
                 }
               </DropdownMenuItem>
               
-              {/* Status Change Sub-menu */}
-              {onUpdateInvoiceStatus && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="w-full" asChild>
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start font-normal px-2 cursor-default"
-                      disabled={!canChangeStatus()}
-                    >
-                      <div className="flex items-center w-full justify-between">
-                        <div className="flex items-center">
-                          <FileEdit className="mr-2 h-4 w-4" />
-                          Change Status
-                        </div>
-                        <ChevronDown className="h-4 w-4" />
-                      </div>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent side="right">
-                    {statusOptions.map(status => (
-                      <DropdownMenuItem
-                        key={status.value}
-                        onClick={() => handleBatchStatusChange(status.value)}
-                      >
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(status.value)}
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              
               {/* Submit Invoice - Only for draft invoices */}
               {onUpdateInvoiceStatus && (
                 <DropdownMenuItem 
@@ -1131,39 +1098,6 @@ export function InvoicesDataTable({
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
                   
-                  {/* Status Change Sub-menu */}
-                  {onUpdateInvoiceStatus && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="w-full" asChild>
-                        <Button 
-                          variant="ghost" 
-                          className="w-full justify-start font-normal px-2 cursor-default"
-                          disabled={!canChangeStatus()}
-                        >
-                          <div className="flex items-center w-full justify-between">
-                            <div className="flex items-center">
-                              <FileEdit className="mr-2 h-4 w-4" />
-                              Change Status
-                            </div>
-                            <ChevronDown className="h-4 w-4" />
-                          </div>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent side="right">
-                        {statusOptions.map(status => (
-                          <DropdownMenuItem
-                            key={status.value}
-                            onClick={() => handleBatchStatusChange(status.value)}
-                          >
-                            <div className="flex items-center gap-2">
-                              {getStatusBadge(status.value)}
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                  
                   {/* Submit Invoices - Only for draft invoices */}
                   {onUpdateInvoiceStatus && (
                     <DropdownMenuItem 
@@ -1208,9 +1142,6 @@ export function InvoicesDataTable({
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete Selected
-                        {!hasDeleteableDrafts() && (
-                          <span className="ml-1 text-xs">(Draft only)</span>
-                        )}
                       </DropdownMenuItem>
                     </>
                   )}
