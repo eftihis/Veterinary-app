@@ -884,6 +884,26 @@ export function InvoicesDataTable({
                 {!["draft", "submitted"].includes(invoice.status.toLowerCase())
                 }
               </DropdownMenuItem>
+              
+              {/* Delete Action */}
+              {onDeleteInvoice && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => handleDeleteInvoice(invoice)}
+                    className={invoice.status.toLowerCase() === "draft" 
+                      ? "text-destructive focus:text-destructive" 
+                      : "text-muted-foreground cursor-not-allowed"}
+                    disabled={invoice.status.toLowerCase() !== "draft"}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete invoice
+                    {invoice.status.toLowerCase() !== "draft" && (
+                      <span className="ml-1 text-xs">(Draft only)</span>
+                    )}
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )
