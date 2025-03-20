@@ -624,7 +624,9 @@ export function InvoicesDataTable({
       idx => filteredData[parseInt(idx)]
     );
     
-    return selectedInvoices.some(invoice => invoice.status.toLowerCase() === 'draft');
+    return selectedInvoices.some(invoice => 
+      ['draft', 'submitted'].includes(invoice.status.toLowerCase())
+    );
   }
 
   // Function to check if any selected invoices can be submitted (must be in draft status)
@@ -947,15 +949,15 @@ export function InvoicesDataTable({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => handleDeleteInvoice(invoice)}
-                    className={invoice.status.toLowerCase() === "draft" 
+                    className={['draft', 'submitted'].includes(invoice.status.toLowerCase())
                       ? "text-destructive focus:text-destructive" 
                       : "text-muted-foreground cursor-not-allowed"}
-                    disabled={invoice.status.toLowerCase() !== "draft"}
+                    disabled={!['draft', 'submitted'].includes(invoice.status.toLowerCase())}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete invoice
-                    {invoice.status.toLowerCase() !== "draft" && (
-                      <span className="ml-1 text-xs">(Draft only)</span>
+                    {!['draft', 'submitted'].includes(invoice.status.toLowerCase()) && (
+                      <span className="ml-1 text-xs">(Draft/Submitted only)</span>
                     )}
                   </DropdownMenuItem>
                 </>
@@ -1142,6 +1144,9 @@ export function InvoicesDataTable({
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete Selected
+                        {!hasDeleteableDrafts() && (
+                          <span className="ml-1 text-xs">(Draft/Submitted only)</span>
+                        )}
                       </DropdownMenuItem>
                     </>
                   )}

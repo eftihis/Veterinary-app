@@ -109,22 +109,22 @@ export default function InvoicesPage() {
       setIsDeleting(true)
       
       if (isBatchDelete && invoicesToDelete && invoicesToDelete.length > 0) {
-        // Filter invoices to only allow deleting draft status
+        // Filter invoices to only allow deleting draft and submitted statuses
         const deletableInvoices = invoicesToDelete.filter(invoice => 
-          invoice.status.toLowerCase() === 'draft'
+          ['draft', 'submitted'].includes(invoice.status.toLowerCase())
         );
         
         // Check if any invoices cannot be deleted
         const nonDeletableCount = invoicesToDelete.length - deletableInvoices.length;
         
         if (deletableInvoices.length === 0) {
-          toast.error('None of the selected invoices can be deleted. Only draft invoices can be deleted.');
+          toast.error('None of the selected invoices can be deleted. Only draft and submitted invoices can be deleted.');
           setIsDeleting(false);
           setDeleteDialogOpen(false);
           return;
         }
         
-        // Batch delete invoices (only drafts)
+        // Batch delete invoices (only drafts and submitted)
         const invoiceIds = deletableInvoices.map(invoice => invoice.id);
         
         try {
@@ -141,7 +141,7 @@ export default function InvoicesPage() {
           
           let successMessage = `${deletableInvoices.length} invoices deleted successfully`;
           if (nonDeletableCount > 0) {
-            successMessage += `. ${nonDeletableCount} invoice(s) could not be deleted because they are not in draft status.`;
+            successMessage += `. ${nonDeletableCount} invoice(s) could not be deleted because they are not in draft or submitted status.`;
           }
           toast.success(successMessage);
         } catch (batchError) {
@@ -173,7 +173,7 @@ export default function InvoicesPage() {
           if (successCount > 0) {
             let successMessage = `${successCount} of ${deletableInvoices.length} invoices deleted successfully`;
             if (nonDeletableCount > 0) {
-              successMessage += `. ${nonDeletableCount} invoice(s) could not be deleted because they are not in draft status.`;
+              successMessage += `. ${nonDeletableCount} invoice(s) could not be deleted because they are not in draft or submitted status.`;
             }
             toast.success(successMessage);
           }
@@ -182,15 +182,15 @@ export default function InvoicesPage() {
           }
         }
       } else if (invoiceToDelete) {
-        // Single delete - check if the invoice is in draft status
-        if (invoiceToDelete.status.toLowerCase() !== 'draft') {
-          toast.error('This invoice cannot be deleted because it is not in draft status.');
+        // Verify the invoice is in draft or submitted status
+        if (!['draft', 'submitted'].includes(invoiceToDelete.status.toLowerCase())) {
+          toast.error('This invoice cannot be deleted. Only draft and submitted invoices can be deleted.');
           setIsDeleting(false);
           setDeleteDialogOpen(false);
           return;
         }
         
-        // Delete the invoice
+        // Delete single invoice
         const { error } = await supabase
           .from('invoices')
           .delete()
