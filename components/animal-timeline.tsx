@@ -136,14 +136,6 @@ export function AnimalTimeline({
     if (is_invoice_item) {
       return (
         <div>
-          <div className="flex items-center">
-            <span className="font-medium">{event_type}</span>
-            {details.price && (
-              <Badge variant="outline" className="ml-2">
-                ${parseFloat(details.price).toFixed(2)}
-              </Badge>
-            )}
-          </div>
           {details.description && (
             <p className="text-sm text-muted-foreground mt-1">{details.description}</p>
           )}
@@ -307,6 +299,11 @@ export function AnimalTimeline({
                   <CardTitle className="text-base font-medium flex items-center">
                     {getEventIcon(event.event_type)}
                     {event.event_type}
+                    {event.is_invoice_item && event.details.price && (
+                      <Badge variant="outline" className="ml-2">
+                        ${parseFloat(event.details.price).toFixed(2)}
+                      </Badge>
+                    )}
                   </CardTitle>
                   <span className="text-xs text-muted-foreground">
                     {formatDistanceToNow(parseISO(event.event_date), { addSuffix: true })}
