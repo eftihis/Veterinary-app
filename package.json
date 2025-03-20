@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "dev:local": "NEXT_PUBLIC_BASE_URL=http://localhost:3000 NEXT_PUBLIC_SITE_URL=http://localhost:3000 NEXT_PUBLIC_DISABLE_XERO=true next dev --turbopack",
-    "dev:ngrok": "NEXT_PUBLIC_BASE_URL=https://ecfb-79-131-58-148.ngrok-free.app NEXT_PUBLIC_SITE_URL=https://ecfb-79-131-58-148.ngrok-free.app NEXT_PUBLIC_DISABLE_XERO=false next dev --turbopack",
+    "dev": "next dev",
+    "dev:local": "NEXT_PUBLIC_BASE_URL=http://localhost:3000 NEXT_PUBLIC_SITE_URL=http://localhost:3000 NEXT_PUBLIC_DISABLE_XERO=true next dev",
+    "dev:ngrok": "NEXT_PUBLIC_BASE_URL=https://ecfb-79-131-58-148.ngrok-free.app NEXT_PUBLIC_SITE_URL=https://ecfb-79-131-58-148.ngrok-free.app NEXT_PUBLIC_DISABLE_XERO=false next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
