@@ -701,25 +701,6 @@ export default function VeterinaryForm({
       // Show success toast
       toast.success(editMode ? "Invoice updated successfully!" : "Form submitted successfully!");
       
-      // Call webhook if Xero integration is enabled
-      if (!isXeroDisabled) {
-        // Call the webhook to create the Xero invoice
-        const webhookResponse = await fetch('/api/process-veterinary-form', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...recordData,
-            invoiceId: invoiceData[0]?.id // Include the Supabase invoice ID in the webhook payload
-          }),
-        });
-        
-        if (!webhookResponse.ok) {
-          throw new Error(`Webhook call failed: ${webhookResponse.statusText}`);
-        }
-      }
-      
       // Reset the form if successful
       if (!editMode) {
         form.reset();
