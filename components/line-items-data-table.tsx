@@ -638,14 +638,27 @@ export function LineItemsDataTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 md:flex-row md:justify-between">
-        <Input
-          placeholder="Search line items by invoice, patient, or item..."
-          value={globalFilter || ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
-        />
-        <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="w-full md:w-auto relative">
+            <Input
+              placeholder="Search line items by invoice, patient, or item..."
+              value={globalFilter || ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="w-full md:w-[350px] pr-8"
+            />
+            {globalFilter && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full"
+                onClick={() => setGlobalFilter("")}
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
           <DateRangePicker
             startDate={startDate}
             endDate={endDate}
@@ -656,44 +669,43 @@ export function LineItemsDataTable({
               setEndDate(undefined)
             }}
           />
-          <div className="flex gap-2">
-            <StatusFilter 
-              statusOptions={statusOptions}
-              selectedStatuses={selectedStatuses}
-              setSelectedStatuses={setSelectedStatuses}
-              getStatusBadge={getStatusBadge}
-            />
-            <ItemFilter
-              itemOptions={itemOptions}
-              selectedItems={selectedItems}
-              setSelectedItems={setSelectedItems}
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex gap-1">
-                  <span>Columns</span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {table
-                  .getAllColumns()
-                  .filter((column) => column.getCanHide())
-                  .map((column) => {
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                      >
-                        {column.id}
-                      </DropdownMenuCheckboxItem>
-                    )
-                  })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <StatusFilter 
+            statusOptions={statusOptions}
+            selectedStatuses={selectedStatuses}
+            setSelectedStatuses={setSelectedStatuses}
+            getStatusBadge={getStatusBadge}
+          />
+          <ItemFilter
+            itemOptions={itemOptions}
+            selectedItems={selectedItems}
+            setSelectedItems={setSelectedItems}
+          />
+        </div>
+        <div className="flex items-center gap-2 self-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       
