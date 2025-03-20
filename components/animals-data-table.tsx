@@ -591,12 +591,10 @@ export function AnimalsDataTable({
           </TableBody>
         </Table>
       </div>
-      <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between py-4">
-        <div>
-          <div className="text-sm text-muted-foreground">
-            Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
-            {table.getFilteredRowModel().rows.length} results
-          </div>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="text-sm text-muted-foreground">
+          Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
+          {table.getFilteredRowModel().rows.length} results
         </div>
         
         <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
@@ -622,6 +620,7 @@ export function AnimalsDataTable({
               </SelectContent>
             </Select>
           </div>
+          
           <div className="flex items-center justify-end gap-2">
             <Pagination>
               <PaginationContent>
