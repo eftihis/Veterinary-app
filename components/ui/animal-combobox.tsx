@@ -26,7 +26,6 @@ interface AnimalComboboxProps {
   loading?: boolean
   className?: string
   onAddAnimal?: (animalData: NewAnimalData) => Promise<AnimalOption>
-  currentAnimalType?: string
 }
 
 export function AnimalCombobox({
@@ -38,7 +37,6 @@ export function AnimalCombobox({
   loading = false,
   className,
   onAddAnimal,
-  currentAnimalType,
 }: AnimalComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
@@ -66,7 +64,7 @@ export function AnimalCombobox({
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [options, inputValue]);
 
-  // Reset input value when options change (e.g., when animal type changes)
+  // Reset input value when options change
   React.useEffect(() => {
     if (!selectedId) {
       setInputValue("");
@@ -426,7 +424,6 @@ export function AnimalCombobox({
           open={showAddDialog}
           onOpenChange={setShowAddDialog}
           onAnimalAdded={handleAddAnimal}
-          defaultAnimalType={currentAnimalType}
           defaultAnimalName={quickCreateName}
         />
       )}

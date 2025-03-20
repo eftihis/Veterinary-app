@@ -76,7 +76,6 @@ const formSchema = z.object({
   reference: z.string().optional(),
   animalName: z.string().min(1, "Animal name is required"),
   animalId: z.string().optional(),
-  animalType: z.string().min(1, "Animal type is required"),
   checkInDate: z.date().optional().refine(date => !!date, { 
     message: "Check-in date is required" 
   }),
@@ -168,6 +167,7 @@ export default function VeterinaryForm({
   const [total, setTotal] = useState<number>(0);
   const { user } = useAuth(); // Get the authenticated user
   const [isXeroDisabled, setIsXeroDisabled] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   useEffect(() => {
     const disableXero = process.env.NEXT_PUBLIC_DISABLE_XERO === 'true';
@@ -210,7 +210,6 @@ export default function VeterinaryForm({
       reference: "",
       animalName: "",
       animalId: "",
-      animalType: "",
       checkInDate: undefined,
       checkOutDate: undefined,
       lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", quantity: 1, price: "", type: "item" }],
@@ -235,27 +234,38 @@ export default function VeterinaryForm({
 
   const { watch, setValue } = form;
   const lineItems = watch("lineItems");
-  const animalType = watch("animalType");
 
-  // Fetch animals with filtering by type
+  // Fetch animals without filtering by type
   const {
     animals: filteredAnimals,
     allAnimals: animalOptions, 
     loading: loadingAnimals, 
     error: animalsError,
-    filterAnimalsByType,
     addAnimal
-  } = useAnimals(animalType);
+  } = useAnimals();
   
   // Update filtered animals when animal type changes
   useEffect(() => {
-    // Use setTimeout to break potential update cycles
-    const timeoutId = setTimeout(() => {
-      filterAnimalsByType(animalType);
-    }, 0);
+    // Skip if we don't have animal data loaded yet
+    if (loadingAnimals || animalsError) return;
     
-    return () => clearTimeout(timeoutId);
-  }, [animalType, filterAnimalsByType]);
+    // If there are no items and we're not editing, create default item
+    if (lineItems.length === 0 && !editMode) {
+      form.setValue("lineItems", [{ 
+        id: `item-${Date.now()}-0`, 
+        description: "", 
+        itemId: "", 
+        itemName: "", 
+        quantity: 1, 
+        price: "" 
+      }]);
+    }
+    
+    // Notify parent component when form changes
+    if (onFormChange) {
+      onFormChange();
+    }
+  }, [lineItems, loadingAnimals, animalsError, editMode, form, onFormChange]);
 
   // Define the calculation function and store it in the ref
   const calculateTotals = (items: LineItem[]) => {
@@ -511,63 +521,94 @@ export default function VeterinaryForm({
     form.setValue("lineItems", itemsCopy);
   };
 
-  // Handle form submission
+  // Get data from existing record if in edit mode
+  useEffect(() => {
+    if (editMode && initialData) {
+      try {
+        console.log("Initial data for form:", initialData);
+        
+        // Process animal name and ID
+        let animalName = '';
+        let animalId = '';
+        
+        if (initialData.animals?.name) {
+          animalName = initialData.animals.name;
+          animalId = initialData.animals.id || '';
+        } else if (initialData.animal_name) {
+          animalName = initialData.animal_name;
+        }
+        
+        // Convert line items from the database format to the form format
+        const formattedLineItems = (initialData.line_items || []).map((item: any, index: number) => ({
+          id: item.id || `item-${Date.now()}-${index}`,
+          description: item.description || '',
+          itemId: item.item_id || '',
+          itemName: item.item_name || '',
+          quantity: item.quantity || 1,
+          price: item.unit_amount || 0,
+          type: item.type || 'item'
+        }));
+        
+        // Create date objects from the timestamp strings
+        const checkInDate = initialData.check_in_date ? new Date(initialData.check_in_date) : undefined;
+        const checkOutDate = initialData.check_out_date ? new Date(initialData.check_out_date) : undefined;
+        
+        // Set form values from record data
+        form.reset({
+          documentNumber: initialData.document_number || '',
+          reference: initialData.reference || '',
+          animalName: animalName,
+          animalId: animalId,
+          checkInDate: checkInDate,
+          checkOutDate: checkOutDate,
+          lineItems: formattedLineItems,
+          comment: initialData.comment || ''
+        });
+        
+        // Show comment section if there's a comment
+        if (initialData.comment) {
+          setShowComment(true);
+        }
+      } catch (error) {
+        console.error("Error populating form:", error);
+        toast.error("Failed to load invoice data into the form");
+      }
+    }
+  }, [editMode, initialData, form]);
+
   const onSubmit = async (data: FormValues) => {
     try {
-      // Show loading toast
-      const loadingToastId = toast.loading(editMode ? "Updating invoice..." : "Submitting form...");
+      setIsSubmitting(true);
       
-      // Create payload from form data with enhanced line items
-      const enhancedLineItems = data.lineItems.map(item => {
-        // Find the corresponding Xero item to get its name
-        const xeroItem = xeroItems.find((xeroItem: any) => xeroItem.value === item.itemId);
-        
-        return {
-          description: item.description,
-          itemId: item.itemId,
-          itemName: xeroItem?.label || item.itemName || "Unknown Item",
-          quantity: item.quantity,
-          price: item.price,
-          type: item.type || "item"
-        };
-      });
+      // Prepare the line items for storage
+      const preparedLineItems = data.lineItems.map(item => ({
+        description: item.description || '',
+        item_id: item.itemId,
+        item_name: item.itemName || '',
+        quantity: typeof item.quantity === 'string' ? parseFloat(item.quantity) : item.quantity,
+        unit_amount: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+        type: item.type || 'item'
+      }));
       
-      // Extract user information for the sender section
-      const sender = user ? {
-        id: user.id,
-        email: user.email,
-        name: user.user_metadata?.full_name || user.email,
-        role: user.user_metadata?.role || 'user',
-        lastSignIn: user.last_sign_in_at
-      } : null;
-      
-      const payload = {
-        executionId: `exec-${Date.now().toString(36)}`,
-        timestamp: new Date().toISOString(),
-        sender, // Add sender information to the payload
-        documentNumber: data.documentNumber,
-        animalId: data.animalId || null,
-        animalName: data.animalName,
-        animalType: data.animalType,
-        checkInDate: data.checkInDate ? data.checkInDate.toISOString() : null,
-        checkOutDate: data.checkOutDate ? data.checkOutDate.toISOString() : null,
-        lineItems: enhancedLineItems,
-        subtotal,
-        discountTotal,
-        total,
-        comment: data.comment,
+      // Prepare the record data
+      const recordData = {
+        document_number: data.documentNumber,
+        reference: data.reference || null,
+        animal_name: data.animalName,
+        animal_id: data.animalId || null,
+        check_in_date: data.checkInDate,
+        check_out_date: data.checkOutDate,
+        line_items: preparedLineItems,
+        total: calculateTotalsRef.current ? calculateTotalsRef.current(data.lineItems).total : 0,
+        comment: data.comment || null,
+        created_by: user?.id,
+        status: 'draft'
       };
       
-      console.log("Form submitted:", payload);
+      console.log("Form submitted:", recordData);
       
       // Save the invoice data to Supabase
-      const animalDetails = {
-        name: data.animalName,
-        type: data.animalType
-      };
-      
       let invoiceData;
-      let invoiceError;
       
       if (editMode && initialData?.id) {
         // Update existing invoice
@@ -576,260 +617,89 @@ export default function VeterinaryForm({
           .update({
             document_number: data.documentNumber,
             reference: data.reference || null,
+            animal_name: data.animalName,
             animal_id: data.animalId || null,
-            check_in_date: data.checkInDate || null,
-            check_out_date: data.checkOutDate || null,
+            check_in_date: data.checkInDate,
+            check_out_date: data.checkOutDate,
             subtotal: subtotal,
             discount_total: discountTotal,
             total: total,
-            line_items: enhancedLineItems,
+            line_items: preparedLineItems,
             comment: data.comment || null,
             sender_id: user?.id || null,
-            updated_at: new Date()
+            updated_at: new Date().toISOString()
           })
           .eq('id', initialData.id)
-          .select('id')
-          .single();
+          .select();
         
+        if (updateError) throw updateError;
         invoiceData = updatedData;
-        invoiceError = updateError;
       } else {
         // Create new invoice
-        const { data: newData, error: insertError } = await supabase
+        const { data: newInvoice, error: insertError } = await supabase
           .from('invoices')
           .insert({
             document_number: data.documentNumber,
             reference: data.reference || null,
+            animal_name: data.animalName,
             animal_id: data.animalId || null,
-            check_in_date: data.checkInDate || null,
-            check_out_date: data.checkOutDate || null,
+            check_in_date: data.checkInDate,
+            check_out_date: data.checkOutDate,
             subtotal: subtotal,
             discount_total: discountTotal,
             total: total,
-            status: 'draft',
-            line_items: enhancedLineItems,
+            line_items: preparedLineItems,
             comment: data.comment || null,
             sender_id: user?.id || null,
             created_by: user?.id || null,
-            created_at: new Date(),
-            updated_at: new Date()
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            status: 'draft'
           })
-          .select('id')
-          .single();
+          .select();
         
-        invoiceData = newData;
-        invoiceError = insertError;
+        if (insertError) throw insertError;
+        invoiceData = newInvoice;
       }
       
-      if (invoiceError) {
-        console.error("Error saving invoice to Supabase:", invoiceError);
-        throw new Error(`Failed to ${editMode ? 'update' : 'save'} invoice: ${invoiceError.message}`);
-      }
+      // Show success toast
+      toast.success(editMode ? "Invoice updated successfully!" : "Form submitted successfully!");
       
-      console.log(`Invoice ${editMode ? 'updated' : 'saved'} in Supabase with ID:`, invoiceData?.id);
-      
-      // Only call the webhook for new invoices, not for updates
-      if (!editMode) {
-        // Send data to the Make.com webhook - Use environment variable only, remove hardcoded fallback
-        const webhookUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL;
-        
-        if (!webhookUrl) {
-          throw new Error("Webhook URL is not configured. Please check your environment variables.");
-        }
-        
-        const response = await fetch(webhookUrl, {
+      // Call webhook if Xero integration is enabled
+      if (!isXeroDisabled) {
+        // Call the webhook to create the Xero invoice
+        const webhookResponse = await fetch('/api/process-veterinary-form', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            ...payload,
-            invoiceId: invoiceData?.id // Include the Supabase invoice ID in the webhook payload
+            ...recordData,
+            invoiceId: invoiceData[0]?.id // Include the Supabase invoice ID in the webhook payload
           }),
         });
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
+        if (!webhookResponse.ok) {
+          throw new Error(`Webhook call failed: ${webhookResponse.statusText}`);
         }
       }
       
-      // Dismiss loading toast and show success
-      toast.dismiss(loadingToastId);
-      
-      if (editMode && onSuccess) {
-        // Call the success callback for edit mode
-        toast.success("Invoice updated successfully!");
-        onSuccess();
-      } else {
-        // Show success toast and reset form for new invoices
-        toast.success("Form submitted successfully!");
-        
-        // Reset form
-        form.reset({
-          documentNumber: "",
-          reference: "",
-          animalName: "",
-          animalId: "",
-          animalType: "",
-          checkInDate: undefined,
-          checkOutDate: undefined,
-          lineItems: [{ id: `item-${Date.now()}-0`, description: "", itemId: "", itemName: "", quantity: 1, price: "", type: "item" }],
-          comment: "",
-        });
+      // Reset the form if successful
+      if (!editMode) {
+        form.reset();
       }
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      toast.error(`Failed to ${editMode ? 'update' : 'submit'} form: ${errorMessage}`);
+      
+      // Call the success callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err) {
+      console.error("Error submitting form:", err);
+      toast.error(`Failed to submit form: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  // Pre-populate form with initial data if in edit mode
-  useEffect(() => {
-    if (editMode && initialData) {
-      try {
-        console.log("Pre-populating form with:", initialData);
-        
-        // Convert line items from the database format to the form format
-        // Ensure line_items is an array before mapping
-        const lineItemsArray = Array.isArray(initialData.line_items) 
-          ? initialData.line_items 
-          : (initialData.line_items ? [initialData.line_items] : []);
-          
-        console.log("Line items array:", lineItemsArray);
-        
-        const formattedLineItems = lineItemsArray.map((item: any, index: number) => {
-          // Extract item details, handling both camelCase and snake_case formats
-          const itemId = item.item_id || item.itemId || "";
-          const itemName = item.item_name || item.itemName || "";
-          const quantity = item.quantity || 1; // Default to 1 for existing items
-          
-          console.log(`Line item ${index}: ID=${itemId}, Name=${itemName}, Quantity=${quantity}`);
-          
-          return {
-            id: `item-${Date.now()}-${index}`,
-            description: item.description || "",
-            itemId: itemId,
-            itemName: itemName,
-            quantity: quantity,
-            price: item.price || 0,
-            type: item.type || "item"
-          };
-        });
-        
-        // Format dates
-        let checkInDate = initialData.check_in_date ? new Date(initialData.check_in_date) : undefined;
-        let checkOutDate = initialData.check_out_date ? new Date(initialData.check_out_date) : undefined;
-        
-        // Ensure dates are valid
-        if (checkInDate && isNaN(checkInDate.getTime())) checkInDate = undefined;
-        if (checkOutDate && isNaN(checkOutDate.getTime())) checkOutDate = undefined;
-        
-        // Process animal type to ensure it matches dropdown options
-        let rawAnimalType = "";
-        
-        // Get animal type from either animals data or animal_details (for backward compatibility)
-        if (initialData.animals) {
-          rawAnimalType = initialData.animals.type || "";
-          console.log("Animal type from joined animals table:", rawAnimalType);
-        } else if (initialData.animal_details?.type) {
-          // Backward compatibility for old data format
-          rawAnimalType = initialData.animal_details.type;
-          console.log("Animal type from animal_details:", rawAnimalType);
-        } else if (initialData.animal_details?.Type) {
-          // Backward compatibility for old data format with capitalized key
-          rawAnimalType = initialData.animal_details.Type;
-          console.log("Animal type from animal_details.Type:", rawAnimalType);
-        }
-        
-        // Handle potential capitalization variations
-        let animalType = "";
-        if (typeof rawAnimalType === 'string') {
-          // Convert to lowercase for comparison
-          let normalizedType = rawAnimalType.toLowerCase().trim();
-          console.log("Normalized animal type to lowercase:", normalizedType);
-          
-          // Map to the exact values used in the form select
-          if (normalizedType === "dog" || normalizedType.includes("dog") || normalizedType.includes("canine")) {
-            animalType = "dog";
-          } else if (normalizedType === "cat" || normalizedType.includes("cat") || normalizedType.includes("feline")) {
-            animalType = "cat";
-          } else {
-            animalType = "other";
-          }
-          
-          console.log("Final mapped animal type for form:", animalType);
-        } else {
-          console.log("Animal type is not a string:", rawAnimalType);
-          animalType = "other"; // Fallback
-        }
-        
-        console.log("Setting form animal type to:", animalType);
-        
-        // Force-set the animal type separately before the full form reset
-        setValue("animalType", animalType);
-        
-        // Get animal name from either animals data or animal_details (for backward compatibility)
-        let animalName = "";
-        let animalId = initialData.animal_id || "";
-        
-        if (initialData.animals) {
-          animalName = initialData.animals.name || "";
-          animalId = initialData.animals.id || initialData.animal_id || "";
-        } else if (initialData.animal_details?.name) {
-          // Backward compatibility for old data format
-          animalName = initialData.animal_details.name;
-        }
-        
-        // Set all form values at once
-        form.reset({
-          documentNumber: initialData.document_number || "",
-          reference: initialData.reference || "",
-          animalName: animalName,
-          animalId: animalId,
-          animalType: animalType, // Use our normalized value here
-          checkInDate: checkInDate,
-          checkOutDate: checkOutDate,
-          lineItems: formattedLineItems,
-          comment: initialData.comment || "",
-        });
-        
-        // For debugging, check what values were actually set
-        setTimeout(() => {
-          console.log("Current form values after reset:", form.getValues());
-          console.log("Current animal type value:", form.getValues("animalType"));
-          
-          // As a fallback, directly set the animal type again
-          setValue("animalType", animalType);
-          
-          // Manually manipulate the DOM to ensure the correct value is selected
-          const animalTypeSelect = document.querySelector('select[name="animalType"]');
-          if (animalTypeSelect) {
-            console.log("Found animal type select element, setting value directly:", animalType);
-            (animalTypeSelect as HTMLSelectElement).value = animalType;
-            
-            // Dispatch a change event to ensure React state is updated
-            const event = new Event('change', { bubbles: true });
-            animalTypeSelect.dispatchEvent(event);
-          } else {
-            console.log("Could not find animal type select element in the DOM");
-          }
-        }, 100);
-        
-        // Update the line items state
-        setValue("lineItems", formattedLineItems);
-        
-        // Show comment section if there's a comment
-        if (initialData.comment) {
-          setShowComment(true);
-        }
-      } catch (error) {
-        console.error("Error pre-populating form:", error);
-        toast.error("Failed to load invoice data into the form");
-      }
-    }
-  }, [editMode, initialData, form]);
 
   return (
     <>
@@ -970,7 +840,7 @@ export default function VeterinaryForm({
                       <FormLabel>Animal Name</FormLabel>
                       <FormControl>
                         <AnimalCombobox
-                          options={animalType ? filteredAnimals : animalOptions}
+                          options={animalOptions}
                           selectedId={form.watch("animalId") || ""}
                           onSelect={(animal) => {
                             if (animal) {
@@ -981,11 +851,6 @@ export default function VeterinaryForm({
                                 
                                 // Store the animal ID in a separate field
                                 form.setValue("animalId", animal.value, { shouldValidate: true });
-                                
-                                // Auto-populate the animal type if it's provided and different from current
-                                if (animal.type && animal.type !== form.getValues("animalType")) {
-                                  form.setValue("animalType", animal.type, { shouldValidate: true });
-                                }
                               }, 0);
                             }
                           }}
@@ -993,13 +858,10 @@ export default function VeterinaryForm({
                           emptyMessage={
                             loadingAnimals 
                               ? "Loading animals..." 
-                              : animalType 
-                                ? `No ${animalType}s found. Type to create new.`
-                                : "No animals found. Type to create new."
+                              : "No animals found. Type to create new."
                           }
                           loading={loadingAnimals}
                           onAddAnimal={addAnimal}
-                          currentAnimalType={animalType}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1010,50 +872,6 @@ export default function VeterinaryForm({
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="animalType"
-                  render={({ field, fieldState }) => (
-                    <FormItem>
-                      <FormLabel className={fieldState.invalid ? "text-destructive" : ""}>
-                        Animal Type
-                      </FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          // Update the field value
-                          field.onChange(value);
-                          
-                          // Clear the animal name and ID if the type changes
-                          // This ensures consistency between animal type and selected animal
-                          if (form.getValues("animalType") !== value) {
-                            form.setValue("animalName", "", { shouldValidate: true });
-                            form.setValue("animalId", "", { shouldValidate: true });
-                          }
-                        }}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger 
-                            className={cn(
-                              fieldState.invalid && "border-destructive ring-destructive focus-visible:ring-destructive"
-                            )}
-                          >
-                            <SelectValue placeholder="Select..." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="dog">Dog</SelectItem>
-                          <SelectItem value="cat">Cat</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="checkInDate"
@@ -1104,7 +922,9 @@ export default function VeterinaryForm({
                     );
                   }}
                 />
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="checkOutDate"
@@ -1740,7 +1560,6 @@ export default function VeterinaryForm({
                                             <FormControl>
                                               <Input placeholder="Description" {...field} />
                                             </FormControl>
-                                            <FormMessage />
                                           </FormItem>
                                         )}
                                       />

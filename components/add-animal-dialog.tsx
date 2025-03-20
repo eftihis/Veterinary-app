@@ -71,7 +71,6 @@ interface AddAnimalDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onAnimalAdded?: (animal: NewAnimalData) => void | Promise<any>;
-  defaultAnimalType?: string;
   defaultAnimalName?: string | null;
 }
 
@@ -81,7 +80,6 @@ export function AddAnimalDialog({
   open: controlledOpen,
   onOpenChange: setControlledOpen,
   onAnimalAdded,
-  defaultAnimalType = '',
   defaultAnimalName = ''
 }: AddAnimalDialogProps) {
   // Internal state for uncontrolled mode
@@ -98,7 +96,7 @@ export function AddAnimalDialog({
     resolver: zodResolver(animalFormSchema),
     defaultValues: {
       name: defaultAnimalName || "",
-      type: defaultAnimalType || "",
+      type: "",
       breed: "",
       gender: "",
       weight: undefined,
@@ -112,7 +110,7 @@ export function AddAnimalDialog({
     if (open) {
       form.reset({
         name: defaultAnimalName || "",
-        type: defaultAnimalType || "",
+        type: "",
         breed: "",
         gender: "",
         weight: undefined,
@@ -120,7 +118,7 @@ export function AddAnimalDialog({
         notes: "",
       });
     }
-  }, [open, form, defaultAnimalType, defaultAnimalName]);
+  }, [open, form, defaultAnimalName]);
   
   // Handle form submission
   async function onSubmit(data: AnimalFormValues) {

@@ -31,7 +31,7 @@ export type NewAnimalData = {
   notes?: string;
 };
 
-export function useAnimals(animalType?: string) {
+export function useAnimals() {
   const [animals, setAnimals] = useState<AnimalOption[]>([]);
   const [allAnimals, setAllAnimals] = useState<AnimalOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,15 +63,7 @@ export function useAnimals(animalType?: string) {
         })).sort((a, b) => a.label.localeCompare(b.label));
         
         setAllAnimals(options);
-        
-        // If animalType is provided, filter the animals
-        if (animalType) {
-          const filtered = options.filter(animal => animal.type === animalType);
-          setAnimals(filtered);
-        } else {
-          // Otherwise, show all animals
-          setAnimals(options);
-        }
+        setAnimals(options);
       } catch (err) {
         console.error('Error fetching animals:', err);
         setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -81,38 +73,7 @@ export function useAnimals(animalType?: string) {
     }
     
     fetchAllAnimals();
-  }, []); // Only run on mount, not when animalType changes
-  
-  // Filter animals when animalType changes - this is the key part for bidirectional functionality
-  useEffect(() => {
-    // Skip if no animals to filter
-    if (allAnimals.length === 0) return;
-    
-    // Use setTimeout to break potential update cycles
-    const timeoutId = setTimeout(() => {
-      if (animalType) {
-        console.log(`Filtering animals by type: ${animalType}`);
-        const filtered = allAnimals.filter(animal => animal.type === animalType);
-        setAnimals(filtered);
-      } else {
-        console.log('No animal type selected, showing all animals');
-        setAnimals(allAnimals);
-      }
-    }, 0);
-    
-    return () => clearTimeout(timeoutId);
-  }, [animalType, allAnimals]);
-  
-  // Add a function to manually filter animals by type
-  const filterAnimalsByType = (type: string | undefined) => {
-    if (!type) {
-      setAnimals(allAnimals);
-      return;
-    }
-    
-    const filtered = allAnimals.filter(animal => animal.type === type);
-    setAnimals(filtered);
-  };
+  }, []); // Only run on mount
   
   // Add a function to add a new animal to the database
   const addAnimal = async (animalData: NewAnimalData): Promise<AnimalOption> => {
@@ -145,11 +106,7 @@ export function useAnimals(animalType?: string) {
       
       // Update the local state with the new animal
       setAllAnimals(prev => [...prev, newAnimal]);
-      
-      // If the new animal matches the current filter, add it to the filtered list
-      if (!animalType || animalType === newAnimal.type) {
-        setAnimals(prev => [...prev, newAnimal]);
-      }
+      setAnimals(prev => [...prev, newAnimal]);
       
       return newAnimal;
     } catch (err) {
@@ -164,7 +121,6 @@ export function useAnimals(animalType?: string) {
     allAnimals, 
     loading, 
     error,
-    filterAnimalsByType,
     addAnimal
   };
 } 
