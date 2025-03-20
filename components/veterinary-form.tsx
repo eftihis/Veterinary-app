@@ -565,7 +565,7 @@ export default function VeterinaryForm({
           itemId: item.item_id || '',
           itemName: item.item_name || '',
           quantity: item.quantity || 1,
-          price: item.unit_amount || 0,
+          price: item.price || 0,
           type: item.type || 'item'
         }));
         
