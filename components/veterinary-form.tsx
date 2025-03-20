@@ -265,9 +265,15 @@ export default function VeterinaryForm({
       roles.push("veterinarian");
     }
     
+    // Trim whitespace and capitalize first and last names
+    const first_name = contactData.first_name.trim().charAt(0).toUpperCase() + contactData.first_name.trim().slice(1);
+    const last_name = contactData.last_name.trim().charAt(0).toUpperCase() + contactData.last_name.trim().slice(1);
+    
     // Call the base function with the modified data
     return addContactBase({
       ...contactData,
+      first_name,
+      last_name,
       roles: roles
     });
   };
