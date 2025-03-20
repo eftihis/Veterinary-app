@@ -155,6 +155,10 @@ export function AddAnimalDialog({
         }
         
         console.log("Animal added successfully:", insertedData);
+        
+        // Dispatch a custom event to notify the animals table to refresh
+        const refreshEvent = new CustomEvent('refreshAnimalsTable');
+        window.dispatchEvent(refreshEvent);
       }
       
       toast.success("Animal added successfully")

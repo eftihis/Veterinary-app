@@ -123,6 +123,10 @@ export function QuickActionButton() {
       
       console.log("Animal added successfully:", data[0]);
       toast.success(`Animal "${animalData.name}" added successfully!`);
+      
+      // Dispatch a custom event to notify the animals table to refresh
+      const refreshEvent = new CustomEvent('refreshAnimalsTable');
+      window.dispatchEvent(refreshEvent);
     } catch (err) {
       console.error("Error in handleAddAnimal:", err);
       toast.error(`Failed to add animal: ${err instanceof Error ? err.message : String(err)}`);

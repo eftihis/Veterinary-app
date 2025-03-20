@@ -25,6 +25,20 @@ export function AnimalsDataTableWrapper({
   
   useEffect(() => {
     fetchAnimals()
+    
+    // Add event listener for refreshing the table
+    const handleRefreshTable = () => {
+      console.log("Received refreshAnimalsTable event, refreshing data...");
+      fetchAnimals();
+    };
+    
+    // Listen for the custom refresh event
+    window.addEventListener('refreshAnimalsTable', handleRefreshTable);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('refreshAnimalsTable', handleRefreshTable);
+    };
   }, [])
   
   async function fetchAnimals() {
