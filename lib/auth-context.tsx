@@ -13,6 +13,7 @@ type Profile = {
   avatar_url: string | null;
   updated_at: string | null;
   contact_id: string;
+  user_role: string | null;
   contacts?: {
     id: string;
     first_name: string | null;

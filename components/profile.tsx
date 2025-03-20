@@ -473,14 +473,6 @@ export default function UserProfile({
                   )}
                 />
                 
-                <FormItem>
-                  <FormLabel>User Role</FormLabel>
-                    <Input value={role} disabled />
-                  <FormDescription>
-                    Your role determines what features you can access.
-                  </FormDescription>
-                </FormItem>
-                
                 <Button type="submit" className="mt-6 w-full sm:w-auto" disabled={profileForm.formState.isSubmitting}>
                   {profileForm.formState.isSubmitting ? (
                     <>

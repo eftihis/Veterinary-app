@@ -67,7 +67,7 @@ export function ProfileContent() {
             initialLastName={profile.contacts?.last_name || ""}
             initialEmail={profile.email}
             avatarUrl={profile.avatar_url || "/placeholder.svg"}
-            role="User"
+            role={profile.user_role || "User"}
             onProfileUpdate={refreshProfile}
           />
         ) : (
