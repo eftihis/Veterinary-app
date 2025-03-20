@@ -47,6 +47,12 @@ export function useProfile() {
         
         console.log('Updating profile with data:', updateData);
         
+        // NOTE: Do NOT try to update email here - it's protected
+        // IMPORTANT: Remove any email field if present
+        if (updateData.email) {
+          delete updateData.email;
+        }
+        
         const { error: updateError } = await supabase
           .from('profiles')
           .update(updateData)
@@ -60,69 +66,44 @@ export function useProfile() {
       }
 
       // 2. Update contact data if needed
-      if (contactData && success && profile?.contact_id) {
-        console.log('Updating contact data:', contactData);
-        console.log('Contact ID:', profile.contact_id);
+      if (contactData && Object.keys(contactData).length > 0 && success) {
+        // IMPORTANT: Do NOT try to update email in contacts
+        if (contactData.email) {
+          delete contactData.email;
+        }
         
-        try {
-          // First check if the contact exists
-          const { data: existingContact, error: checkError } = await supabase
+        // Get the contact_id from the profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('contact_id')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileData?.contact_id) {
+          const { error: contactError } = await supabase
             .from('contacts')
-            .select('*')
-            .eq('id', profile.contact_id)
-            .single();
-            
-          console.log('Existing contact:', existingContact, checkError ? `Check error: ${JSON.stringify(checkError)}` : '');
+            .update(contactData)
+            .eq('id', profileData.contact_id);
           
-          if (checkError) {
-            console.error('Error checking contact:', checkError);
+          if (contactError) {
+            console.error('Supabase contact update error:', contactError);
             success = false;
-            errorMessage = `Contact check error: ${checkError.message}`;
-          } else {
-            // Now update the contact
-            const contactUpdateData = {
-              ...contactData,
-              updated_at: new Date().toISOString()
-            };
-            
-            console.log('Contact update data:', contactUpdateData);
-            
-            const { data: updatedContact, error: contactError } = await supabase
-              .from('contacts')
-              .update(contactUpdateData)
-              .eq('id', profile.contact_id)
-              .select('*')
-              .single();
-              
-            console.log('Updated contact:', updatedContact, contactError ? `Contact error: ${JSON.stringify(contactError)}` : '');
-
-            if (contactError) {
-              console.error('Supabase contact update error:', contactError);
-              success = false;
-              errorMessage = contactError.message;
-            }
+            errorMessage = contactError.message;
           }
-        } catch (err) {
-          console.error('Exception updating contact:', err);
-          success = false;
-          errorMessage = err instanceof Error ? err.message : 'Unknown contact update error';
         }
       }
 
-      // If any step failed, throw error
+      // Return result
       if (!success) {
-        throw new Error(errorMessage || 'Failed to update profile or contact data');
+        setError(errorMessage);
       }
-
-      // Refresh the profile in auth context
-      await refreshProfile();
-
-      return { success: true };
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
+      
+      return { success, error: errorMessage };
+      
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+      return { success: false, error: error instanceof Error ? error.message : 'An unknown error occurred' };
     } finally {
       setLoading(false);
     }
