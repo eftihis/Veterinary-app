@@ -102,6 +102,56 @@ export type Invoice = {
   total: number
   status: string
   created_at: string
+  updated_at?: string
+  line_items?: Array<{
+    id: string
+    description: string
+    price: number
+    quantity: number
+  }>
+}
+
+// Define interface for the filter row function
+interface TableRow {
+  id: string;
+  getValue: (columnId: string) => unknown;
+  getUniqueValues: (columnId: string) => unknown[];
+  original: Invoice;
+}
+
+// Define type for raw invoice data from Supabase
+type RawInvoiceData = {
+  id: string;
+  document_number: string;
+  reference: string | null;
+  animal_id: string | null;
+  veterinarian_id: string | null;
+  check_in_date: string | null;
+  check_out_date: string | null;
+  subtotal?: number;
+  discount_total?: number;
+  discount_amount?: number;
+  total?: number;
+  status: string;
+  created_at: string;
+  updated_at?: string;
+  animals?: {
+    id?: string;
+    name?: string;
+    type?: string;
+  } | Array<{
+    id?: string;
+    name?: string;
+    type?: string;
+  }>;
+  [key: string]: unknown;
+};
+
+// Define type for veterinarian data
+interface Veterinarian {
+  id: string
+  first_name: string
+  last_name: string
 }
 
 // Format currency
@@ -313,7 +363,7 @@ export function InvoicesDataTable({
       }
       
       // Check for available columns in the invoices table
-      const { data: columnData, error: columnError } = await supabase
+      const { data: columnData } = await supabase
         .from('invoices')
         .select('*')
         .limit(1)
@@ -361,12 +411,17 @@ export function InvoicesDataTable({
       }
       
       // Get all veterinarian IDs to fetch their data
-      const veterinarianIds = data
-        .map((invoice: any) => invoice.veterinarian_id)
-        .filter((id: string | null) => id !== null && id !== undefined);
+      // Safely cast the data to the expected type
+      const invoiceData = Array.isArray(data) 
+        ? data.filter(item => typeof item === 'object' && item !== null) as unknown as RawInvoiceData[]
+        : [] as RawInvoiceData[];
+        
+      const veterinarianIds = invoiceData
+        .map(invoice => invoice.veterinarian_id)
+        .filter(Boolean);
       
       // Create a map to store veterinarian data
-      let veterinarians: {[key: string]: any} = {};
+      let veterinarians: {[key: string]: Veterinarian} = {};
       
       // If we have veterinarian IDs, fetch their data
       if (veterinarianIds.length > 0) {
@@ -379,16 +434,16 @@ export function InvoicesDataTable({
           console.error("Error fetching veterinarians:", vetsError);
         } else if (vetsData) {
           // Convert to a lookup object
-          veterinarians = vetsData.reduce((acc: {[key: string]: any}, vet: any) => {
+          veterinarians = (vetsData as Veterinarian[]).reduce((acc, vet) => {
             acc[vet.id] = vet;
             return acc;
-          }, {});
+          }, {} as {[key: string]: Veterinarian});
 
         }
       }
       
       // Process the data to include animal information and handle discount field changes
-      const processedData = (data || []).map((invoice: any) => {
+      const processedData = invoiceData.map((invoice) => {
         try {
           // Determine which discount field to use
           let discountValue = 0;
@@ -403,18 +458,20 @@ export function InvoicesDataTable({
           if (invoice.animals) {
             // If it's an array with elements, use the first one
             if (Array.isArray(invoice.animals) && invoice.animals.length > 0) {
+              const firstAnimal = invoice.animals[0];
               animalData = {
-                id: invoice.animals[0].id || "",
-                name: invoice.animals[0].name || "",
-                type: invoice.animals[0].type || ""
+                id: firstAnimal.id || "",
+                name: firstAnimal.name || "",
+                type: firstAnimal.type || ""
               };
             } 
             // If it's a single object (not in an array)
             else if (typeof invoice.animals === 'object' && invoice.animals !== null) {
+              const singleAnimal = invoice.animals as { id?: string; name?: string; type?: string };
               animalData = {
-                id: invoice.animals.id || "",
-                name: invoice.animals.name || "",
-                type: invoice.animals.type || ""
+                id: singleAnimal.id || "",
+                name: singleAnimal.name || "",
+                type: singleAnimal.type || ""
               };
             }
           }
@@ -442,7 +499,7 @@ export function InvoicesDataTable({
             // Use the determined discount value
             discount_total: discountValue || 0,
             total: invoice.total || 0
-          };
+          } as Invoice;
         } catch (itemErr) {
           console.error("Error processing invoice item:", itemErr, "Invoice data:", JSON.stringify(invoice));
           // Return a minimal valid object to prevent the entire map from failing
@@ -461,7 +518,7 @@ export function InvoicesDataTable({
             total: 0,
             status: invoice.status || "unknown",
             created_at: invoice.created_at || new Date().toISOString()
-          };
+          } as Invoice;
         }
       });
       
@@ -473,7 +530,7 @@ export function InvoicesDataTable({
     } finally {
       setLoading(false);
     }
-  }, [preloadedData]);
+  }, [preloadedData, invoices]);
 
   // Adjust column visibility based on screen size
   React.useEffect(() => {
@@ -654,16 +711,6 @@ export function InvoicesDataTable({
       );
       onUpdateInvoiceStatus(selectedInvoices, newStatus);
     }
-  }
-  
-  // Function to check if selected invoices can have their status changed
-  const canChangeStatus = () => {
-    const selectedInvoices = Object.keys(rowSelection).map(
-      idx => filteredData[parseInt(idx)]
-    );
-    
-    // Check if there are any selected invoices
-    return selectedInvoices.length > 0;
   }
 
   // Define columns with access to component state/functions
@@ -967,7 +1014,7 @@ export function InvoicesDataTable({
   ]
 
   // Custom filter function to search across multiple columns
-  const fuzzyFilter = (row: any, columnId: string, filterValue: string) => {
+  const fuzzyFilter = (row: TableRow, columnId: string, filterValue: string) => {
     const searchValue = filterValue.toLowerCase();
     
     // Get the values to search in
