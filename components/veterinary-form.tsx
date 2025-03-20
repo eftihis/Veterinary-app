@@ -974,9 +974,7 @@ export default function VeterinaryForm({
                     );
                   }}
                 />
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="checkOutDate"
@@ -1455,7 +1453,6 @@ export default function VeterinaryForm({
                                                     min="0.01"
                                                     step="any"
                                                     onFocus={(e) => e.target.select()}
-                                                    className="rounded-none relative"
                                                   />
                                                 </FormControl>
                                                 <FormMessage />
@@ -1512,7 +1509,6 @@ export default function VeterinaryForm({
                                                     onFocus={(e) => e.target.select()}
                                                     min="0"
                                                     step="any"
-                                                    className="rounded-none relative"
                                                   />
                                                 </FormControl>
                                                 <FormMessage />
@@ -1702,7 +1698,6 @@ export default function VeterinaryForm({
                                                     min="0.01"
                                                     step="any"
                                                     onFocus={(e) => e.target.select()}
-                                                    className="rounded-none relative"
                                                   />
                                                 </FormControl>
                                                 <FormMessage />
