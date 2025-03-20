@@ -103,20 +103,19 @@ function formatCurrency(amount: number) {
 
 // Helper function for status badges
 function getStatusBadge(status: string) {
-  const statusLower = status.toLowerCase();
-  if (statusLower === "draft") {
-    return <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-blue-200">Draft</Badge>
-  } else if (statusLower === "submitted") {
-    return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50 border-yellow-200">Submitted</Badge>
-  } else if (statusLower === "authorised") {
-    return <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200">Authorised</Badge>
-  } else if (statusLower === "paid") {
-    return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border-emerald-200">Paid</Badge>
-  } else if (statusLower === "voided") {
-    return <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50 border-red-200">Voided</Badge>
-  } else {
-    return <Badge variant="outline">{status}</Badge>
-  }
+  const statusClass = {
+    'draft': "bg-gray-100 text-gray-600 border-gray-300 border",
+    'submitted': "bg-yellow-100 text-yellow-700 border-yellow-300 border",
+    'authorised': "bg-blue-100 text-blue-700 border-blue-300 border",
+    'paid': "bg-green-100 text-green-800 border-green-300 border",
+    'voided': "bg-red-100 text-red-800 border-red-300 border",
+  }[status.toLowerCase()] || "bg-gray-500"
+  
+  return (
+    <Badge variant="status" className={statusClass}>
+      <span className="capitalize">{status}</span>
+    </Badge>
+  )
 }
 
 // Format date
@@ -140,24 +139,23 @@ function DateRangePicker({
   onClear: () => void
 }) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center gap-2 md:pr-4">
-      <div className="grid gap-2">
+    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+      <div className="grid gap-2 w-full sm:w-auto">
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              id="date-from"
+              id="start-date"
               variant={"outline"}
-              size="sm"
               className={cn(
-                "w-full md:w-[180px] justify-start text-left font-normal",
+                "w-full sm:w-[150px] md:w-[180px] justify-start text-left font-normal",
                 !startDate && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, "d MMM yyyy") : "From date"}
+              {startDate ? format(startDate, "d MMM yyyy") : <span>Start date</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
+          <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
               selected={startDate}
@@ -167,23 +165,22 @@ function DateRangePicker({
           </PopoverContent>
         </Popover>
       </div>
-      <div className="grid gap-2">
+      <div className="grid gap-2 w-full sm:w-auto">
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              id="date-to"
+              id="end-date"
               variant={"outline"}
-              size="sm"
               className={cn(
-                "w-full md:w-[180px] justify-start text-left font-normal",
+                "w-full sm:w-[150px] md:w-[180px] justify-start text-left font-normal",
                 !endDate && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, "d MMM yyyy") : "To date"}
+              {endDate ? format(endDate, "d MMM yyyy") : <span>End date</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
+          <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
               selected={endDate}
@@ -193,6 +190,16 @@ function DateRangePicker({
           </PopoverContent>
         </Popover>
       </div>
+      {(startDate || endDate) && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClear}
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Clear dates</span>
+        </Button>
+      )}
     </div>
   )
 }
@@ -224,83 +231,65 @@ function ActiveFilters({
   }
   
   return (
-    <div className="flex flex-wrap gap-2">
-      {/* Status filters */}
+    <div className="flex flex-wrap gap-2 pt-2">
+      <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>
+      
       {selectedStatuses.map(status => (
-        <div
-          key={status}
-          className="flex items-center bg-muted border rounded-md px-2 py-1 text-sm"
-        >
-          <span>Status: {status}</span>
+        <Badge key={status} variant="secondary" className="flex items-center gap-1">
+          <span className="capitalize">{status}</span>
           <Button
             variant="ghost"
-            className="h-4 w-4 p-0 ml-2 text-muted-foreground hover:text-foreground"
+            size="icon"
+            className="h-4 w-4 p-0 hover:bg-transparent"
             onClick={() => toggleStatus(status)}
           >
             <X className="h-3 w-3" />
             <span className="sr-only">Remove {status} filter</span>
           </Button>
-        </div>
+        </Badge>
       ))}
       
-      {/* Item filters */}
       {selectedItems.map(item => (
-        <div
-          key={item}
-          className="flex items-center bg-muted border rounded-md px-2 py-1 text-sm"
-        >
-          <span>Item: {item}</span>
+        <Badge key={item} variant="secondary" className="flex items-center gap-1">
+          <span>{item}</span>
           <Button
             variant="ghost"
-            className="h-4 w-4 p-0 ml-2 text-muted-foreground hover:text-foreground"
+            size="icon"
+            className="h-4 w-4 p-0 hover:bg-transparent"
             onClick={() => toggleItem(item)}
           >
             <X className="h-3 w-3" />
             <span className="sr-only">Remove {item} filter</span>
           </Button>
-        </div>
+        </Badge>
       ))}
       
-      {/* Date range filter */}
-      {startDate && (
-        <div className="flex items-center bg-muted border rounded-md px-2 py-1 text-sm">
-          <span>From: {format(startDate, 'd MMM yyyy')}</span>
+      {(startDate || endDate) && (
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <span>Date: {startDate ? format(startDate, "d MMM yyyy") : "Any"} - {endDate ? format(endDate, "d MMM yyyy") : "Any"}</span>
           <Button
             variant="ghost"
-            className="h-4 w-4 p-0 ml-2 text-muted-foreground hover:text-foreground"
-            onClick={() => setStartDate(undefined)}
+            size="icon"
+            className="h-4 w-4 p-0 hover:bg-transparent"
+            onClick={() => {
+              setStartDate(undefined);
+              setEndDate(undefined);
+            }}
           >
             <X className="h-3 w-3" />
-            <span className="sr-only">Remove start date filter</span>
+            <span className="sr-only">Remove date filter</span>
           </Button>
-        </div>
+        </Badge>
       )}
       
-      {endDate && (
-        <div className="flex items-center bg-muted border rounded-md px-2 py-1 text-sm">
-          <span>To: {format(endDate, 'd MMM yyyy')}</span>
-          <Button
-            variant="ghost"
-            className="h-4 w-4 p-0 ml-2 text-muted-foreground hover:text-foreground"
-            onClick={() => setEndDate(undefined)}
-          >
-            <X className="h-3 w-3" />
-            <span className="sr-only">Remove end date filter</span>
-          </Button>
-        </div>
-      )}
-      
-      {/* Clear all button */}
-      {(selectedStatuses.length > 0 || selectedItems.length > 0 || startDate || endDate) && (
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={clearAllFilters}
-          className="h-7 px-2 text-sm"
-        >
-          Clear all
-        </Button>
-      )}
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="h-6 px-2 text-xs"
+        onClick={clearAllFilters}
+      >
+        Clear all
+      </Button>
     </div>
   );
 }
@@ -879,7 +868,7 @@ export function LineItemsDataTable({
           </div>
           <div className="rounded-md border">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-muted/50">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
