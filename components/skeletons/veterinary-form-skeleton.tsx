@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function VeterinaryFormSkeleton() {
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <form className="space-y-8 max-w-4xl mx-auto">
       {/* Patient Information Section */}
       <Card>
         <CardContent className="pt-6">
@@ -105,6 +105,6 @@ export function VeterinaryFormSkeleton() {
       <div className="flex justify-end">
         <Skeleton className="h-10 w-32" /> {/* Submit button */}
       </div>
-    </div>
+    </form>
   );
 } 

@@ -25,11 +25,12 @@ export default function VeterinaryFormWrapper() {
     return () => clearTimeout(timer);
   }, [loadingXeroItems, loadingAnimals]);
   
-  // If we're still loading data for the form, show skeleton
-  if (isLoading) {
-    return <VeterinaryFormSkeleton />;
-  }
+  const content = isLoading ? <VeterinaryFormSkeleton /> : <VeterinaryForm />;
   
-  // Otherwise, render the actual form
-  return <VeterinaryForm />;
+  // Using a consistent wrapper for both skeleton and form
+  return (
+    <div className="w-full">
+      {content}
+    </div>
+  );
 } 
