@@ -82,7 +82,8 @@ export function useAnimals() {
       
       // Ensure the animal has a valid type
       if (!animalData.type) {
-        animalData.type = "dog"; // Default to dog if no type is provided
+        console.warn("No animal type provided, defaulting to 'other'");
+        animalData.type = "other"; // Default to 'other' if no type is provided
       }
       
       console.log("Adding animal with data:", animalData);

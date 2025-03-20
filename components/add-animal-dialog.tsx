@@ -96,7 +96,7 @@ export function AddAnimalDialog({
     resolver: zodResolver(animalFormSchema),
     defaultValues: {
       name: defaultAnimalName || "",
-      type: "dog",
+      type: "",
       breed: "",
       gender: "",
       weight: undefined,
@@ -110,7 +110,7 @@ export function AddAnimalDialog({
     if (open) {
       form.reset({
         name: defaultAnimalName || "",
-        type: "dog",
+        type: "",
         breed: "",
         gender: "",
         weight: undefined,
@@ -221,7 +221,7 @@ export function AddAnimalDialog({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
+                          <SelectValue placeholder="Select animal type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

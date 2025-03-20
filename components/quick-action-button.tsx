@@ -20,6 +20,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useKeyboardShortcut } from "@/lib/useKeyboardShortcut"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 
 export function QuickActionButton() {
   const router = useRouter()
@@ -92,9 +93,40 @@ export function QuickActionButton() {
     };
   }, [user, setIsDropdownOpen]);
 
-  const handleAddAnimal = (animalData: any) => {
-    // Handle the added animal data if needed
-    console.log("Animal added:", animalData);
+  const handleAddAnimal = async (animalData: any) => {
+    try {
+      console.log("Adding animal from quick action:", animalData);
+      
+      // Ensure the animal has a valid type
+      if (!animalData.type) {
+        console.warn("No animal type provided, defaulting to 'other'");
+        animalData.type = "other"; // Default to 'other' if no type is provided
+      }
+      
+      // Insert the animal into the database
+      const { data, error } = await supabase
+        .from('animals')
+        .insert([animalData])
+        .select('id, name, type, breed, is_deceased, gender');
+      
+      if (error) {
+        console.error("Error adding animal:", error);
+        toast.error(`Failed to add animal: ${error.message}`);
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        console.error("No data returned from insert operation");
+        toast.error("Failed to add animal: No data returned");
+        return;
+      }
+      
+      console.log("Animal added successfully:", data[0]);
+      toast.success(`Animal "${animalData.name}" added successfully!`);
+    } catch (err) {
+      console.error("Error in handleAddAnimal:", err);
+      toast.error(`Failed to add animal: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
   
   const handleContactSuccess = () => {
