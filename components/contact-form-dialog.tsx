@@ -40,7 +40,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { X } from "lucide-react"
+import { X, Loader2 } from "lucide-react"
 
 // Define the contact form schema
 const contactFormSchema = z.object({
@@ -167,29 +167,59 @@ export function ContactFormDialog({
     console.log('Available roles updated:', availableRoles)
   }, [availableRoles])
   
-  // Fetch roles from Supabase when component mounts
-  useEffect(() => {
-    async function fetchRoles() {
-      try {
-        const { data, error } = await supabase
-          .from('roles')
-          .select('id, name, description')
-          .order('name')
-        
-        if (error) throw error
-        
-        console.log('Roles fetched from database:', data)
-        setAvailableRoles(data.map(role => role.name))
-      } catch (error) {
-        console.error('Error fetching roles:', error)
-        toast.error('Failed to load roles')
-      } finally {
-        setIsLoadingRoles(false)
-      }
-    }
+  // Fetch roles from Supabase
+  const fetchRoles = async () => {
+    setIsLoadingRoles(true);
+    console.log("Attempting to fetch roles...");
     
-    fetchRoles()
-  }, [])
+    try {
+      // Fetch roles from the table with all fields and sort alphabetically
+      const { data, error } = await supabase
+        .from('roles')
+        .select('id, name, description')
+        .order('name');
+      
+      if (error) {
+        console.error("Error fetching roles:", error);
+        // Fallback to actual roles if database query fails
+        fallbackToDefaultRoles();
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        console.log("Fetched roles:", data);
+        // Extract role names from the response
+        const roleNames = data.map((role) => role.name);
+        setAvailableRoles(roleNames);
+      } else {
+        console.warn("No roles found. Using default roles.");
+        fallbackToDefaultRoles();
+      }
+    } catch (error) {
+      console.error("Failed to fetch roles:", error);
+      fallbackToDefaultRoles();
+    } finally {
+      setIsLoadingRoles(false);
+    }
+  };
+  
+  // Helper to use default roles
+  const fallbackToDefaultRoles = () => {
+    const defaultRoles = [
+      "board member",
+      "emergency contact",
+      "external",
+      "owner",
+      "veterinarian",
+      "volunteer"
+    ];
+    setAvailableRoles(defaultRoles);
+  };
+  
+  // Call fetchRoles when component mounts
+  useEffect(() => {
+    fetchRoles();
+  }, []);
   
   async function onSubmit(data: ContactFormValues) {
     try {
@@ -197,6 +227,8 @@ export function ContactFormDialog({
       
       // Add roles to the form data
       data.roles = selectedRoles
+      console.log("Submitting contact with roles:", selectedRoles);
+      console.log("Full form data being submitted:", data);
       
       // Convert empty strings to null for database
       Object.keys(data).forEach((key) => {
@@ -206,6 +238,8 @@ export function ContactFormDialog({
           data[key as keyof ContactFormValues] = null
         }
       })
+      
+      console.log("Form data after processing:", data);
       
       if (contact) {
         // Update existing contact
@@ -257,15 +291,20 @@ export function ContactFormDialog({
   
   function handleSelectRole(role: string) {
     if (!selectedRoles.includes(role)) {
-      setSelectedRoles([...selectedRoles, role])
-      form.setValue("roles", [...selectedRoles, role])
+      const newSelectedRoles = [...selectedRoles, role];
+      setSelectedRoles(newSelectedRoles);
+      // Update the form value with the new roles array
+      form.setValue("roles", newSelectedRoles);
+      console.log("Role added:", role, "New roles:", newSelectedRoles);
     }
   }
   
   function handleRemoveRole(role: string) {
-    const updatedRoles = selectedRoles.filter((r) => r !== role)
-    setSelectedRoles(updatedRoles)
-    form.setValue("roles", updatedRoles)
+    const filteredRoles = selectedRoles.filter((r) => r !== role);
+    setSelectedRoles(filteredRoles);
+    // Update the form value with the new roles array
+    form.setValue("roles", filteredRoles);
+    console.log("Role removed:", role, "Remaining roles:", filteredRoles);
   }
   
   return (
@@ -369,40 +408,79 @@ export function ContactFormDialog({
                       <div>
                         <FormLabel>Roles</FormLabel>
                         <div className="flex flex-wrap gap-2 mt-2 mb-2">
-                          {selectedRoles.map((role) => (
-                            <Badge key={role} variant="secondary" className="capitalize">
-                              {role}
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveRole(role)}
-                                className="ml-1 rounded-full outline-none focus:ring-2"
-                              >
-                                <X className="h-3 w-3" />
-                                <span className="sr-only">Remove {role} role</span>
-                              </button>
-                            </Badge>
-                          ))}
-                          {selectedRoles.length === 0 && (
+                          {selectedRoles.length > 0 ? (
+                            selectedRoles.map((role) => (
+                              <Badge key={role} variant="secondary" className="capitalize">
+                                {role.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRole(role)}
+                                  className="ml-1 rounded-full outline-none focus:ring-2"
+                                >
+                                  <X className="h-3 w-3" />
+                                  <span className="sr-only">Remove {role} role</span>
+                                </button>
+                              </Badge>
+                            ))
+                          ) : (
                             <div className="text-sm text-muted-foreground">
                               No roles selected
                             </div>
                           )}
                         </div>
-                        <Select onValueChange={handleSelectRole} disabled={isLoadingRoles}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder={isLoadingRoles ? "Loading roles..." : "Add a role"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {/* Debugging roles */}
-                            {availableRoles
-                              .filter((role) => !selectedRoles.includes(role))
-                              .map((role) => (
-                                <SelectItem key={role} value={role} className="capitalize">
-                                  {role}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                        
+                        <div className="relative">
+                          {/* Add debug info for roles */}
+                          {process.env.NODE_ENV === 'development' && (
+                            <div className="text-xs text-muted-foreground mb-1">
+                              Available roles: {availableRoles.length} | 
+                              Selected roles: {selectedRoles.length}
+                            </div>
+                          )}
+                          
+                          <Select 
+                            onValueChange={handleSelectRole} 
+                            disabled={isLoadingRoles || availableRoles.length === 0}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder={
+                                isLoadingRoles 
+                                  ? "Loading roles..." 
+                                  : availableRoles.length === 0
+                                    ? "No roles available"
+                                    : "Add a role"
+                              } />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {isLoadingRoles ? (
+                                <div className="flex items-center justify-center p-2">
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  <span>Loading roles...</span>
+                                </div>
+                              ) : availableRoles.length === 0 ? (
+                                <div className="p-2 text-sm text-muted-foreground">
+                                  No roles available
+                                </div>
+                              ) : (
+                                availableRoles
+                                  .filter(role => !selectedRoles.includes(role))
+                                  .map(role => (
+                                    <SelectItem key={role} value={role}>
+                                      {role.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                                    </SelectItem>
+                                  ))
+                              )}
+                              
+                              {!isLoadingRoles && 
+                               availableRoles.length > 0 && 
+                               availableRoles.filter(role => !selectedRoles.includes(role)).length === 0 && (
+                                <div className="p-2 text-sm text-muted-foreground">
+                                  All roles already selected
+                                </div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       
                       <FormField
