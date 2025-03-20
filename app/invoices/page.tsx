@@ -53,8 +53,23 @@ export default function InvoicesPage() {
       setIsDeleting(true)
       
       if (isBatchDelete && invoicesToDelete && invoicesToDelete.length > 0) {
-        // Batch delete invoices
-        const invoiceIds = invoicesToDelete.map(invoice => invoice.id)
+        // Filter invoices to only allow deleting draft status
+        const deletableInvoices = invoicesToDelete.filter(invoice => 
+          invoice.status.toLowerCase() === 'draft'
+        );
+        
+        // Check if any invoices cannot be deleted
+        const nonDeletableCount = invoicesToDelete.length - deletableInvoices.length;
+        
+        if (deletableInvoices.length === 0) {
+          toast.error('None of the selected invoices can be deleted. Only draft invoices can be deleted.');
+          setIsDeleting(false);
+          setDeleteDialogOpen(false);
+          return;
+        }
+        
+        // Batch delete invoices (only drafts)
+        const invoiceIds = deletableInvoices.map(invoice => invoice.id);
         
         try {
           // Delete all invoices
@@ -68,7 +83,11 @@ export default function InvoicesPage() {
             throw invoicesError;
           }
           
-          toast.success(`${invoicesToDelete.length} invoices deleted successfully`);
+          let successMessage = `${deletableInvoices.length} invoices deleted successfully`;
+          if (nonDeletableCount > 0) {
+            successMessage += `. ${nonDeletableCount} invoice(s) could not be deleted because they are not in draft status.`;
+          }
+          toast.success(successMessage);
         } catch (batchError) {
           console.error("Batch delete failed, falling back to individual deletes:", batchError);
           
@@ -76,7 +95,7 @@ export default function InvoicesPage() {
           let successCount = 0;
           let errorCount = 0;
           
-          for (const invoice of invoicesToDelete) {
+          for (const invoice of deletableInvoices) {
             try {
               // Delete the invoice
               const { error } = await supabase
@@ -96,14 +115,26 @@ export default function InvoicesPage() {
           }
           
           if (successCount > 0) {
-            toast.success(`${successCount} of ${invoicesToDelete.length} invoices deleted successfully`);
+            let successMessage = `${successCount} of ${deletableInvoices.length} invoices deleted successfully`;
+            if (nonDeletableCount > 0) {
+              successMessage += `. ${nonDeletableCount} invoice(s) could not be deleted because they are not in draft status.`;
+            }
+            toast.success(successMessage);
           }
           if (errorCount > 0) {
             toast.error(`Failed to delete ${errorCount} invoices. Please try again.`);
           }
         }
       } else if (invoiceToDelete) {
-        // Single delete
+        // Single delete - check if the invoice is in draft status
+        if (invoiceToDelete.status.toLowerCase() !== 'draft') {
+          toast.error('This invoice cannot be deleted because it is not in draft status.');
+          setIsDeleting(false);
+          setDeleteDialogOpen(false);
+          return;
+        }
+        
+        // Delete the invoice
         const { error } = await supabase
           .from('invoices')
           .delete()

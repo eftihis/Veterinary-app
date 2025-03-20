@@ -614,6 +614,15 @@ export function InvoicesDataTable({
     }
   }
 
+  // Function to check if any selected invoices can be deleted (are in draft status)
+  const hasDeleteableDrafts = () => {
+    const selectedInvoices = Object.keys(rowSelection).map(
+      idx => filteredData[parseInt(idx)]
+    );
+    
+    return selectedInvoices.some(invoice => invoice.status.toLowerCase() === 'draft');
+  }
+
   // Define columns with access to component state/functions
   const columns: ColumnDef<Invoice>[] = [
     {
@@ -856,10 +865,16 @@ export function InvoicesDataTable({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => handleDeleteInvoice(invoice)}
-                    className="text-destructive focus:text-destructive"
+                    className={invoice.status.toLowerCase() === "draft" 
+                      ? "text-destructive focus:text-destructive" 
+                      : "text-muted-foreground cursor-not-allowed"}
+                    disabled={invoice.status.toLowerCase() !== "draft"}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete invoice
+                    {invoice.status.toLowerCase() !== "draft" && (
+                      <span className="ml-1 text-xs">(Draft only)</span>
+                    )}
                   </DropdownMenuItem>
                 </>
               )}
@@ -997,6 +1012,7 @@ export function InvoicesDataTable({
                       size="sm" 
                       onClick={handleBatchDelete}
                       className="flex items-center gap-1"
+                      disabled={!hasDeleteableDrafts()}
                     >
                       <Trash2 className="h-4 w-4" />
                       Delete Selected
