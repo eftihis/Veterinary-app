@@ -1038,7 +1038,7 @@ export function InvoicesDataTable({
   }
 
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-4 w-full p-1">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <div className="w-full md:w-auto relative">

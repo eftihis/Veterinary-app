@@ -428,7 +428,7 @@ export function ContactsDataTable({
   });
 
   return (
-    <div className="space-y-4 overflow-hidden">
+    <div className="space-y-4 overflow-hidden p-1">
       <div className="flex items-center justify-between pb-2 gap-4">
         <div className="flex w-full max-w-sm items-center space-x-2">
           <Input
