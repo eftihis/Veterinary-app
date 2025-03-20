@@ -74,6 +74,13 @@ export function AnimalCombobox({
   // Handle adding a new animal
   const handleAddAnimal = async (animalData: NewAnimalData) => {
     if (onAddAnimal) {
+      // Ensure animal type is set to a valid value
+      const validTypes = ["dog", "cat", "bird", "rabbit", "rodent", "other"];
+      if (!animalData.type || !validTypes.includes(animalData.type.toLowerCase())) {
+        console.warn("Invalid animal type provided, defaulting to 'dog'");
+        animalData.type = "dog"; // Default to dog if invalid or no type
+      }
+      
       const newAnimal = await onAddAnimal(animalData);
       onSelect(newAnimal);
       return newAnimal;
