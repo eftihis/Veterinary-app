@@ -301,38 +301,45 @@ export function LineItemsDataTable({
   const [lineItems, setLineItems] = React.useState<LineItem[]>(preloadedData);
   const [loading, setLoading] = React.useState(!initialFetchComplete);
   const [error, setError] = React.useState<string | null>(null);
+  const [filteredData, setFilteredData] = React.useState<LineItem[]>(preloadedData);
   
+  // Filtering states
+  const [startDate, setStartDate] = React.useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = React.useState<Date | undefined>(undefined);
+  const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
+  const [selectedItems, setSelectedItems] = React.useState<string[]>([]);
+  
+  // Table states
   const [sorting, setSorting] = React.useState<SortingState>([
     {
       id: "created_at",
       desc: true
     }
-  ])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [globalFilter, setGlobalFilter] = React.useState<string>("")
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  ]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = React.useState<string>("");
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
   
-  // Status filter state
-  const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([])
-  
-  // Item filter state
-  const [selectedItems, setSelectedItems] = React.useState<string[]>([])
-  const [itemOptions, setItemOptions] = React.useState<{ value: string; label: string }[]>([])
-  
-  // Date range filter state
-  const [startDate, setStartDate] = React.useState<Date | undefined>(undefined)
-  const [endDate, setEndDate] = React.useState<Date | undefined>(undefined)
-  const [filteredData, setFilteredData] = React.useState<LineItem[]>([])
-  
-  // Available statuses
-  const statusOptions = [
+  // Status options
+  const statusOptions = React.useMemo(() => [
     { value: "draft", label: "Draft" },
     { value: "submitted", label: "Submitted" },
     { value: "authorised", label: "Authorised" },
     { value: "paid", label: "Paid" },
     { value: "voided", label: "Voided" }
-  ]
+  ], []);
+  
+  // Item options - generated from the line items data
+  const itemOptions = React.useMemo(() => {
+    if (!lineItems.length) return [];
+    
+    const uniqueItems = Array.from(new Set(lineItems.map(item => item.item_name)));
+    return uniqueItems.map(item => ({
+      value: item,
+      label: item
+    }));
+  }, [lineItems]);
   
   // Function to refresh line items
   const refreshLineItems = React.useCallback(async () => {
@@ -372,22 +379,6 @@ export function LineItemsDataTable({
       // Use preloaded data instead of fetching
       setFilteredData(preloadedData);
       setLoading(false);
-
-      // Extract item options from preloaded data
-      if (preloadedData.length > 0) {
-        // Get unique items
-        const uniqueItems = Array.from(
-          new Set(preloadedData.map(item => item.item_name))
-        ).sort();
-        
-        // Format as options
-        const options = uniqueItems.map(item => ({
-          value: item,
-          label: item
-        }));
-        
-        setItemOptions(options);
-      }
     } else {
       // Fetch data normally
       refreshLineItems();
@@ -433,30 +424,29 @@ export function LineItemsDataTable({
   
   // Clear all filters
   const clearAllFilters = () => {
-    setStartDate(undefined)
-    setEndDate(undefined)
-    setSelectedStatuses([])
-    setSelectedItems([])
-    setGlobalFilter("")
-  }
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setSelectedStatuses([]);
+    setSelectedItems([]);
+    setGlobalFilter("");
+  };
   
-  // Handle status selection toggle
+  // Helper functions to maintain previous toggle function interface for ActiveFilters component
   const toggleStatus = (status: string) => {
     setSelectedStatuses(prev => 
       prev.includes(status) 
         ? prev.filter(s => s !== status) 
         : [...prev, status]
-    )
-  }
+    );
+  };
   
-  // Handle item selection toggle
   const toggleItem = (item: string) => {
     setSelectedItems(prev => 
       prev.includes(item) 
         ? prev.filter(i => i !== item) 
         : [...prev, item]
-    )
-  }
+    );
+  };
 
   // Define columns
   const columns: ColumnDef<LineItem>[] = [
@@ -631,82 +621,58 @@ export function LineItemsDataTable({
   // Modify the loading condition to respect skipLoadingState
   if (loading && !skipLoadingState) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     )
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="bg-red-50 text-red-700 p-4 rounded-md flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            <p>Error loading line items: {error}</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+      <div className="bg-red-50 text-red-700 p-4 rounded-md flex items-center gap-2">
+        <AlertCircle className="h-5 w-5" />
+        <p>Error loading line items: {error}</p>
+      </div>
+    )
   }
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col gap-4 py-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="w-full md:w-auto relative">
-                <Input
-                  placeholder="Search line items by invoice, patient, or item..."
-                  value={globalFilter}
-                  onChange={(event) => setGlobalFilter(event.target.value)}
-                  className="w-full md:w-[350px] pr-8"
-                />
-                {globalFilter && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full"
-                    onClick={() => setGlobalFilter("")}
-                    aria-label="Clear search"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <DateRangePicker 
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-                onClear={clearAllFilters}
-              />
-              
-              {/* Status Filter */}
-              <StatusFilter
-                statusOptions={statusOptions}
-                selectedStatuses={selectedStatuses}
-                setSelectedStatuses={setSelectedStatuses}
-                getStatusBadge={getStatusBadge}
-              />
-              
-              {/* Item Filter */}
-              <ItemFilter
-                itemOptions={itemOptions}
-                selectedItems={selectedItems}
-                setSelectedItems={setSelectedItems}
-              />
-            </div>
-            
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 md:flex-row md:justify-between">
+        <Input
+          placeholder="Search line items by invoice, patient, or item..."
+          value={globalFilter || ""}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="max-w-sm"
+        />
+        <div className="flex flex-col sm:flex-row gap-2">
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            onClear={() => {
+              setStartDate(undefined)
+              setEndDate(undefined)
+            }}
+          />
+          <div className="flex gap-2">
+            <StatusFilter 
+              statusOptions={statusOptions}
+              selectedStatuses={selectedStatuses}
+              setSelectedStatuses={setSelectedStatuses}
+              getStatusBadge={getStatusBadge}
+            />
+            <ItemFilter
+              itemOptions={itemOptions}
+              selectedItems={selectedItems}
+              setSelectedItems={setSelectedItems}
+            />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                <Button variant="outline" className="flex gap-1">
+                  <span>Columns</span>
+                  <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -719,202 +685,195 @@ export function LineItemsDataTable({
                         key={column.id}
                         className="capitalize"
                         checked={column.getIsVisible()}
-                        onCheckedChange={(value: boolean) =>
-                          column.toggleVisibility(!!value)
-                        }
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
                       >
                         {column.id}
                       </DropdownMenuCheckboxItem>
-                    );
+                    )
                   })}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          {filteredData.length !== lineItems.length && (
-            <div className="text-sm text-muted-foreground">
-              Showing {filteredData.length} of {lineItems.length} line items based on filters.
-            </div>
-          )}
-          
-          {/* Active Filters */}
-          <ActiveFilters
-            selectedStatuses={selectedStatuses}
-            toggleStatus={toggleStatus}
-            selectedItems={selectedItems}
-            toggleItem={toggleItem}
-            startDate={startDate}
-            endDate={endDate}
-            setStartDate={setStartDate}
-            setEndDate={setEndDate}
-            clearAllFilters={clearAllFilters}
-          />
         </div>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No line items found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between py-4">
-          <div className="text-sm text-muted-foreground">
-            Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
-            {table.getFilteredRowModel().rows.length} results
-          </div>
-          
-          <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
-            <div className="flex items-center justify-end sm:justify-start gap-2">
-              <p className="text-sm text-muted-foreground whitespace-nowrap">
-                Rows per page
-              </p>
-              <Select
-                value={table.getState().pagination.pageSize.toString()}
-                onValueChange={(value) => {
-                  table.setPageSize(Number(value));
-                }}
-              >
-                <SelectTrigger className="h-8 w-[70px]">
-                  <SelectValue placeholder={table.getState().pagination.pageSize.toString()} />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  {[10, 20, 30, 50, 100].map((pageSize) => (
-                    <SelectItem key={pageSize} value={pageSize.toString()}>
-                      {pageSize}
-                    </SelectItem>
+      </div>
+      
+      <ActiveFilters
+        selectedStatuses={selectedStatuses}
+        toggleStatus={toggleStatus}
+        selectedItems={selectedItems}
+        toggleItem={toggleItem}
+        startDate={startDate}
+        endDate={endDate}
+        setStartDate={setStartDate}
+        setEndDate={setEndDate}
+        clearAllFilters={clearAllFilters}
+      />
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center justify-end gap-2">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => table.previousPage()} 
-                      aria-disabled={!table.getCanPreviousPage()}
-                      className={!table.getCanPreviousPage() 
-                        ? "pointer-events-none opacity-50" 
-                        : "cursor-pointer"
-                      }
-                      tabIndex={!table.getCanPreviousPage() ? -1 : undefined}
-                    />
-                  </PaginationItem>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  No line items found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between py-4">
+        <div className="text-sm text-muted-foreground">
+          Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
+          {table.getFilteredRowModel().rows.length} results
+        </div>
+        
+        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
+          <div className="flex items-center justify-end sm:justify-start gap-2">
+            <p className="text-sm text-muted-foreground whitespace-nowrap">
+              Rows per page
+            </p>
+            <Select
+              value={table.getState().pagination.pageSize.toString()}
+              onValueChange={(value) => {
+                table.setPageSize(Number(value));
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={table.getState().pagination.pageSize.toString()} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[10, 20, 30, 50, 100].map((pageSize) => (
+                  <SelectItem key={pageSize} value={pageSize.toString()}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center justify-end gap-2">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => table.previousPage()} 
+                    aria-disabled={!table.getCanPreviousPage()}
+                    className={!table.getCanPreviousPage() 
+                      ? "pointer-events-none opacity-50" 
+                      : "cursor-pointer"
+                    }
+                    tabIndex={!table.getCanPreviousPage() ? -1 : undefined}
+                  />
+                </PaginationItem>
+                
+                {/* Generate page buttons - hide on small screens */}
+                <div className="hidden sm:flex">
+                {Array.from({ length: table.getPageCount() }).map((_, index) => {
+                  // Show limited number of pages to avoid cluttering the UI
+                  const pageNumber = index + 1;
+                  const isCurrent = table.getState().pagination.pageIndex === index;
                   
-                  {/* Generate page buttons - hide on small screens */}
-                  <div className="hidden sm:flex">
-                  {Array.from({ length: table.getPageCount() }).map((_, index) => {
-                    // Show limited number of pages to avoid cluttering the UI
-                    const pageNumber = index + 1;
-                    const isCurrent = table.getState().pagination.pageIndex === index;
-                    
-                    // Logic to determine which page numbers to show
-                    const shouldShowPageNumber =
-                      pageNumber === 1 || // First page
-                      pageNumber === table.getPageCount() || // Last page
-                      Math.abs(pageNumber - (table.getState().pagination.pageIndex + 1)) <= 1; // Pages around current
-                    
-                    // Show ellipsis when needed
-                    const showEllipsisBefore =
-                      index === 1 && table.getState().pagination.pageIndex > 2;
-                    const showEllipsisAfter =
-                      index === table.getPageCount() - 2 && 
-                      table.getState().pagination.pageIndex < table.getPageCount() - 3;
-                    
-                    if (showEllipsisBefore) {
-                      return (
-                        <PaginationItem key={`ellipsis-before`}>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                      );
-                    }
-                    
-                    if (showEllipsisAfter) {
-                      return (
-                        <PaginationItem key={`ellipsis-after`}>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                      );
-                    }
-                    
-                    if (shouldShowPageNumber) {
-                      return (
-                        <PaginationItem key={index}>
-                          <PaginationLink
-                            isActive={isCurrent}
-                            onClick={() => table.setPageIndex(index)}
-                            className="cursor-pointer"
-                          >
-                            {pageNumber}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    }
-                    
-                    return null;
-                  })}
-                  </div>
+                  // Logic to determine which page numbers to show
+                  const shouldShowPageNumber =
+                    pageNumber === 1 || // First page
+                    pageNumber === table.getPageCount() || // Last page
+                    Math.abs(pageNumber - (table.getState().pagination.pageIndex + 1)) <= 1; // Pages around current
                   
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => table.nextPage()} 
-                      aria-disabled={!table.getCanNextPage()}
-                      className={!table.getCanNextPage() 
-                        ? "pointer-events-none opacity-50" 
-                        : "cursor-pointer"
-                      }
-                      tabIndex={!table.getCanNextPage() ? -1 : undefined}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
+                  // Show ellipsis when needed
+                  const showEllipsisBefore =
+                    index === 1 && table.getState().pagination.pageIndex > 2;
+                  const showEllipsisAfter =
+                    index === table.getPageCount() - 2 && 
+                    table.getState().pagination.pageIndex < table.getPageCount() - 3;
+                  
+                  if (showEllipsisBefore) {
+                    return (
+                      <PaginationItem key={`ellipsis-before`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                  
+                  if (showEllipsisAfter) {
+                    return (
+                      <PaginationItem key={`ellipsis-after`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                  
+                  if (shouldShowPageNumber) {
+                    return (
+                      <PaginationItem key={index}>
+                        <PaginationLink
+                          isActive={isCurrent}
+                          onClick={() => table.setPageIndex(index)}
+                          className="cursor-pointer"
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+                  
+                  return null;
+                })}
+                </div>
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => table.nextPage()} 
+                    aria-disabled={!table.getCanNextPage()}
+                    className={!table.getCanNextPage() 
+                      ? "pointer-events-none opacity-50" 
+                      : "cursor-pointer"
+                    }
+                    tabIndex={!table.getCanNextPage() ? -1 : undefined}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 } 
