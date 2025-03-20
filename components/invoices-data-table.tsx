@@ -60,7 +60,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
-import { ViewInvoiceDialog } from "@/components/view-invoice-dialog"
+import { InvoiceDetailSheet } from "@/components/invoice-detail-sheet"
 import { StatusFilter } from "@/components/status-filter"
 import {
   Pagination,
@@ -1434,10 +1434,11 @@ export function InvoicesDataTable({
 
       {/* View Invoice Dialog */}
       {selectedInvoice && (
-        <ViewInvoiceDialog
+        <InvoiceDetailSheet
           invoice={selectedInvoice}
           open={viewDialogOpen}
           onOpenChange={setViewDialogOpen}
+          onEdit={handleEditInvoice}
         />
       )}
 

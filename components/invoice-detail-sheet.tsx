@@ -3,15 +3,14 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { Eye, Calendar, Tag, User, User2, Hash, FileText, DollarSign } from "lucide-react"
+import { Eye, Calendar, Tag, User, User2, Hash, FileText, DollarSign, AlertCircle, FileEdit } from "lucide-react"
 import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog"
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle,
+  SheetFooter
+} from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { getInvoiceById, InvoiceWithJoins } from "@/hooks/useInvoiceWithJoins"
 import { Invoice } from "@/components/invoices-data-table"
@@ -27,11 +26,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 
-interface ViewInvoiceDialogProps {
+interface InvoiceDetailSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   invoice: Invoice | null
+  onEdit?: (invoice: Invoice) => void
 }
 
 // Format date
@@ -65,16 +66,17 @@ const getStatusBadge = (status: string) => {
   )
 }
 
-export function ViewInvoiceDialog({
+export function InvoiceDetailSheet({
   open,
   onOpenChange,
-  invoice
-}: ViewInvoiceDialogProps) {
+  invoice,
+  onEdit
+}: InvoiceDetailSheetProps) {
   const [loading, setLoading] = useState(false)
   const [fullInvoiceData, setFullInvoiceData] = useState<InvoiceWithJoins | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch the complete invoice data when the dialog opens
+  // Fetch the complete invoice data when the sheet opens
   useEffect(() => {
     async function fetchInvoiceData() {
       if (!open || !invoice?.id) return
@@ -104,51 +106,73 @@ export function ViewInvoiceDialog({
     fetchInvoiceData()
   }, [open, invoice?.id])
 
+  function handleEdit() {
+    if (invoice && onEdit) {
+      onEdit(invoice)
+      onOpenChange(false)
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[95%] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
-          <DialogTitle className="flex items-center text-base sm:text-lg">
-            <Eye className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="sm:max-w-xl overflow-y-auto p-6">
+        <SheetHeader className="pb-4">
+          <SheetTitle className="text-2xl font-bold flex items-center">
+            <FileText className="mr-2 h-5 w-5" />
             Invoice {invoice?.document_number}
-          </DialogTitle>
-          <DialogDescription>
-            View the details of this invoice
-          </DialogDescription>
-        </DialogHeader>
+          </SheetTitle>
+          
+          {!loading && fullInvoiceData && (
+            <div className="flex items-center gap-2 mt-1">
+              {getStatusBadge(fullInvoiceData.status)}
+            </div>
+          )}
+        </SheetHeader>
         
         {loading ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="space-y-6 px-1">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-40 w-full" />
           </div>
         ) : error ? (
-          <div className="py-4 text-destructive">
-            {error}
+          <div className="rounded-md bg-destructive/10 p-5 mx-1">
+            <div className="flex items-center">
+              <AlertCircle className="h-4 w-4 text-destructive mr-2" />
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+            <Button 
+              onClick={() => onOpenChange(false)} 
+              variant="outline" 
+              size="sm"
+              className="mt-2"
+            >
+              Close
+            </Button>
           </div>
         ) : fullInvoiceData ? (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-6 px-1">
             {/* Invoice Header Information */}
             <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-base sm:text-lg">Invoice Information</CardTitle>
+              <CardHeader className="py-4 px-5">
+                <CardTitle className="text-base font-medium flex items-center">
+                  <Hash className="h-4 w-4 mr-2" />
+                  Invoice Information
+                </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <CardContent className="py-4 px-5 pt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-1">
-                      <Hash className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium mr-1">Document Number:</span>
                       <span>{fullInvoiceData.document_number}</span>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-1">
-                      <FileText className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium mr-1">Reference:</span>
                       <span>{fullInvoiceData.reference || "-"}</span>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-1">
-                      <DollarSign className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium mr-1">Status:</span>
                       <span>{getStatusBadge(fullInvoiceData.status)}</span>
                     </div>
@@ -156,19 +180,16 @@ export function ViewInvoiceDialog({
                   
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-1">
-                      <Calendar className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium mr-1">Created:</span>
                       <span>{formatDate(fullInvoiceData.created_at)}</span>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-1">
-                      <Calendar className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium mr-1">Check-in Date:</span>
                       <span>{formatDate(fullInvoiceData.check_in_date)}</span>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-1">
-                      <Calendar className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium mr-1">Check-out Date:</span>
                       <span>{formatDate(fullInvoiceData.check_out_date)}</span>
                     </div>
@@ -179,20 +200,21 @@ export function ViewInvoiceDialog({
             
             {/* Patient Information */}
             <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-base sm:text-lg">Patient Information</CardTitle>
+              <CardHeader className="py-4 px-5">
+                <CardTitle className="text-base font-medium flex items-center">
+                  <User className="h-4 w-4 mr-2" />
+                  Patient Information
+                </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <CardContent className="py-4 px-5 pt-0">
                 {fullInvoiceData.animal ? (
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-1">
-                      <User className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium mr-1">Name:</span>
                       <span>{fullInvoiceData.animal.name}</span>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-1">
-                      <Tag className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium mr-1">Type:</span>
                       <span className="capitalize">{fullInvoiceData.animal.type}</span>
                     </div>
@@ -205,14 +227,16 @@ export function ViewInvoiceDialog({
             
             {/* Veterinarian Information */}
             <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-base sm:text-lg">Veterinarian Information</CardTitle>
+              <CardHeader className="py-4 px-5">
+                <CardTitle className="text-base font-medium flex items-center">
+                  <User2 className="h-4 w-4 mr-2" />
+                  Veterinarian Information
+                </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <CardContent className="py-4 px-5 pt-0">
                 {fullInvoiceData.veterinarian ? (
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-1">
-                      <User2 className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium mr-1">Name:</span>
                       <span>
                         {`${fullInvoiceData.veterinarian.first_name} ${fullInvoiceData.veterinarian.last_name}`}
@@ -227,10 +251,13 @@ export function ViewInvoiceDialog({
             
             {/* Line Items */}
             <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-base sm:text-lg">Line Items</CardTitle>
+              <CardHeader className="py-4 px-5">
+                <CardTitle className="text-base font-medium flex items-center">
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Line Items
+                </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <CardContent className="py-4 px-5 pt-0">
                 <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
                   <Table>
                     <TableHeader>
@@ -307,10 +334,10 @@ export function ViewInvoiceDialog({
             {/* Comment section if available */}
             {fullInvoiceData.comment && (
               <Card>
-                <CardHeader className="p-4 sm:p-6">
-                  <CardTitle className="text-base sm:text-lg">Additional Comments</CardTitle>
+                <CardHeader className="py-4 px-5">
+                  <CardTitle className="text-base font-medium">Additional Comments</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                <CardContent className="py-4 px-5 pt-0">
                   <p className="whitespace-pre-wrap">{fullInvoiceData.comment}</p>
                 </CardContent>
               </Card>
@@ -322,12 +349,30 @@ export function ViewInvoiceDialog({
           </div>
         )}
         
-        <DialogFooter className="mt-4 sm:mt-6">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <SheetFooter className="flex justify-between mt-6 pt-4 border-t">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="flex-1"
+            >
+              Close
+            </Button>
+          </div>
+          
+          {invoice && !loading && onEdit && (
+            <Button
+              size="sm"
+              onClick={handleEdit}
+              className="flex items-center"
+            >
+              <FileEdit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          )}
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 } 
