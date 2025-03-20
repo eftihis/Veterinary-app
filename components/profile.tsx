@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -100,11 +100,20 @@ export default function UserProfile({
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Toggle functions for password visibility
   const toggleCurrentPassword = () => setShowCurrentPassword(!showCurrentPassword);
   const toggleNewPassword = () => setShowNewPassword(!showNewPassword);
   const toggleConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
+
+  // Add a handler to trigger file input click
+  const handleAvatarClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (fileInputRef.current && !isUpdatingAvatar) {
+      fileInputRef.current.click();
+    }
+  };
 
   // Profile form
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -335,7 +344,7 @@ export default function UserProfile({
           <CardContent className="space-y-6">
             {/* Avatar */}
             <div className="flex flex-col items-center md:flex-row md:items-start gap-6 pb-6 border-b">
-              <div className="relative group">
+              <div className="relative group" onClick={handleAvatarClick} style={{ cursor: 'pointer' }}>
                 <Avatar className="h-24 w-24 md:h-28 md:w-28 border-2 border-border">
                   <AvatarImage src={profileAvatar} alt={initialFullName} />
                   <AvatarFallback>
@@ -348,10 +357,8 @@ export default function UserProfile({
                       : "U"}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                  <label htmlFor="avatar-upload" className="cursor-pointer">
-                    <Upload className="h-7 w-7 text-white" />
-                  </label>
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Upload className="h-7 w-7 text-white" />
                 </div>
                 <input
                   id="avatar-upload"
@@ -360,6 +367,7 @@ export default function UserProfile({
                   accept="image/png, image/jpeg, image/gif"
                   onChange={handleAvatarUpload}
                   disabled={isUpdatingAvatar}
+                  ref={fileInputRef}
                 />
               </div>
               <div className="flex flex-col gap-1 text-center md:text-left">
@@ -369,9 +377,11 @@ export default function UserProfile({
                 </div>
                 <p className="text-sm text-muted-foreground">{initialEmail}</p>
                 <div className="mt-2">
-                  <label 
-                    htmlFor="avatar-upload" 
+                  <button 
+                    type="button"
+                    onClick={handleAvatarClick}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md text-xs font-medium cursor-pointer transition-colors"
+                    disabled={isUpdatingAvatar}
                   >
                     {isUpdatingAvatar ? (
                       <>
@@ -384,7 +394,7 @@ export default function UserProfile({
                         <span>Change avatar</span>
                       </>
                     )}
-                  </label>
+                  </button>
                   <p className="text-[10px] text-muted-foreground mt-1.5">
                     JPG, GIF or PNG. 200KB max.
                   </p>
