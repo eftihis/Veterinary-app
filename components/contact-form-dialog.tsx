@@ -65,6 +65,9 @@ interface ContactFormDialogProps {
   onOpenChange: (open: boolean) => void
   contact?: Contact
   onSuccess?: () => void
+  onFormSubmit?: (contactData: any) => void
+  defaultContactName?: string
+  onContactAdded?: (contactData: any) => Promise<any>
 }
 
 export function ContactFormDialog({
@@ -72,6 +75,9 @@ export function ContactFormDialog({
   onOpenChange,
   contact,
   onSuccess,
+  onFormSubmit,
+  defaultContactName,
+  onContactAdded,
 }: ContactFormDialogProps) {
   console.log('Contact object:', contact)
   console.log('Contact roles:', contact?.roles)
@@ -105,8 +111,8 @@ export function ContactFormDialog({
           roles: contact.roles || [],
         }
       : {
-          first_name: "",
-          last_name: "",
+          first_name: defaultContactName ? defaultContactName.split(' ')[0] : "",
+          last_name: defaultContactName ? defaultContactName.split(' ').slice(1).join(' ') : "",
           email: "",
           phone: "",
           address: "",
@@ -145,8 +151,8 @@ export function ContactFormDialog({
     } else {
       // Reset the form to defaults when no contact is provided
       form.reset({
-        first_name: "",
-        last_name: "",
+        first_name: defaultContactName ? defaultContactName.split(' ')[0] : "",
+        last_name: defaultContactName ? defaultContactName.split(' ').slice(1).join(' ') : "",
         email: "",
         phone: "",
         address: "",
@@ -160,7 +166,7 @@ export function ContactFormDialog({
       })
       setSelectedRoles([])
     }
-  }, [contact, form])
+  }, [contact, form, defaultContactName])
   
   // Add debugging useEffect
   useEffect(() => {
@@ -227,8 +233,23 @@ export function ContactFormDialog({
       
       // Add roles to the form data
       data.roles = selectedRoles
-      console.log("Submitting contact with roles:", selectedRoles);
-      console.log("Full form data being submitted:", data);
+      
+      // If onContactAdded is provided, use that instead of direct DB insert
+      if (onContactAdded) {
+        try {
+          await onContactAdded(data);
+          console.log("Contact added via onContactAdded callback");
+        } catch (error) {
+          console.error("Error in onContactAdded:", error);
+        }
+        
+        // Reset form and close dialog regardless of errors
+        form.reset()
+        setSelectedRoles([])
+        setActiveTab("basic")
+        onOpenChange(false);
+        return;
+      }
       
       // Convert empty strings to null for database
       Object.keys(data).forEach((key) => {
@@ -238,8 +259,6 @@ export function ContactFormDialog({
           data[key as keyof ContactFormValues] = null
         }
       })
-      
-      console.log("Form data after processing:", data);
       
       if (contact) {
         // Update existing contact
@@ -276,6 +295,11 @@ export function ContactFormDialog({
       // Call onSuccess callback
       if (onSuccess) {
         onSuccess()
+      }
+      
+      // Call onFormSubmit callback
+      if (onFormSubmit) {
+        onFormSubmit(data)
       }
     } catch (error) {
       console.error("Error saving contact:", error)

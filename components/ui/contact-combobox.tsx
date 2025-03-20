@@ -75,9 +75,22 @@ export function ContactCombobox({
   // Handle adding a new contact
   const handleAddContact = async (contactData: NewContactData) => {
     if (onAddContact) {
-      const newContact = await onAddContact(contactData);
-      onSelect(newContact);
-      return newContact;
+      try {
+        console.log("Adding new contact:", contactData);
+        
+        // Call the parent's addContact function
+        const newContact = await onAddContact(contactData);
+        
+        console.log("Contact successfully added:", newContact);
+        
+        // Update the selected contact
+        onSelect(newContact);
+        
+        return newContact;
+      } catch (error) {
+        console.error("Error adding contact:", error);
+        return null;
+      }
     }
     return null;
   };
@@ -426,9 +439,10 @@ export function ContactCombobox({
           open={showAddDialog}
           onOpenChange={setShowAddDialog}
           onSuccess={() => {
-            // This will be handled by the onAddContact callback
             setShowAddDialog(false);
           }}
+          onContactAdded={handleAddContact}
+          defaultContactName={quickCreateName || ""}
         />
       )}
     </>
