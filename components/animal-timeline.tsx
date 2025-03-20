@@ -104,8 +104,14 @@ export function AnimalTimeline({
   }
   
   // Get icon based on event type
-  function getEventIcon(eventType: string) {
+  function getEventIcon(eventType: string | null | undefined) {
     const iconProps = { className: "h-4 w-4 mr-2" }
+    
+    // Return default icon early if eventType is null or undefined
+    if (!eventType) {
+      return <FileText {...iconProps} />
+    }
+    
     const eventTypeLower = eventType.toLowerCase()
     
     if (eventTypeLower.includes('weight')) return <Weight {...iconProps} />
@@ -118,8 +124,8 @@ export function AnimalTimeline({
     if (eventTypeLower.includes('emergency')) return <AlertTriangle {...iconProps} />
     if (eventTypeLower.includes('note')) return <FileText {...iconProps} />
     
-    // Default icon for medical procedures
-    return <Activity {...iconProps} />
+    // Default icon if no match or if eventType is null/undefined
+    return <FileText {...iconProps} />
   }
   
   // Render appropriate content based on event type

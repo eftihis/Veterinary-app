@@ -54,7 +54,7 @@ export function ItemFilter({
 
   // Filter item options based on search query
   const filteredItemOptions = itemOptions.filter(item => 
-    item.label.toLowerCase().includes(searchQuery.toLowerCase())
+    item.label?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
