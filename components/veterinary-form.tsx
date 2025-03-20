@@ -914,7 +914,10 @@ export default function VeterinaryForm({
                           selectedId={field.value || ""}
                           onSelect={(contact) => {
                             if (contact) {
-                              field.onChange(contact.value);
+                              // Use setTimeout to break the update cycle, similar to AnimalCombobox
+                              setTimeout(() => {
+                                field.onChange(contact.value);
+                              }, 0);
                             }
                           }}
                           placeholder="Select or type veterinarian name"
