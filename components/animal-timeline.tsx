@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { format, formatDistanceToNow, parseISO } from "date-fns"
+import { formatDistanceToNow, parseISO } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import { 
   Card, 
