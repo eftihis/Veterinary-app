@@ -2,12 +2,43 @@
 
 import { useState, useEffect } from "react";
 import { DataTableSkeleton } from "@/components/skeletons/data-table-skeleton";
-import { InvoicesDataTable } from "@/components/invoices-data-table";
+import { InvoicesDataTable, Invoice } from "@/components/invoices-data-table";
 import { supabase } from "@/lib/supabase";
 
+// Define proper types for local use
+interface Veterinarian {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
+interface RawInvoice {
+  id: string;
+  document_number: string;
+  reference?: string | null;
+  animal_id?: string | null;
+  veterinarian_id?: string | null;
+  check_in_date?: string | null;
+  check_out_date?: string | null;
+  subtotal: number;
+  discount_total: number;
+  total: number;
+  status: string;
+  created_at: string;
+  animals?: {
+    id: string;
+    name: string;
+    type: string;
+  } | Array<{
+    id: string;
+    name: string;
+    type: string;
+  }> | null;
+}
+
 interface InvoicesDataTableWrapperProps {
-  onDeleteInvoice?: (invoice: any | any[]) => void;
-  onUpdateInvoiceStatus?: (invoices: any[], newStatus: string) => void;
+  onDeleteInvoice?: (invoice: Invoice | Invoice[]) => void;
+  onUpdateInvoiceStatus?: (invoices: Invoice[], newStatus: string) => void;
 }
 
 export default function InvoicesDataTableWrapper({
@@ -15,7 +46,7 @@ export default function InvoicesDataTableWrapper({
   onUpdateInvoiceStatus,
 }: InvoicesDataTableWrapperProps = {}) {
   const [isLoading, setIsLoading] = useState(true);
-  const [preloadedInvoices, setPreloadedInvoices] = useState<any[]>([]);
+  const [preloadedInvoices, setPreloadedInvoices] = useState<Invoice[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
@@ -56,13 +87,13 @@ export default function InvoicesDataTableWrapper({
         
         // Get all veterinarian IDs to fetch their data
         const veterinarianIds = data
-          .map((invoice: any) => invoice.veterinarian_id)
-          .filter((id: string | null) => id !== null && id !== undefined);
+          .map((invoice: RawInvoice) => invoice.veterinarian_id)
+          .filter((id: string | null | undefined) => id !== null && id !== undefined);
         
         console.log("Veterinarian IDs found in wrapper:", veterinarianIds);
         
         // Create a map to store veterinarian data
-        let veterinarians: {[key: string]: any} = {};
+        let veterinarians: {[key: string]: Veterinarian} = {};
         
         // If we have veterinarian IDs, fetch their data
         if (veterinarianIds.length > 0) {
@@ -77,7 +108,7 @@ export default function InvoicesDataTableWrapper({
             console.error("Error fetching veterinarians in wrapper:", vetsError);
           } else if (vetsData) {
             // Convert to a lookup object
-            veterinarians = vetsData.reduce((acc: {[key: string]: any}, vet: any) => {
+            veterinarians = vetsData.reduce((acc: {[key: string]: Veterinarian}, vet: Veterinarian) => {
               acc[vet.id] = vet;
               return acc;
             }, {});
@@ -87,7 +118,7 @@ export default function InvoicesDataTableWrapper({
         }
         
         // Process data similar to how InvoicesDataTable would
-        const processedData = (data || []).map((invoice: any) => {
+        const processedData = (data || []).map((invoice: RawInvoice) => {
           // Handle the animals property
           let animalData = null;
           if (invoice.animals) {
@@ -101,10 +132,11 @@ export default function InvoicesDataTableWrapper({
             } 
             // If it's a single object (not in an array)
             else if (typeof invoice.animals === 'object' && invoice.animals !== null) {
+              const animalObj = invoice.animals as {id: string; name: string; type: string};
               animalData = {
-                id: invoice.animals.id || "",
-                name: invoice.animals.name || "",
-                type: invoice.animals.type || ""
+                id: animalObj.id || "",
+                name: animalObj.name || "",
+                type: animalObj.type || ""
               };
             }
           }
@@ -151,7 +183,7 @@ export default function InvoicesDataTableWrapper({
         }
         
         // Set data and finish loading
-        setPreloadedInvoices(processedData);
+        setPreloadedInvoices(processedData as Invoice[]);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);

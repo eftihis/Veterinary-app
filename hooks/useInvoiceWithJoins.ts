@@ -12,7 +12,7 @@ export type InvoiceWithJoins = {
   discount_total: number;
   total: number;
   status: string;
-  line_items: any[];
+  line_items: LineItem[];
   comment: string | null;
   created_at: string;
   updated_at: string;
@@ -39,19 +39,57 @@ export type InvoiceWithJoins = {
   } | null;
 };
 
-// Define types for the animal and sender data
-interface AnimalData {
+interface LineItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  discount_percentage?: number;
+  tax_percentage?: number;
+  total: number;
+}
+
+// Define types for database records
+interface RawInvoice {
+  id: string;
+  document_number: string;
+  reference: string | null;
+  check_in_date: string | null;
+  check_out_date: string | null;
+  subtotal: number;
+  discount_total: number | null;
+  total: number;
+  status: string;
+  line_items: LineItem[] | null;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+  animal_id: string | null;
+  sender_id: string | null;
+  created_by: string | null;
+  veterinarian_id: string | null;
+  animals?: AnimalRecord | null;
+}
+
+interface AnimalRecord {
   id: string;
   name: string;
   type: string;
+  [key: string]: unknown;
 }
 
-interface SenderData {
+interface UserRecord {
   id: string;
   email: string;
-  raw_user_meta_data?: {
-    full_name?: string;
-  };
+  full_name: string | null;
+  [key: string]: unknown;
+}
+
+interface VetRecord {
+  id: string;
+  first_name: string;
+  last_name: string;
+  [key: string]: unknown;
 }
 
 export function useInvoicesWithJoins() {
@@ -77,10 +115,10 @@ export function useInvoicesWithJoins() {
         
         // Fetch user data separately
         const userIds = data
-          .filter(invoice => invoice.sender_id)
-          .map(invoice => invoice.sender_id);
+          .filter((invoice: RawInvoice) => invoice.sender_id)
+          .map((invoice: RawInvoice) => invoice.sender_id as string);
           
-        let userData: any = {};
+        let userData: Record<string, UserRecord> = {};
         
         if (userIds.length > 0) {
           const { data: users, error: userError } = await supabase
@@ -89,7 +127,7 @@ export function useInvoicesWithJoins() {
             .in('id', userIds);
             
           if (!userError && users) {
-            userData = users.reduce((acc: any, user: any) => {
+            userData = users.reduce((acc: Record<string, UserRecord>, user: UserRecord) => {
               acc[user.id] = user;
               return acc;
             }, {});
@@ -98,10 +136,10 @@ export function useInvoicesWithJoins() {
         
         // Fetch veterinarian data separately
         const vetIds = data
-          .filter(invoice => invoice.veterinarian_id)
-          .map(invoice => invoice.veterinarian_id);
+          .filter((invoice: RawInvoice) => invoice.veterinarian_id)
+          .map((invoice: RawInvoice) => invoice.veterinarian_id as string);
           
-        let vetData: any = {};
+        let vetData: Record<string, VetRecord> = {};
         
         if (vetIds.length > 0) {
           const { data: vets, error: vetError } = await supabase
@@ -110,7 +148,7 @@ export function useInvoicesWithJoins() {
             .in('id', vetIds);
             
           if (!vetError && vets) {
-            vetData = vets.reduce((acc: any, vet: any) => {
+            vetData = vets.reduce((acc: Record<string, VetRecord>, vet: VetRecord) => {
               acc[vet.id] = vet;
               return acc;
             }, {});
@@ -118,7 +156,7 @@ export function useInvoicesWithJoins() {
         }
         
         // Process the data to transform into a cleaner structure
-        const processedInvoices = data.map((invoice: any) => {
+        const processedInvoices = data.map((invoice: RawInvoice) => {
           const sender = invoice.sender_id && userData[invoice.sender_id] 
             ? {
                 id: userData[invoice.sender_id].id,
