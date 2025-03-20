@@ -142,7 +142,7 @@ export default function InvoicesPage() {
           </Breadcrumb>
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-hidden">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <h2 className="text-2xl font-bold tracking-tight">Invoices</h2>
@@ -159,10 +159,12 @@ export default function InvoicesPage() {
           </Link>
         </div>
         
-        <InvoicesDataTableWrapper 
-          key={refreshKey} 
-          onDeleteInvoice={handleDeleteInvoice}
-        />
+        <div className="w-full overflow-hidden">
+          <InvoicesDataTableWrapper 
+            key={refreshKey} 
+            onDeleteInvoice={handleDeleteInvoice}
+          />
+        </div>
         
         <DeleteConfirmationDialog
           open={deleteDialogOpen}

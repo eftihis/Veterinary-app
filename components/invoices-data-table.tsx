@@ -242,7 +242,13 @@ export function InvoicesDataTable({
   ])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = React.useState<string>("")
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
+    // Hide less important columns by default on smaller screens
+    check_in_date: false,
+    check_out_date: false,
+    veterinarian: false,
+    reference: false,
+  })
   const [rowSelection, setRowSelection] = React.useState({})
   
   // Status filter state
@@ -467,6 +473,70 @@ export function InvoicesDataTable({
       setLoading(false);
     }
   }, [preloadedData]);
+
+  // Adjust column visibility based on screen size
+  React.useEffect(() => {
+    // Function to update column visibility based on screen width
+    const updateColumnVisibility = () => {
+      const width = window.innerWidth;
+      
+      if (width < 768) {
+        // Mobile view - show minimal columns
+        setColumnVisibility({
+          select: true,
+          document_number: true,
+          animal: true,
+          total: true,
+          status: true,
+          actions: true,
+          reference: false,
+          veterinarian: false,
+          created_at: false,
+          check_in_date: false,
+          check_out_date: false,
+        });
+      } else if (width < 1024) {
+        // Tablet view - show more columns but still limited
+        setColumnVisibility({
+          select: true,
+          document_number: true,
+          reference: false,
+          animal: true,
+          veterinarian: false,
+          created_at: true,
+          check_in_date: false,
+          check_out_date: false,
+          total: true,
+          status: true,
+          actions: true,
+        });
+      } else {
+        // Desktop view - show most columns
+        setColumnVisibility({
+          select: true,
+          document_number: true,
+          reference: true,
+          animal: true,
+          veterinarian: true,
+          created_at: true,
+          check_in_date: false,
+          check_out_date: false,
+          total: true,
+          status: true,
+          actions: true,
+        });
+      }
+    };
+    
+    // Set initial column visibility
+    updateColumnVisibility();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', updateColumnVisibility);
+    
+    // Remove event listener on cleanup
+    return () => window.removeEventListener('resize', updateColumnVisibility);
+  }, []);
 
   // Fetch invoices from Supabase only if we don't have preloaded data
   React.useEffect(() => {
@@ -875,7 +945,7 @@ export function InvoicesDataTable({
   return (
     <>
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-6 overflow-x-auto">
           <div className="flex flex-col gap-4 py-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -1017,8 +1087,8 @@ export function InvoicesDataTable({
               </div>
             )}
           </div>
-          <div className="rounded-md border">
-            <Table>
+          <div className="rounded-md border w-full min-w-full overflow-hidden">
+            <Table className="w-full">
               <TableHeader className="bg-muted/50">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
