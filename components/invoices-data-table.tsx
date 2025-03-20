@@ -331,7 +331,7 @@ export function InvoicesDataTable({
       const hasDiscountAmount = availableColumns.includes('discount_amount'); 
       
       // Dynamically build select query based on available columns
-      let selectQuery = `
+      const selectQuery = `
         id, 
         document_number, 
         reference, 

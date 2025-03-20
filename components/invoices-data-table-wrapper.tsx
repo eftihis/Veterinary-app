@@ -26,7 +26,7 @@ export default function InvoicesDataTableWrapper({
         const startTime = Date.now();
         
         // Build select query for invoices with all needed fields
-        let selectQuery = `
+        const selectQuery = `
           id, 
           document_number, 
           reference, 
