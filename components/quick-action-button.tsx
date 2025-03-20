@@ -31,51 +31,21 @@ export function QuickActionButton() {
   // Do not render button on login pages or when user is not authenticated
   const isLoginPage = pathname?.includes('/login') || pathname === '/alt-login'
 
-  // Handler functions for shortcuts
-  const handleAddAnimalShortcut = useCallback(() => {
-    if (!user) return;
-    setAddAnimalOpen(true);
-    toast.info("Add Animal keyboard shortcut activated (⌘⇧A)", {
-      duration: 2000
-    });
-  }, [user]);
-
-  const handleAddContactShortcut = useCallback(() => {
-    if (!user) return;
-    setAddContactOpen(true);
-    toast.info("Add Contact keyboard shortcut activated (⌘⇧C)", {
-      duration: 2000
-    });
-  }, [user]);
-
-  const handleCreateInvoiceShortcut = useCallback(() => {
-    if (!user) return;
-    router.push("/invoices/create-new");
-    toast.info("Create Invoice keyboard shortcut activated (⌘⇧I)", {
-      duration: 2000
-    });
-  }, [router, user]);
-
+  // Handler function for quick actions toggle shortcut
   const handleQuickActionsShortcut = useCallback(() => {
     if (!user) return;
     setIsDropdownOpen(prev => !prev);
-    toast.info(`Quick Actions menu ${isDropdownOpen ? "closed" : "opened"} (⌘⇧U)`, {
+    toast.info(`Quick Actions menu ${isDropdownOpen ? "closed" : "opened"} (⌘⇧A)`, {
       duration: 2000
     });
-    console.log("CMD+Shift+u shortcut triggered");
+    console.log("CMD+Shift+A shortcut triggered");
   }, [user, isDropdownOpen]);
 
-  // Register keyboard shortcuts using our custom hook
-  useKeyboardShortcut('cmd+shift+a', handleAddAnimalShortcut, { disableOnInput: true });
-  useKeyboardShortcut('cmd+shift+c', handleAddContactShortcut, { disableOnInput: true });
-  useKeyboardShortcut('cmd+shift+i', handleCreateInvoiceShortcut, { disableOnInput: true });
-  useKeyboardShortcut('cmd+shift+u', handleQuickActionsShortcut, { disableOnInput: true });
+  // Register keyboard shortcut using our custom hook
+  useKeyboardShortcut('cmd+shift+a', handleQuickActionsShortcut, { disableOnInput: true });
 
-  // Also register Ctrl+A, Ctrl+C and Ctrl+I for Windows/Linux users
-  useKeyboardShortcut('ctrl+shift+a', handleAddAnimalShortcut, { disableOnInput: true });
-  useKeyboardShortcut('ctrl+shift+c', handleAddContactShortcut, { disableOnInput: true });
-  useKeyboardShortcut('ctrl+shift+i', handleCreateInvoiceShortcut, { disableOnInput: true });
-  useKeyboardShortcut('ctrl+shift+u', handleQuickActionsShortcut, { disableOnInput: true });
+  // Also register Ctrl+Shift+A for Windows/Linux users
+  useKeyboardShortcut('ctrl+shift+a', handleQuickActionsShortcut, { disableOnInput: true });
 
   // Add a direct event listener for keyboard shortcuts
   useEffect(() => {
@@ -150,7 +120,7 @@ export function QuickActionButton() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Quick Actions (⌘⇧U)
+              Quick Actions (⌘⇧A)
             </DropdownMenuLabel>
             <DropdownMenuItem 
               onClick={() => {
@@ -163,7 +133,6 @@ export function QuickActionButton() {
                 <Plus className="size-4" />
               </div>
               <div className="ml-2 font-medium">Add Animal</div>
-              <DropdownMenuShortcut>⌘⇧A</DropdownMenuShortcut>
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={() => {
@@ -176,7 +145,6 @@ export function QuickActionButton() {
                 <Plus className="size-4" />
               </div>
               <div className="ml-2 font-medium">Add Contact</div>
-              <DropdownMenuShortcut>⌘⇧C</DropdownMenuShortcut>
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={() => {
@@ -189,7 +157,6 @@ export function QuickActionButton() {
                 <Plus className="size-4" />
               </div>
               <div className="ml-2 font-medium">Create Invoice</div>
-              <DropdownMenuShortcut>⌘⇧I</DropdownMenuShortcut>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
