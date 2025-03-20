@@ -41,10 +41,14 @@ export default function CreateInvoicePage() {
         </div>
       </header>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <h1 className="text-3xl font-bold tracking-tight">Create Invoice</h1>
-        <p className="text-muted-foreground">Create a new veterinary invoice for a patient.</p>
-        
-        <VeterinaryFormWrapper />
+        <div className="max-w-4xl mx-auto w-full">
+          <h1 className="text-3xl font-bold tracking-tight">Create Invoice</h1>
+          <p className="text-muted-foreground">Create a new veterinary invoice for a patient.</p>
+          
+          <div className="mt-6">
+            <VeterinaryFormWrapper />
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );
