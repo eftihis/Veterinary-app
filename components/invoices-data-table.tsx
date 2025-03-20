@@ -251,6 +251,7 @@ export function InvoicesDataTable({
     check_out_date: false,
     veterinarian: false,
     reference: false,
+    select: true, // Explicitly set select column to visible
   })
   const [rowSelection, setRowSelection] = React.useState({})
   
@@ -486,7 +487,7 @@ export function InvoicesDataTable({
       if (width < 768) {
         // Mobile view - show minimal columns
         setColumnVisibility({
-          select: true,
+          select: true, // Always keep select column visible
           document_number: true,
           animal: true,
           total: true,
@@ -501,7 +502,7 @@ export function InvoicesDataTable({
       } else if (width < 1024) {
         // Tablet view - show more columns but still limited
         setColumnVisibility({
-          select: true,
+          select: true, // Always keep select column visible
           document_number: true,
           reference: false,
           animal: true,
@@ -516,7 +517,7 @@ export function InvoicesDataTable({
       } else {
         // Desktop view - show most columns
         setColumnVisibility({
-          select: true,
+          select: true, // Always keep select column visible
           document_number: true,
           reference: true,
           animal: true,
@@ -883,24 +884,6 @@ export function InvoicesDataTable({
                 {!["draft", "submitted"].includes(invoice.status.toLowerCase())
                 }
               </DropdownMenuItem>
-              {onDeleteInvoice && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => handleDeleteInvoice(invoice)}
-                    className={invoice.status.toLowerCase() === "draft" 
-                      ? "text-destructive focus:text-destructive" 
-                      : "text-muted-foreground cursor-not-allowed"}
-                    disabled={invoice.status.toLowerCase() !== "draft"}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete invoice
-                    {invoice.status.toLowerCase() !== "draft" && (
-                      <span className="ml-1 text-xs">(Draft only)</span>
-                    )}
-                  </DropdownMenuItem>
-                </>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )
@@ -949,6 +932,7 @@ export function InvoicesDataTable({
       columnFilters,
       columnVisibility: {
         ...columnVisibility,
+        select: true, // Force select column to always be visible
       },
       rowSelection,
       globalFilter,
@@ -1023,48 +1007,76 @@ export function InvoicesDataTable({
                 {Object.keys(rowSelection).length} selected
               </span>
               
-              {/* Batch Status Change */}
-              {onUpdateInvoiceStatus && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      className="flex items-center gap-1 mr-2"
-                      disabled={!canChangeStatus()}
-                    >
-                      <FileEdit className="h-4 w-4" />
-                      Change Status
-                      <ChevronDown className="h-4 w-4 ml-1" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Set Status To</DropdownMenuLabel>
-                    {statusOptions.map(status => (
-                      <DropdownMenuItem
-                        key={status.value}
-                        onClick={() => handleBatchStatusChange(status.value)}
+              {/* Consolidated Batch Actions Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-1"
+                  >
+                    Bulk Actions
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  
+                  {/* Status Change Sub-menu */}
+                  {onUpdateInvoiceStatus && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="w-full" asChild>
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start font-normal px-2 cursor-default"
+                          disabled={!canChangeStatus()}
+                        >
+                          <div className="flex items-center w-full justify-between">
+                            <div className="flex items-center">
+                              <FileEdit className="mr-2 h-4 w-4" />
+                              Change Status
+                            </div>
+                            <ChevronDown className="h-4 w-4" />
+                          </div>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="right">
+                        {statusOptions.map(status => (
+                          <DropdownMenuItem
+                            key={status.value}
+                            onClick={() => handleBatchStatusChange(status.value)}
+                          >
+                            <div className="flex items-center gap-2">
+                              {getStatusBadge(status.value)}
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                  
+                  {/* Delete Option */}
+                  {onDeleteInvoice && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={handleBatchDelete}
+                        disabled={!hasDeleteableDrafts()}
+                        className={!hasDeleteableDrafts() 
+                          ? "text-muted-foreground cursor-not-allowed" 
+                          : "text-destructive focus:text-destructive"
+                        }
                       >
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(status.value)}
-                        </div>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Selected
+                        {!hasDeleteableDrafts() && (
+                          <span className="ml-1 text-xs">(Draft only)</span>
+                        )}
                       </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              
-              {/* Batch Delete */}
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={handleBatchDelete}
-                className="flex items-center gap-1"
-                disabled={!hasDeleteableDrafts()}
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete Selected
-              </Button>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         
@@ -1157,8 +1169,22 @@ export function InvoicesDataTable({
             <TableHeader className="bg-muted/50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
+                  {/* Manually render the select column header first */}
+                  <TableHead key="select-header" className="w-[50px]">
+                    <Checkbox
+                      checked={
+                        table.getIsAllPageRowsSelected() ||
+                        (table.getIsSomePageRowsSelected() && "indeterminate")
+                      }
+                      onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
+                  
+                  {/* Render all other headers */}
+                  {headerGroup.headers
+                    .filter(header => header.id !== 'select')
+                    .map((header) => (
                       <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
@@ -1167,8 +1193,7 @@ export function InvoicesDataTable({
                               header.getContext()
                             )}
                       </TableHead>
-                    )
-                  })}
+                    ))}
                 </TableRow>
               ))}
             </TableHeader>
@@ -1179,14 +1204,26 @@ export function InvoicesDataTable({
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
+                    {/* Manually render the select column cell first */}
+                    <TableCell key="select-cell" className="w-[50px]">
+                      <Checkbox
+                        checked={row.getIsSelected()}
+                        onCheckedChange={(value) => row.toggleSelected(!!value)}
+                        aria-label="Select row"
+                      />
+                    </TableCell>
+                    
+                    {/* Render all other cells */}
+                    {row.getVisibleCells()
+                      .filter(cell => cell.column.id !== 'select')
+                      .map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
                   </TableRow>
                 ))
               ) : (
