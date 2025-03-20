@@ -91,6 +91,12 @@ export type Invoice = {
     name: string
     type: string
   } | null
+  veterinarian_id: string | null
+  veterinarian: {
+    id: string
+    first_name: string
+    last_name: string
+  } | null
   check_in_date: string | null
   check_out_date: string | null
   subtotal: number
@@ -326,6 +332,7 @@ export function InvoicesDataTable({
         document_number, 
         reference, 
         animal_id,
+        veterinarian_id,
         check_in_date, 
         check_out_date, 
         subtotal, 
@@ -353,6 +360,32 @@ export function InvoicesDataTable({
       }
       
       console.log(`Raw data from Supabase: ${data.length} records`);
+      
+      // Get all veterinarian IDs to fetch their data
+      const veterinarianIds = data
+        .map((invoice: any) => invoice.veterinarian_id)
+        .filter((id: string | null) => id !== null && id !== undefined);
+      
+      // Create a map to store veterinarian data
+      let veterinarians: {[key: string]: any} = {};
+      
+      // If we have veterinarian IDs, fetch their data
+      if (veterinarianIds.length > 0) {
+        const { data: vetsData, error: vetsError } = await supabase
+          .from('contacts')
+          .select('id, first_name, last_name')
+          .in('id', veterinarianIds);
+        
+        if (vetsError) {
+          console.error("Error fetching veterinarians:", vetsError);
+        } else if (vetsData) {
+          // Convert to a lookup object
+          veterinarians = vetsData.reduce((acc: {[key: string]: any}, vet: any) => {
+            acc[vet.id] = vet;
+            return acc;
+          }, {});
+        }
+      }
       
       // Process the data to include animal information and handle discount field changes
       const processedData = (data || []).map((invoice: any) => {
@@ -386,11 +419,24 @@ export function InvoicesDataTable({
             }
           }
           
+          // Get veterinarian data from our lookup
+          let veterinarianData = null;
+          if (invoice.veterinarian_id && veterinarians[invoice.veterinarian_id]) {
+            const vet = veterinarians[invoice.veterinarian_id];
+            veterinarianData = {
+              id: vet.id,
+              first_name: vet.first_name,
+              last_name: vet.last_name
+            };
+          }
+          
           // Return a standardized invoice object with all required fields
           return {
             ...invoice,
             // Create a properly structured animal object from the joined data
             animal: animalData,
+            // Add veterinarian data
+            veterinarian: veterinarianData,
             // Ensure all required fields have defaults
             subtotal: invoice.subtotal || 0,
             // Use the determined discount value
@@ -405,7 +451,9 @@ export function InvoicesDataTable({
             document_number: invoice.document_number || "unknown",
             reference: invoice.reference || null,
             animal_id: invoice.animal_id || null,
+            veterinarian_id: invoice.veterinarian_id || null,
             animal: null,
+            veterinarian: null,
             check_in_date: invoice.check_in_date || null,
             check_out_date: invoice.check_out_date || null,
             subtotal: 0,
@@ -589,6 +637,41 @@ export function InvoicesDataTable({
       }
     },
     {
+      accessorKey: "veterinarian",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Veterinarian
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const vet = row.getValue("veterinarian") as Invoice["veterinarian"];
+        
+        // Check if the veterinarian data is missing
+        if (!vet) {
+          return <div className="text-gray-400 italic">No veterinarian assigned</div>;
+        }
+        
+        return (
+          <div className="font-medium">
+            {`${vet.first_name} ${vet.last_name}` || "Unknown"}
+          </div>
+        );
+      },
+      sortingFn: (rowA, rowB) => {
+        const vetA = (rowA.getValue("veterinarian") as Invoice["veterinarian"]);
+        const vetB = (rowB.getValue("veterinarian") as Invoice["veterinarian"]);
+        
+        const nameA = vetA ? `${vetA.first_name} ${vetA.last_name}`.toLowerCase() : "";
+        const nameB = vetB ? `${vetB.first_name} ${vetB.last_name}`.toLowerCase() : "";
+        
+        return nameA.localeCompare(nameB);
+      }
+    },
+    {
       accessorKey: "created_at",
       header: ({ column }) => (
         <Button
@@ -723,12 +806,17 @@ export function InvoicesDataTable({
     const reference = row.getValue("reference")?.toString().toLowerCase() || "";
     const animal = row.getValue("animal") as Invoice["animal"];
     const animalName = animal?.name?.toLowerCase() || "";
+    const veterinarian = row.getValue("veterinarian") as Invoice["veterinarian"];
+    const veterinarianName = veterinarian 
+      ? `${veterinarian.first_name} ${veterinarian.last_name}`.toLowerCase() 
+      : "";
     
     // Check if any of the values match the search term
     return (
       documentNumber.includes(searchValue) ||
       reference.includes(searchValue) ||
-      animalName.includes(searchValue)
+      animalName.includes(searchValue) ||
+      veterinarianName.includes(searchValue)
     );
   };
 
@@ -790,7 +878,7 @@ export function InvoicesDataTable({
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <div className="w-full md:w-auto relative">
                   <Input
-                    placeholder="Search invoices by number, reference, or patient..."
+                    placeholder="Search invoices by number, reference, patient, or veterinarian..."
                     value={globalFilter}
                     onChange={(event) => setGlobalFilter(event.target.value)}
                     className="w-full md:w-[350px] pr-8"
