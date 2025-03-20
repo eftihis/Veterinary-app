@@ -598,7 +598,7 @@ export default function UserProfile({
                   )}
                 />
                 
-                <Button type="submit" className="mt-6 w-full sm:w-auto" disabled={passwordForm.formState.isSubmitting}>
+                <Button type="submit" className="mt-6 mb-4 w-full sm:w-auto" disabled={passwordForm.formState.isSubmitting}>
                   {passwordForm.formState.isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
