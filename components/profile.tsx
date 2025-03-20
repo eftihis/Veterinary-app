@@ -108,9 +108,10 @@ export default function UserProfile({
   const toggleConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
 
   // Add a handler to trigger file input click
-  const handleAvatarClick = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleAvatarClick = () => {
+    console.log("Avatar click handler triggered");
     if (fileInputRef.current && !isUpdatingAvatar) {
+      console.log("Triggering file input click");
       fileInputRef.current.click();
     }
   };
@@ -344,7 +345,11 @@ export default function UserProfile({
           <CardContent className="space-y-6">
             {/* Avatar */}
             <div className="flex flex-col items-center md:flex-row md:items-start gap-6 pb-6 border-b">
-              <div className="relative group" onClick={handleAvatarClick} style={{ cursor: 'pointer' }}>
+              <div 
+                className="relative group" 
+                onClick={handleAvatarClick} 
+                style={{ cursor: 'pointer' }}
+              >
                 <Avatar className="h-24 w-24 md:h-28 md:w-28 border-2 border-border">
                   <AvatarImage src={profileAvatar} alt={initialFullName} />
                   <AvatarFallback>
@@ -360,15 +365,6 @@ export default function UserProfile({
                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                   <Upload className="h-7 w-7 text-white" />
                 </div>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  className="hidden"
-                  accept="image/png, image/jpeg, image/gif"
-                  onChange={handleAvatarUpload}
-                  disabled={isUpdatingAvatar}
-                  ref={fileInputRef}
-                />
               </div>
               <div className="flex flex-col gap-1 text-center md:text-left">
                 <div className="flex flex-col md:flex-row md:items-center md:gap-2">
@@ -401,6 +397,17 @@ export default function UserProfile({
                 </div>
               </div>
             </div>
+
+            {/* Hidden file input for avatar upload */}
+            <input
+              id="avatar-upload"
+              type="file"
+              className="hidden"
+              accept="image/png, image/jpeg, image/gif"
+              onChange={handleAvatarUpload}
+              disabled={isUpdatingAvatar}
+              ref={fileInputRef}
+            />
 
             {/* Profile Form */}
             <Form {...profileForm}>
