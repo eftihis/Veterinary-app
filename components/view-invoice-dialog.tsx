@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { Eye, Calendar, Tag, User, Hash, FileText, DollarSign } from "lucide-react"
+import { Eye, Calendar, Tag, User, User2, Hash, FileText, DollarSign } from "lucide-react"
 import { 
   Dialog, 
   DialogContent, 
@@ -199,6 +199,28 @@ export function ViewInvoiceDialog({
                   </div>
                 ) : (
                   <p className="text-muted-foreground">No patient information available</p>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Veterinarian Information */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Veterinarian Information</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                {fullInvoiceData.veterinarian ? (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-1">
+                      <User2 className="h-4 w-4 mr-1 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium mr-1">Name:</span>
+                      <span>
+                        {`${fullInvoiceData.veterinarian.first_name} ${fullInvoiceData.veterinarian.last_name}`}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No veterinarian information available</p>
                 )}
               </CardContent>
             </Card>

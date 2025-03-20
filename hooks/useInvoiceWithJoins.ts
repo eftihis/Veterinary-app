@@ -20,6 +20,7 @@ export type InvoiceWithJoins = {
   animal_id: string | null;
   sender_id: string | null;
   created_by: string | null;
+  veterinarian_id: string | null;
   // Joined data
   animal: {
     id: string;
@@ -30,6 +31,11 @@ export type InvoiceWithJoins = {
     id: string;
     email: string;
     name: string;
+  } | null;
+  veterinarian: {
+    id: string;
+    first_name: string;
+    last_name: string;
   } | null;
 };
 
@@ -90,6 +96,27 @@ export function useInvoicesWithJoins() {
           }
         }
         
+        // Fetch veterinarian data separately
+        const vetIds = data
+          .filter(invoice => invoice.veterinarian_id)
+          .map(invoice => invoice.veterinarian_id);
+          
+        let vetData: any = {};
+        
+        if (vetIds.length > 0) {
+          const { data: vets, error: vetError } = await supabase
+            .from('contacts')
+            .select('id, first_name, last_name')
+            .in('id', vetIds);
+            
+          if (!vetError && vets) {
+            vetData = vets.reduce((acc: any, vet: any) => {
+              acc[vet.id] = vet;
+              return acc;
+            }, {});
+          }
+        }
+        
         // Process the data to transform into a cleaner structure
         const processedInvoices = data.map((invoice: any) => {
           const sender = invoice.sender_id && userData[invoice.sender_id] 
@@ -97,6 +124,14 @@ export function useInvoicesWithJoins() {
                 id: userData[invoice.sender_id].id,
                 email: userData[invoice.sender_id].email,
                 name: userData[invoice.sender_id].full_name || userData[invoice.sender_id].email
+              }
+            : null;
+            
+          const veterinarian = invoice.veterinarian_id && vetData[invoice.veterinarian_id]
+            ? {
+                id: vetData[invoice.veterinarian_id].id,
+                first_name: vetData[invoice.veterinarian_id].first_name,
+                last_name: vetData[invoice.veterinarian_id].last_name
               }
             : null;
             
@@ -117,6 +152,7 @@ export function useInvoicesWithJoins() {
             animal_id: invoice.animal_id,
             sender_id: invoice.sender_id,
             created_by: invoice.created_by,
+            veterinarian_id: invoice.veterinarian_id,
             // Process animal data
             animal: invoice.animals ? {
               id: invoice.animals.id,
@@ -124,7 +160,9 @@ export function useInvoicesWithJoins() {
               type: invoice.animals.type
             } : null,
             // Include sender data
-            sender
+            sender,
+            // Include veterinarian data
+            veterinarian
           };
         });
         
@@ -176,6 +214,24 @@ export async function getInvoiceById(invoiceId: string): Promise<InvoiceWithJoin
         };
       }
     }
+
+    // Fetch veterinarian data if veterinarian_id exists
+    let veterinarian = null;
+    if (data.veterinarian_id) {
+      const { data: vetData, error: vetError } = await supabase
+        .from('contacts')
+        .select('id, first_name, last_name')
+        .eq('id', data.veterinarian_id)
+        .single();
+        
+      if (!vetError && vetData) {
+        veterinarian = {
+          id: vetData.id,
+          first_name: vetData.first_name,
+          last_name: vetData.last_name
+        };
+      }
+    }
     
     // Process the data
     return {
@@ -195,6 +251,7 @@ export async function getInvoiceById(invoiceId: string): Promise<InvoiceWithJoin
       animal_id: data.animal_id,
       sender_id: data.sender_id,
       created_by: data.created_by,
+      veterinarian_id: data.veterinarian_id,
       // Process animal data
       animal: data.animals ? {
         id: data.animals.id,
@@ -202,7 +259,9 @@ export async function getInvoiceById(invoiceId: string): Promise<InvoiceWithJoin
         type: data.animals.type
       } : null,
       // Include sender data
-      sender
+      sender,
+      // Include veterinarian data
+      veterinarian
     };
   } catch (err) {
     console.error('Error fetching invoice:', err);
