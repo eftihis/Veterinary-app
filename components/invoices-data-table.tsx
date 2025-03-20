@@ -557,21 +557,6 @@ export function InvoicesDataTable({
       },
     },
     {
-      accessorKey: "animal_id",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Patient ID
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <div>{row.getValue("animal_id") || "-"}</div>
-      ),
-    },
-    {
       accessorKey: "animal",
       header: ({ column }) => (
         <Button
@@ -765,7 +750,6 @@ export function InvoicesDataTable({
       columnFilters,
       columnVisibility: {
         ...columnVisibility,
-        animal_id: false, // Hide the animal_id column by default
       },
       rowSelection,
       globalFilter,
