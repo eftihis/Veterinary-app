@@ -6,7 +6,7 @@ import { InvoicesDataTable } from "@/components/invoices-data-table";
 import { supabase } from "@/lib/supabase";
 
 interface InvoicesDataTableWrapperProps {
-  onDeleteInvoice?: (invoice: any) => void;
+  onDeleteInvoice?: (invoice: any | any[]) => void;
 }
 
 export default function InvoicesDataTableWrapper({

@@ -221,7 +221,7 @@ export interface InvoicesDataTableProps {
   skipLoadingState?: boolean;
   initialFetchComplete?: boolean;
   preloadedData?: Invoice[];
-  onDeleteInvoice?: (invoice: Invoice) => void;
+  onDeleteInvoice?: (invoice: Invoice | Invoice[]) => void;
 }
 
 export function InvoicesDataTable({ 
@@ -531,6 +531,16 @@ export function InvoicesDataTable({
   const handleDeleteInvoice = (invoice: Invoice) => {
     if (onDeleteInvoice) {
       onDeleteInvoice(invoice);
+    }
+  }
+
+  // Function to handle batch deleting multiple invoices
+  const handleBatchDelete = () => {
+    if (onDeleteInvoice) {
+      const selectedInvoices = Object.keys(rowSelection).map(
+        idx => filteredData[parseInt(idx)]
+      );
+      onDeleteInvoice(selectedInvoices);
     }
   }
 
@@ -905,32 +915,52 @@ export function InvoicesDataTable({
                 />
               </div>
               
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    Columns <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {table
-                    .getAllColumns()
-                    .filter((column) => column.getCanHide())
-                    .map((column) => {
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={column.id}
-                          className="capitalize"
-                          checked={column.getIsVisible()}
-                          onCheckedChange={(value) =>
-                            column.toggleVisibility(!!value)
-                          }
-                        >
-                          {column.id}
-                        </DropdownMenuCheckboxItem>
-                      )
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center gap-2">
+                {/* Batch Actions - Show only when rows are selected */}
+                {Object.keys(rowSelection).length > 0 && (
+                  <div className="flex items-center mr-2">
+                    <span className="text-sm text-muted-foreground mr-2">
+                      {Object.keys(rowSelection).length} selected
+                    </span>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={handleBatchDelete}
+                      className="flex items-center gap-1"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Selected
+                    </Button>
+                  </div>
+                )}
+              
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      Columns <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {table
+                      .getAllColumns()
+                      .filter((column) => column.getCanHide())
+                      .map((column) => {
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={column.id}
+                            className="capitalize"
+                            checked={column.getIsVisible()}
+                            onCheckedChange={(value) =>
+                              column.toggleVisibility(!!value)
+                            }
+                          >
+                            {column.id}
+                          </DropdownMenuCheckboxItem>
+                        )
+                      })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
             {filteredData.length !== invoices.length && (
               <div className="text-sm text-muted-foreground">

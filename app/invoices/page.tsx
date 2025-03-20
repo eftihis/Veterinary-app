@@ -23,6 +23,8 @@ import { toast } from "sonner"
 export default function InvoicesPage() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [invoiceToDelete, setInvoiceToDelete] = useState<any | null>(null)
+  const [invoicesToDelete, setInvoicesToDelete] = useState<any[] | null>(null)
+  const [isBatchDelete, setIsBatchDelete] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   
@@ -31,56 +33,86 @@ export default function InvoicesPage() {
     setRefreshKey(prev => prev + 1)
   }
   
-  // Handle delete button click
-  const handleDeleteInvoice = (invoice: any) => {
-    setInvoiceToDelete(invoice)
+  // Handle delete button click - now supports both single and batch delete
+  const handleDeleteInvoice = (invoice: any | any[]) => {
+    if (Array.isArray(invoice)) {
+      // Batch delete
+      setInvoicesToDelete(invoice)
+      setIsBatchDelete(true)
+    } else {
+      // Single delete
+      setInvoiceToDelete(invoice)
+      setIsBatchDelete(false)
+    }
     setDeleteDialogOpen(true)
   }
   
   // Handle confirming invoice deletion
   const confirmDeleteInvoice = async () => {
-    if (!invoiceToDelete) return
-    
     try {
       setIsDeleting(true)
       
-      // Check if invoice has line items
-      const { data: lineItems, error: lineItemsError } = await supabase
-        .from('invoice_line_items')
-        .select('id')
-        .eq('invoice_id', invoiceToDelete.id)
-        .limit(1)
-      
-      if (lineItemsError) throw lineItemsError
-      
-      // Delete line items first if they exist
-      if (lineItems && lineItems.length > 0) {
-        const { error: deleteLineItemsError } = await supabase
+      if (isBatchDelete && invoicesToDelete && invoicesToDelete.length > 0) {
+        // Batch delete
+        const invoiceIds = invoicesToDelete.map(invoice => invoice.id)
+        
+        // Delete all line items first
+        const { error: lineItemsError } = await supabase
           .from('invoice_line_items')
           .delete()
-          .eq('invoice_id', invoiceToDelete.id)
+          .in('invoice_id', invoiceIds)
         
-        if (deleteLineItemsError) throw deleteLineItemsError
+        if (lineItemsError) throw lineItemsError
+        
+        // Delete all invoices
+        const { error: invoicesError } = await supabase
+          .from('invoices')
+          .delete()
+          .in('id', invoiceIds)
+        
+        if (invoicesError) throw invoicesError
+        
+        toast.success(`${invoicesToDelete.length} invoices deleted successfully`)
+      } else if (invoiceToDelete) {
+        // Single delete
+        // Check if invoice has line items
+        const { data: lineItems, error: lineItemsError } = await supabase
+          .from('invoice_line_items')
+          .select('id')
+          .eq('invoice_id', invoiceToDelete.id)
+          .limit(1)
+        
+        if (lineItemsError) throw lineItemsError
+        
+        // Delete line items first if they exist
+        if (lineItems && lineItems.length > 0) {
+          const { error: deleteLineItemsError } = await supabase
+            .from('invoice_line_items')
+            .delete()
+            .eq('invoice_id', invoiceToDelete.id)
+          
+          if (deleteLineItemsError) throw deleteLineItemsError
+        }
+        
+        // Delete the invoice
+        const { error } = await supabase
+          .from('invoices')
+          .delete()
+          .eq('id', invoiceToDelete.id)
+        
+        if (error) throw error
+        
+        toast.success("Invoice deleted successfully")
       }
-      
-      // Delete the invoice
-      const { error } = await supabase
-        .from('invoices')
-        .delete()
-        .eq('id', invoiceToDelete.id)
-      
-      if (error) throw error
-      
-      toast.success("Invoice deleted successfully")
       
       // Refresh the invoice list
       handleDataChanged()
     } catch (error) {
-      console.error("Error deleting invoice:", error)
+      console.error("Error deleting invoice(s):", error)
       toast.error(
         error instanceof Error 
-          ? `Failed to delete invoice: ${error.message}`
-          : "Failed to delete invoice. Please try again."
+          ? `Failed to delete invoice(s): ${error.message}`
+          : "Failed to delete invoice(s). Please try again."
       )
     } finally {
       setIsDeleting(false)
@@ -137,12 +169,15 @@ export default function InvoicesPage() {
           onOpenChange={setDeleteDialogOpen}
           onConfirm={confirmDeleteInvoice}
           isDeleting={isDeleting}
-          title="Delete Invoice"
-          description={invoiceToDelete 
-            ? `Are you sure you want to delete invoice #${invoiceToDelete.document_number}? This will also delete all line items for this invoice. This action cannot be undone.`
-            : "Are you sure you want to delete this invoice? This action cannot be undone."
+          title={isBatchDelete ? "Delete Multiple Invoices" : "Delete Invoice"}
+          description={isBatchDelete 
+            ? `Are you sure you want to delete ${invoicesToDelete?.length} selected invoices? This will also delete all line items for these invoices. This action cannot be undone.`
+            : (invoiceToDelete 
+              ? `Are you sure you want to delete invoice #${invoiceToDelete.document_number}? This will also delete all line items for this invoice. This action cannot be undone.`
+              : "Are you sure you want to delete this invoice? This action cannot be undone."
+            )
           }
-          entityName="invoice"
+          entityName={isBatchDelete ? "invoices" : "invoice"}
         />
       </div>
     </DashboardLayout>
