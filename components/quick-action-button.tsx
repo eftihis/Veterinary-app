@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { AddAnimalDialog } from "@/components/add-animal-dialog"
 import { ContactFormDialog } from "@/components/contact-form-dialog"
+import { AddEventDialog } from "@/components/add-event-dialog"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useKeyboardShortcut } from "@/lib/useKeyboardShortcut"
@@ -26,6 +27,7 @@ export function QuickActionButton() {
   const { user } = useAuth()
   const [addAnimalOpen, setAddAnimalOpen] = useState(false)
   const [addContactOpen, setAddContactOpen] = useState(false)
+  const [addEventOpen, setAddEventOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   // Do not render button on login pages or when user is not authenticated
@@ -99,6 +101,10 @@ export function QuickActionButton() {
     console.log("Contact added/updated successfully");
   }
   
+  const handleEventSuccess = () => {
+    console.log("Event added successfully");
+  }
+  
   // If this is a login page or user is not logged in, don't render the button
   if (isLoginPage || !user) {
     return null;
@@ -149,6 +155,18 @@ export function QuickActionButton() {
             <DropdownMenuItem 
               onClick={() => {
                 setIsDropdownOpen(false);
+                setAddEventOpen(true);
+              }}
+              className="cursor-pointer"
+            >
+              <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
+                <Plus className="size-4" />
+              </div>
+              <div className="ml-2 font-medium">Add Animal Event</div>
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => {
+                setIsDropdownOpen(false);
                 router.push("/invoices/create-new");
               }}
               className="cursor-pointer"
@@ -174,6 +192,14 @@ export function QuickActionButton() {
         open={addContactOpen}
         onOpenChange={setAddContactOpen}
         onSuccess={handleContactSuccess}
+      />
+      
+      {/* Add Event Dialog with animal selector */}
+      <AddEventDialog
+        showAnimalSelector={true}
+        open={addEventOpen}
+        onOpenChange={setAddEventOpen}
+        onSuccess={handleEventSuccess}
       />
     </>
   );
