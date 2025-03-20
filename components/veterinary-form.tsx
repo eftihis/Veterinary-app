@@ -49,7 +49,7 @@ import { AnimalCombobox } from "@/components/ui/animal-combobox";
 import { ContactCombobox } from "@/components/ui/contact-combobox";
 import { useXeroItems } from '@/hooks/useXeroItems';
 import { useAnimals } from '@/hooks/useAnimals';
-import { useContacts } from '@/hooks/useContacts';
+import { useContacts, NewContactData, ContactOption } from '@/hooks/useContacts';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 
@@ -254,8 +254,23 @@ export default function VeterinaryForm({
     contacts: contactOptions,
     loading: loadingContacts,
     error: contactsError,
-    addContact
-  } = useContacts();
+    addContact: addContactBase
+  } = useContacts("veterinarian");
+  
+  // Wrapper function to add veterinarian role to new contacts
+  const addContact = async (contactData: NewContactData): Promise<ContactOption> => {
+    // Make sure the roles array includes veterinarian
+    const roles = contactData.roles || [];
+    if (!roles.includes("veterinarian")) {
+      roles.push("veterinarian");
+    }
+    
+    // Call the base function with the modified data
+    return addContactBase({
+      ...contactData,
+      roles: roles
+    });
+  };
 
   // Update filtered animals when animal type changes
   useEffect(() => {

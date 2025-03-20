@@ -31,7 +31,7 @@ export type NewContactData = {
   is_active?: boolean;
 };
 
-export function useContacts() {
+export function useContacts(roleFilter?: string) {
   const [contacts, setContacts] = useState<ContactOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,10 +43,19 @@ export function useContacts() {
         setLoading(true);
         setError(null);
         
-        const { data, error } = await supabase
+        // Create query
+        let query = supabase
           .from('contacts')
           .select('id, first_name, last_name, email, phone, roles, is_active')
           .eq('is_active', true);
+          
+        // Add role filter if provided
+        if (roleFilter) {
+          // Filter for contacts that have the specified role in their roles array
+          query = query.contains('roles', [roleFilter]);
+        }
+        
+        const { data, error } = await query;
         
         if (error) {
           throw error;
@@ -72,7 +81,7 @@ export function useContacts() {
     }
     
     fetchContacts();
-  }, []);
+  }, [roleFilter]);
   
   // Add a function to add a new contact to the database
   const addContact = async (contactData: NewContactData): Promise<ContactOption> => {
