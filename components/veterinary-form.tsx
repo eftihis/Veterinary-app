@@ -607,7 +607,7 @@ export default function VeterinaryForm({
         item_id: item.itemId,
         item_name: item.itemName || '',
         quantity: typeof item.quantity === 'string' ? parseFloat(item.quantity) : item.quantity,
-        unit_amount: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+        price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
         type: item.type || 'item'
       }));
       
