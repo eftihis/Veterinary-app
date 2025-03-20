@@ -138,6 +138,7 @@ export function AnimalsDataTable({
     weight: false,
     created_at: false,
     updated_at: false,
+    status: true,
   })
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
@@ -348,24 +349,65 @@ export function AnimalsDataTable({
       },
     },
     {
-      accessorKey: "is_deceased",
+      id: "status",
       header: "Status",
       cell: ({ row }) => {
         const isDeceased = row.getValue("is_deceased") as boolean
+        const animal = row.original
         
+        // If animal is deceased, just show that status
+        if (isDeceased) {
+          return (
+            <Badge variant="destructive">Deceased</Badge>
+          )
+        }
+        
+        // If animal has a specific status that's not just "Active", show that
+        if (animal.status && animal.status.toLowerCase() !== "active") {
+          let variant: "default" | "secondary" | "outline" | "destructive" | "status" = "outline"
+          
+          // Determine badge variant based on status
+          switch(animal.status.toLowerCase()) {
+            case 'critical':
+            case 'emergency':
+              variant = "destructive"
+              break
+            case 'stable':
+            case 'healthy':
+              variant = "default"
+              break
+            case 'recovering':
+            case 'treatment':
+              variant = "secondary"
+              break
+            case 'monitoring':
+            case 'observation':
+              variant = "status"
+              break
+            default:
+              variant = "outline"
+          }
+          
+          return (
+            <Badge variant={variant} className="capitalize">
+              {animal.status}
+            </Badge>
+          )
+        }
+        
+        // Default case - just show active
         return (
-          <Badge variant={isDeceased ? "destructive" : "outline"}>
-            {isDeceased ? "Deceased" : "Active"}
-          </Badge>
+          <Badge variant="outline">Active</Badge>
         )
       },
       filterFn: (row, id, value) => {
         if (value.includes("all")) return true
-        const isDeceased = row.getValue(id) as boolean
+        const isDeceased = row.original.is_deceased as boolean
         if (value.includes("deceased") && isDeceased) return true
         if (value.includes("active") && !isDeceased) return true
         return false
       },
+      accessorFn: (row) => row.is_deceased,
     },
     {
       accessorKey: "created_at",
