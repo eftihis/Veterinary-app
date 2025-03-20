@@ -5,12 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "dev:local": "NEXT_PUBLIC_BASE_URL=http://localhost:3000 NEXT_PUBLIC_SITE_URL=http://localhost:3000 NEXT_PUBLIC_DISABLE_XERO=true next dev",
-    "dev:ngrok": "NEXT_PUBLIC_BASE_URL=https://ecfb-79-131-58-148.ngrok-free.app NEXT_PUBLIC_SITE_URL=https://ecfb-79-131-58-148.ngrok-free.app NEXT_PUBLIC_DISABLE_XERO=false next dev",
+    "dev:ngrok": "NEXT_PUBLIC_BASE_URL=https://00f7-2a02-587-c41f-ed7a-8e8-9568-1ffe-8338.ngrok-free.app NEXT_PUBLIC_SITE_URL=https://00f7-2a02-587-c41f-ed7a-8e8-9568-1ffe-8338.ngrok-free.app NEXT_PUBLIC_DISABLE_XERO=false next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@babel/runtime": "^7.26.10",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -35,7 +36,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
-    "date-fns": "^3.0.0",
+    "date-fns": "^3.6.0",
     "input-otp": "^1.4.2",
     "jose": "^5.2.0",
     "lucide-react": "^0.479.0",

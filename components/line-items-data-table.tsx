@@ -69,6 +69,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { InvoiceDetailSheet } from "@/components/invoice-detail-sheet"
+import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
+import { Invoice } from "@/components/invoices-data-table"
 
 // Define our LineItem type based on our Supabase view structure
 export type LineItem = {
@@ -83,6 +86,7 @@ export type LineItem = {
   item_name: string
   description: string | null
   price: number
+  // Add any other fields needed for the invoice detail sheet
 }
 
 // Format currency
@@ -319,7 +323,11 @@ export function LineItemsDataTable({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState<string>("");
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
+  
+  // Invoice detail sheet states
+  const [selectedInvoice, setSelectedInvoice] = React.useState<Invoice | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = React.useState(false);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   
   // Status options
   const statusOptions = React.useMemo(() => [
@@ -448,6 +456,46 @@ export function LineItemsDataTable({
     );
   };
 
+  // Handle viewing an invoice
+  const handleViewInvoice = (lineItem: LineItem) => {
+    // Convert LineItem to Invoice format
+    const invoice: Invoice = {
+      id: lineItem.invoice_id,
+      document_number: lineItem.document_number,
+      status: lineItem.status,
+      created_at: lineItem.created_at,
+      reference: null,
+      check_in_date: null,
+      check_out_date: null,
+      total: lineItem.price,
+      subtotal: lineItem.price,
+      discount_total: 0,
+      animal_id: lineItem.animal_id,
+      veterinarian_id: null,
+      animal: lineItem.animal_name && lineItem.animal_id ? {
+        id: lineItem.animal_id, // Ensure this is not null
+        name: lineItem.animal_name || "",
+        type: lineItem.animal_type || "unknown"
+      } : null,
+      veterinarian: null
+    };
+    
+    setSelectedInvoice(invoice);
+    setViewDialogOpen(true);
+  };
+
+  // Handle editing an invoice
+  const handleEditInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setEditDialogOpen(true);
+  };
+
+  // Handle invoice update
+  const handleInvoiceUpdated = () => {
+    // Refresh the line items data after an invoice update
+    refreshLineItems();
+  };
+
   // Define columns
   const columns: ColumnDef<LineItem>[] = [
     {
@@ -462,7 +510,13 @@ export function LineItemsDataTable({
         </Button>
       ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("document_number")}</div>
+        <Button
+          variant="link"
+          className="p-0 h-auto font-medium text-primary hover:text-primary/80"
+          onClick={() => handleViewInvoice(row.original)}
+        >
+          {row.getValue("document_number")}
+        </Button>
       ),
     },
     {
@@ -606,14 +660,12 @@ export function LineItemsDataTable({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
     globalFilterFn: fuzzyFilter,
     onGlobalFilterChange: setGlobalFilter,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
       globalFilter,
     },
   });
@@ -746,7 +798,6 @@ export function LineItemsDataTable({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -886,6 +937,26 @@ export function LineItemsDataTable({
           </div>
         </div>
       </div>
+      
+      {/* View Invoice Sheet */}
+      {selectedInvoice && (
+        <InvoiceDetailSheet
+          invoice={selectedInvoice}
+          open={viewDialogOpen}
+          onOpenChange={setViewDialogOpen}
+          onEdit={handleEditInvoice}
+        />
+      )}
+      
+      {/* Edit Invoice Dialog */}
+      {selectedInvoice && (
+        <EditInvoiceDialog
+          invoice={selectedInvoice}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onInvoiceUpdated={handleInvoiceUpdated}
+        />
+      )}
     </div>
   );
 } 
