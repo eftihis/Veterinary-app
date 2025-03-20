@@ -223,13 +223,15 @@ export interface InvoicesDataTableProps {
   initialFetchComplete?: boolean;
   preloadedData?: Invoice[];
   onDeleteInvoice?: (invoice: Invoice | Invoice[]) => void;
+  onUpdateInvoiceStatus?: (invoices: Invoice[], newStatus: string) => void;
 }
 
 export function InvoicesDataTable({ 
   skipLoadingState = false,
   initialFetchComplete = false,
   preloadedData = [],
-  onDeleteInvoice
+  onDeleteInvoice,
+  onUpdateInvoiceStatus
 }: InvoicesDataTableProps) {
   const [invoices, setInvoices] = React.useState<Invoice[]>(preloadedData);
   const [loading, setLoading] = React.useState(!initialFetchComplete);
@@ -624,6 +626,26 @@ export function InvoicesDataTable({
     return selectedInvoices.some(invoice => invoice.status.toLowerCase() === 'draft');
   }
 
+  // Function to handle batch status change
+  const handleBatchStatusChange = (newStatus: string) => {
+    if (onUpdateInvoiceStatus) {
+      const selectedInvoices = Object.keys(rowSelection).map(
+        idx => filteredData[parseInt(idx)]
+      );
+      onUpdateInvoiceStatus(selectedInvoices, newStatus);
+    }
+  }
+  
+  // Function to check if selected invoices can have their status changed
+  const canChangeStatus = () => {
+    const selectedInvoices = Object.keys(rowSelection).map(
+      idx => filteredData[parseInt(idx)]
+    );
+    
+    // Check if there are any selected invoices
+    return selectedInvoices.length > 0;
+  }
+
   // Define columns with access to component state/functions
   const columns: ColumnDef<Invoice>[] = [
     {
@@ -1000,6 +1022,39 @@ export function InvoicesDataTable({
               <span className="text-sm text-muted-foreground mr-2">
                 {Object.keys(rowSelection).length} selected
               </span>
+              
+              {/* Batch Status Change */}
+              {onUpdateInvoiceStatus && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      className="flex items-center gap-1 mr-2"
+                      disabled={!canChangeStatus()}
+                    >
+                      <FileEdit className="h-4 w-4" />
+                      Change Status
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Set Status To</DropdownMenuLabel>
+                    {statusOptions.map(status => (
+                      <DropdownMenuItem
+                        key={status.value}
+                        onClick={() => handleBatchStatusChange(status.value)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(status.value)}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              
+              {/* Batch Delete */}
               <Button 
                 variant="destructive" 
                 size="sm" 
@@ -1264,6 +1319,24 @@ export function InvoicesDataTable({
           </div>
         </div>
       </div>
+
+      {/* View Invoice Dialog */}
+      {selectedInvoice && (
+        <ViewInvoiceDialog
+          invoice={selectedInvoice}
+          open={viewDialogOpen}
+          onOpenChange={setViewDialogOpen}
+        />
+      )}
+
+      {/* Edit Invoice Dialog */}
+      {selectedInvoice && (
+        <EditInvoiceDialog
+          invoice={selectedInvoice}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+        />
+      )}
     </div>
   )
 } 
