@@ -18,10 +18,7 @@ import {
   ChevronDown, 
   X,
   AlertCircle,
-  Calendar as CalendarIcon,
-  MoreHorizontal,
-  Eye,
-  FileEdit
+  Calendar as CalendarIcon
 } from "lucide-react"
 import { format, isAfter, isBefore, parseISO } from "date-fns"
 import { supabase } from "@/lib/supabase"
@@ -46,6 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -71,11 +69,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ViewInvoiceDialog } from "@/components/view-invoice-dialog"
-import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
-import { Invoice } from "@/components/invoices-data-table"
-import { Skeleton } from "@/components/ui/skeleton"
-import { TableSkeleton } from "@/components/skeletons/table-skeleton"
 
 // Define our LineItem type based on our Supabase view structure
 export type LineItem = {
@@ -93,17 +86,21 @@ export type LineItem = {
 }
 
 // Format currency
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('en-US', {
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-IE', {
     style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount);
+    currency: 'EUR'
+  }).format(amount)
 }
 
-// Helper function for status badges
-function getStatusBadge(status: string) {
+// Format date
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return '-'
+  return format(new Date(dateString), 'd MMM yyyy')
+}
+
+// Get status badge
+const getStatusBadge = (status: string) => {
   const statusClass = {
     'draft': "bg-gray-100 text-gray-600 border-gray-300 border",
     'submitted': "bg-yellow-100 text-yellow-700 border-yellow-300 border",
@@ -119,25 +116,19 @@ function getStatusBadge(status: string) {
   )
 }
 
-// Format date
-function formatDate(dateString: string) {
-  if (!dateString) return '-'
-  return format(new Date(dateString), 'd MMM yyyy')
-}
-
 // Date range picker component
-function DateRangePicker({
-  startDate,
-  endDate,
-  onStartDateChange,
+function DateRangePicker({ 
+  startDate, 
+  endDate, 
+  onStartDateChange, 
   onEndDateChange,
-  onClear
-}: {
-  startDate: Date | undefined,
-  endDate: Date | undefined,
-  onStartDateChange: (date: Date | undefined) => void,
-  onEndDateChange: (date: Date | undefined) => void,
-  onClear: () => void
+  onClear 
+}: { 
+  startDate: Date | undefined; 
+  endDate: Date | undefined; 
+  onStartDateChange: (date: Date | undefined) => void; 
+  onEndDateChange: (date: Date | undefined) => void;
+  onClear: () => void;
 }) {
   return (
     <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
@@ -205,8 +196,8 @@ function DateRangePicker({
   )
 }
 
-// Active filters component
-function ActiveFilters({
+// Helper component for active filters
+const ActiveFilters = ({
   selectedStatuses,
   toggleStatus,
   selectedItems,
@@ -217,16 +208,16 @@ function ActiveFilters({
   setEndDate,
   clearAllFilters
 }: {
-  selectedStatuses: string[],
-  toggleStatus: (status: string) => void,
-  selectedItems: string[],
-  toggleItem: (item: string) => void,
-  startDate: Date | undefined,
-  endDate: Date | undefined,
-  setStartDate: (date: Date | undefined) => void,
-  setEndDate: (date: Date | undefined) => void,
-  clearAllFilters: () => void
-}) {
+  selectedStatuses: string[];
+  toggleStatus: (status: string) => void;
+  selectedItems: string[];
+  toggleItem: (item: string) => void;
+  startDate?: Date;
+  endDate?: Date;
+  setStartDate: (date: Date | undefined) => void;
+  setEndDate: (date: Date | undefined) => void;
+  clearAllFilters: () => void;
+}) => {
   if (selectedStatuses.length === 0 && selectedItems.length === 0 && !startDate && !endDate) {
     return null;
   }
@@ -283,9 +274,9 @@ function ActiveFilters({
         </Badge>
       )}
       
-      <Button 
-        variant="ghost" 
-        size="sm" 
+      <Button
+        variant="ghost"
+        size="sm"
         className="h-6 px-2 text-xs"
         onClick={clearAllFilters}
       >
@@ -295,8 +286,8 @@ function ActiveFilters({
   );
 }
 
-// Define interface for the component props
-export interface LineItemsDataTableProps {
+// Update the props interface to include preloadedData
+interface LineItemsDataTableProps {
   skipLoadingState?: boolean;
   initialFetchComplete?: boolean;
   preloadedData?: LineItem[];
@@ -319,10 +310,7 @@ export function LineItemsDataTable({
   ])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = React.useState<string>("")
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
-    // Hide less important columns by default
-    description: false,
-  })
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   
   // Status filter state
@@ -336,13 +324,6 @@ export function LineItemsDataTable({
   const [startDate, setStartDate] = React.useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined)
   const [filteredData, setFilteredData] = React.useState<LineItem[]>([])
-
-  // Edit invoice dialog state
-  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
-  const [selectedInvoice, setSelectedInvoice] = React.useState<Invoice | null>(null)
-
-  // View invoice dialog state
-  const [viewDialogOpen, setViewDialogOpen] = React.useState(false)
   
   // Available statuses
   const statusOptions = [
@@ -352,117 +333,6 @@ export function LineItemsDataTable({
     { value: "paid", label: "Paid" },
     { value: "voided", label: "Voided" }
   ]
-
-  // Adjust column visibility based on screen size
-  React.useEffect(() => {
-    // Function to update column visibility based on screen width
-    const updateColumnVisibility = () => {
-      const width = window.innerWidth;
-      
-      if (width < 768) {
-        // Mobile view - show minimal columns
-        setColumnVisibility({
-          document_number: true,
-          status: true,
-          animal_name: false,
-          item_name: true,
-          price: true,
-          description: false,
-          created_at: false,
-          actions: true,
-        });
-      } else if (width < 1024) {
-        // Tablet view - show more columns but still limited
-        setColumnVisibility({
-          document_number: true,
-          status: true,
-          animal_name: true,
-          item_name: true,
-          price: true,
-          description: false,
-          created_at: true,
-          actions: true,
-        });
-      } else {
-        // Desktop view - show most columns
-        setColumnVisibility({
-          document_number: true,
-          status: true,
-          animal_name: true,
-          item_name: true,
-          price: true,
-          description: true,
-          created_at: true,
-          actions: true,
-        });
-      }
-    };
-    
-    // Set initial column visibility
-    updateColumnVisibility();
-    
-    // Add event listener for window resize
-    window.addEventListener('resize', updateColumnVisibility);
-    
-    // Remove event listener on cleanup
-    return () => window.removeEventListener('resize', updateColumnVisibility);
-  }, []);
-
-  // Function to handle opening the edit dialog
-  const handleEditInvoice = (lineItem: LineItem) => {
-    // Convert LineItem to Invoice format required by EditInvoiceDialog
-    const invoiceData: Invoice = {
-      id: lineItem.invoice_id,
-      document_number: lineItem.document_number,
-      created_at: lineItem.created_at,
-      status: lineItem.status,
-      reference: null,
-      animal_id: lineItem.animal_id,
-      animal: lineItem.animal_name ? {
-        id: lineItem.animal_id || '',
-        name: lineItem.animal_name || '',
-        type: lineItem.animal_type || ''
-      } : null,
-      veterinarian_id: null,
-      veterinarian: null,
-      check_in_date: null,
-      check_out_date: null,
-      subtotal: 0,
-      discount_total: 0,
-      total: 0
-    };
-    
-    setSelectedInvoice(invoiceData);
-    setEditDialogOpen(true);
-  }
-
-  // Function to handle opening the view dialog
-  const handleViewInvoice = (lineItem: LineItem) => {
-    // Convert LineItem to Invoice format required by ViewInvoiceDialog
-    const invoiceData: Invoice = {
-      id: lineItem.invoice_id,
-      document_number: lineItem.document_number,
-      created_at: lineItem.created_at,
-      status: lineItem.status,
-      reference: null,
-      animal_id: lineItem.animal_id,
-      animal: lineItem.animal_name ? {
-        id: lineItem.animal_id || '',
-        name: lineItem.animal_name || '',
-        type: lineItem.animal_type || ''
-      } : null,
-      veterinarian_id: null,
-      veterinarian: null,
-      check_in_date: null,
-      check_out_date: null,
-      subtotal: 0,
-      discount_total: 0,
-      total: 0
-    };
-    
-    setSelectedInvoice(invoiceData);
-    setViewDialogOpen(true);
-  }
   
   // Function to refresh line items
   const refreshLineItems = React.useCallback(async () => {
@@ -524,7 +394,7 @@ export function LineItemsDataTable({
     }
   }, [preloadedData, refreshLineItems]);
 
-  // Update filteredData when any of the filters change
+  // Update the filtering effect to include item filtering
   React.useEffect(() => {
     // Start with all line items
     let filtered = lineItems;
@@ -601,17 +471,9 @@ export function LineItemsDataTable({
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => {
-        const lineItem = row.original;
-        return (
-          <div 
-            className="font-medium text-primary underline cursor-pointer hover:text-primary/80"
-            onClick={() => handleViewInvoice(lineItem)}
-          >
-            {row.getValue("document_number")}
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("document_number")}</div>
+      ),
     },
     {
       accessorKey: "created_at",
@@ -723,47 +585,6 @@ export function LineItemsDataTable({
       ),
       cell: ({ row }) => getStatusBadge(row.getValue("status")),
     },
-    {
-      id: "actions",
-      enableSorting: false,
-      enableHiding: false,
-      cell: ({ row }) => {
-        const lineItem = row.original
-        const isEditable = ["draft", "submitted"].includes(lineItem.status.toLowerCase())
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(lineItem.invoice_id)}
-              >
-                Copy invoice ID
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleViewInvoice(lineItem)}>
-                <Eye className="mr-2 h-4 w-4" />
-                View invoice details
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => handleEditInvoice(lineItem)}
-                disabled={!isEditable}
-                className={!isEditable ? "text-muted-foreground cursor-not-allowed" : ""}
-              >
-                <FileEdit className="mr-2 h-4 w-4" />
-                Edit invoice
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
-    },
   ];
 
   // Custom filter function to search across multiple columns
@@ -809,122 +630,128 @@ export function LineItemsDataTable({
 
   // Modify the loading condition to respect skipLoadingState
   if (loading && !skipLoadingState) {
-    return <TableSkeleton rowCount={7} showDateFilter={true} showStatusFilter={true} columnCount={8} />
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   if (error) {
     return (
-      <div className="space-y-4 w-full">
-        <div className="rounded-md border border-red-200 p-6 bg-red-50">
-          <div className="flex items-center space-x-3">
-            <AlertCircle className="h-6 w-6 text-red-600" />
-            <div>
-              <h3 className="text-lg font-medium text-red-600">Error loading line items</h3>
-              <p className="text-red-600">{error}</p>
-            </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="bg-red-50 text-red-700 p-4 rounded-md flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            <p>Error loading line items: {error}</p>
           </div>
-        </div>
-      </div>
-    )
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <div className="space-y-4 w-full">
-      <div className="flex flex-col md:flex-row md:justify-between gap-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <div className="w-full md:w-auto relative">
-            <Input
-              placeholder="Search line items by invoice, patient, or item..."
-              value={globalFilter}
-              onChange={(event) => setGlobalFilter(event.target.value)}
-              className="w-full md:w-[350px] pr-8"
-            />
-            {globalFilter && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full"
-                onClick={() => setGlobalFilter("")}
-                aria-label="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex flex-col gap-4 py-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="w-full md:w-auto relative">
+                <Input
+                  placeholder="Search line items by invoice, patient, or item..."
+                  value={globalFilter}
+                  onChange={(event) => setGlobalFilter(event.target.value)}
+                  className="w-full md:w-[350px] pr-8"
+                />
+                {globalFilter && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full"
+                    onClick={() => setGlobalFilter("")}
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <DateRangePicker 
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                onClear={clearAllFilters}
+              />
+              
+              {/* Status Filter */}
+              <StatusFilter
+                statusOptions={statusOptions}
+                selectedStatuses={selectedStatuses}
+                setSelectedStatuses={setSelectedStatuses}
+                getStatusBadge={getStatusBadge}
+              />
+              
+              {/* Item Filter */}
+              <ItemFilter
+                itemOptions={itemOptions}
+                selectedItems={selectedItems}
+                setSelectedItems={setSelectedItems}
+              />
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value: boolean) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <DateRangePicker 
+          {filteredData.length !== lineItems.length && (
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredData.length} of {lineItems.length} line items based on filters.
+            </div>
+          )}
+          
+          {/* Active Filters */}
+          <ActiveFilters
+            selectedStatuses={selectedStatuses}
+            toggleStatus={toggleStatus}
+            selectedItems={selectedItems}
+            toggleItem={toggleItem}
             startDate={startDate}
             endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-            onClear={clearAllFilters}
-          />
-          
-          {/* Status Filter */}
-          <StatusFilter
-            statusOptions={statusOptions}
-            selectedStatuses={selectedStatuses}
-            setSelectedStatuses={setSelectedStatuses}
-            getStatusBadge={getStatusBadge}
-          />
-          
-          {/* Item Filter */}
-          <ItemFilter
-            itemOptions={itemOptions}
-            selectedItems={selectedItems}
-            setSelectedItems={setSelectedItems}
+            setStartDate={setStartDate}
+            setEndDate={setEndDate}
+            clearAllFilters={clearAllFilters}
           />
         </div>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      {filteredData.length !== lineItems.length && (
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredData.length} of {lineItems.length} line items based on filters.
-        </div>
-      )}
-      
-      {/* Active Filters */}
-      <ActiveFilters
-        selectedStatuses={selectedStatuses}
-        toggleStatus={toggleStatus}
-        selectedItems={selectedItems}
-        toggleItem={toggleItem}
-        startDate={startDate}
-        endDate={endDate}
-        setStartDate={setStartDate}
-        setEndDate={setEndDate}
-        clearAllFilters={clearAllFilters}
-      />
-      
-      <div className="overflow-x-auto">
-        <div className="rounded-md border w-full min-w-full overflow-hidden">
-          <Table className="w-full">
-            <TableHeader className="bg-muted/50">
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -972,123 +799,122 @@ export function LineItemsDataTable({
             </TableBody>
           </Table>
         </div>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-sm text-muted-foreground">
-          Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
-          {table.getFilteredRowModel().rows.length} results
-        </div>
-        
-        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
-          <div className="flex items-center justify-end sm:justify-start gap-2">
-            <p className="text-sm text-muted-foreground whitespace-nowrap">
-              Rows per page
-            </p>
-            <Select
-              value={table.getState().pagination.pageSize.toString()}
-              onValueChange={(value) => {
-                table.setPageSize(Number(value));
-              }}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue placeholder={table.getState().pagination.pageSize.toString()} />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 50, 100].map((pageSize) => (
-                  <SelectItem key={pageSize} value={pageSize.toString()}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between py-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
+            {table.getFilteredRowModel().rows.length} results
           </div>
           
-          <div className="flex items-center justify-end gap-2">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious 
-                    onClick={() => table.previousPage()} 
-                    aria-disabled={!table.getCanPreviousPage()}
-                    className={!table.getCanPreviousPage() 
-                      ? "pointer-events-none opacity-50" 
-                      : "cursor-pointer"
+          <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
+            <div className="flex items-center justify-end sm:justify-start gap-2">
+              <p className="text-sm text-muted-foreground whitespace-nowrap">
+                Rows per page
+              </p>
+              <Select
+                value={table.getState().pagination.pageSize.toString()}
+                onValueChange={(value) => {
+                  table.setPageSize(Number(value));
+                }}
+              >
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue placeholder={table.getState().pagination.pageSize.toString()} />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 30, 50, 100].map((pageSize) => (
+                    <SelectItem key={pageSize} value={pageSize.toString()}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center justify-end gap-2">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => table.previousPage()} 
+                      aria-disabled={!table.getCanPreviousPage()}
+                      className={!table.getCanPreviousPage() 
+                        ? "pointer-events-none opacity-50" 
+                        : "cursor-pointer"
+                      }
+                      tabIndex={!table.getCanPreviousPage() ? -1 : undefined}
+                    />
+                  </PaginationItem>
+                  
+                  {/* Generate page buttons - hide on small screens */}
+                  <div className="hidden sm:flex">
+                  {Array.from({ length: table.getPageCount() }).map((_, index) => {
+                    // Show limited number of pages to avoid cluttering the UI
+                    const pageNumber = index + 1;
+                    const isCurrent = table.getState().pagination.pageIndex === index;
+                    
+                    // Logic to determine which page numbers to show
+                    const shouldShowPageNumber =
+                      pageNumber === 1 || // First page
+                      pageNumber === table.getPageCount() || // Last page
+                      Math.abs(pageNumber - (table.getState().pagination.pageIndex + 1)) <= 1; // Pages around current
+                    
+                    // Show ellipsis when needed
+                    const showEllipsisBefore =
+                      index === 1 && table.getState().pagination.pageIndex > 2;
+                    const showEllipsisAfter =
+                      index === table.getPageCount() - 2 && 
+                      table.getState().pagination.pageIndex < table.getPageCount() - 3;
+                    
+                    if (showEllipsisBefore) {
+                      return (
+                        <PaginationItem key={`ellipsis-before`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
                     }
-                    tabIndex={!table.getCanPreviousPage() ? -1 : undefined}
-                  />
-                </PaginationItem>
-                
-                {/* Generate page buttons - hide on small screens */}
-                <div className="hidden sm:flex">
-                {Array.from({ length: table.getPageCount() }).map((_, index) => {
-                  // Show limited number of pages to avoid cluttering the UI
-                  const pageNumber = index + 1;
-                  const isCurrent = table.getState().pagination.pageIndex === index;
-                  
-                  // Logic to determine which page numbers to show
-                  const shouldShowPageNumber =
-                    pageNumber === 1 || // First page
-                    pageNumber === table.getPageCount() || // Last page
-                    Math.abs(pageNumber - (table.getState().pagination.pageIndex + 1)) <= 1; // Pages around current
-                  
-                  // Show ellipsis when needed
-                  const showEllipsisBefore =
-                    index === 1 && table.getState().pagination.pageIndex > 2;
-                  const showEllipsisAfter =
-                    index === table.getPageCount() - 2 && 
-                    table.getState().pagination.pageIndex < table.getPageCount() - 3;
-                  
-                  if (showEllipsisBefore) {
-                    return (
-                      <PaginationItem key={`ellipsis-before`}>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    );
-                  }
-                  
-                  if (showEllipsisAfter) {
-                    return (
-                      <PaginationItem key={`ellipsis-after`}>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    );
-                  }
-                  
-                  if (shouldShowPageNumber) {
-                    return (
-                      <PaginationItem key={index}>
-                        <PaginationLink
-                          isActive={isCurrent}
-                          onClick={() => table.setPageIndex(index)}
-                          className="cursor-pointer"
-                        >
-                          {pageNumber}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  }
-                  
-                  return null;
-                })}
-                </div>
-                
-                <PaginationItem>
-                  <PaginationNext 
-                    onClick={() => table.nextPage()} 
-                    aria-disabled={!table.getCanNextPage()}
-                    className={!table.getCanNextPage() 
-                      ? "pointer-events-none opacity-50" 
-                      : "cursor-pointer"
+                    
+                    if (showEllipsisAfter) {
+                      return (
+                        <PaginationItem key={`ellipsis-after`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
                     }
-                    tabIndex={!table.getCanNextPage() ? -1 : undefined}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+                    
+                    if (shouldShowPageNumber) {
+                      return (
+                        <PaginationItem key={index}>
+                          <PaginationLink
+                            isActive={isCurrent}
+                            onClick={() => table.setPageIndex(index)}
+                            className="cursor-pointer"
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    return null;
+                  })}
+                  </div>
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => table.nextPage()} 
+                      aria-disabled={!table.getCanNextPage()}
+                      className={!table.getCanNextPage() 
+                        ? "pointer-events-none opacity-50" 
+                        : "cursor-pointer"
+                      }
+                      tabIndex={!table.getCanNextPage() ? -1 : undefined}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 } 

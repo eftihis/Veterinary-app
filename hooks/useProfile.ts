@@ -49,8 +49,8 @@ export function useProfile() {
         
         // NOTE: Do NOT try to update email here - it's protected
         // IMPORTANT: Remove any email field if present
-        if (updateData.email) {
-          delete updateData.email;
+        if ('email' in updateData) {
+          delete (updateData as any).email;
         }
         
         const { error: updateError } = await supabase
@@ -68,8 +68,8 @@ export function useProfile() {
       // 2. Update contact data if needed
       if (contactData && Object.keys(contactData).length > 0 && success) {
         // IMPORTANT: Do NOT try to update email in contacts
-        if (contactData.email) {
-          delete contactData.email;
+        if ('email' in contactData) {
+          delete (contactData as any).email;
         }
         
         // Get the contact_id from the profile

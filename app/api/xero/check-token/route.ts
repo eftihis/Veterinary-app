@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 export async function GET(req: NextRequest) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const accessToken = cookieStore.get('xero_access_token')?.value;
     const tokenExpiry = cookieStore.get('xero_token_expiry')?.value;
     
