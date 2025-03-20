@@ -340,6 +340,13 @@ export default function VeterinaryForm({
       0
     );
     setTotal(newTotal);
+
+    // Return the calculated values
+    return {
+      subtotal: newSubtotal,
+      discountTotal: newDiscountTotal,
+      total: newTotal
+    };
   };
 
   // Store the function in the ref
@@ -604,17 +611,31 @@ export default function VeterinaryForm({
         type: item.type || 'item'
       }));
       
+      // Safer calculation of total by directly using the current state values
+      // This provides a fallback if the calculateTotalsRef approach fails
+      const safeTotal = total || 
+        data.lineItems.reduce((sum, item) => {
+          const price = typeof item.price === 'string' 
+            ? (item.price === "" ? 0 : parseFloat(item.price) || 0) 
+            : (Number(item.price) || 0);
+          
+          const quantity = typeof item.quantity === 'string' 
+            ? (item.quantity === "" ? 1 : parseFloat(item.quantity) || 1) 
+            : (Number(item.quantity) || 1);
+          
+          return sum + (price * quantity);
+        }, 0);
+      
       // Prepare the record data
       const recordData = {
         document_number: data.documentNumber,
         reference: data.reference || null,
-        animal_name: data.animalName,
         animal_id: data.animalId || null,
         veterinarian_id: data.veterinarianId || null,
         check_in_date: data.checkInDate,
         check_out_date: data.checkOutDate,
         line_items: preparedLineItems,
-        total: calculateTotalsRef.current ? calculateTotalsRef.current(data.lineItems).total : 0,
+        total: safeTotal,
         comment: data.comment || null,
         created_by: user?.id,
         status: 'draft'
@@ -632,14 +653,13 @@ export default function VeterinaryForm({
           .update({
             document_number: data.documentNumber,
             reference: data.reference || null,
-            animal_name: data.animalName,
             animal_id: data.animalId || null,
             veterinarian_id: data.veterinarianId || null,
             check_in_date: data.checkInDate,
             check_out_date: data.checkOutDate,
             subtotal: subtotal,
             discount_total: discountTotal,
-            total: total,
+            total: safeTotal,
             line_items: preparedLineItems,
             comment: data.comment || null,
             sender_id: user?.id || null,
@@ -657,14 +677,13 @@ export default function VeterinaryForm({
           .insert({
             document_number: data.documentNumber,
             reference: data.reference || null,
-            animal_name: data.animalName,
             animal_id: data.animalId || null,
             veterinarian_id: data.veterinarianId || null,
             check_in_date: data.checkInDate,
             check_out_date: data.checkOutDate,
             subtotal: subtotal,
             discount_total: discountTotal,
-            total: total,
+            total: safeTotal,
             line_items: preparedLineItems,
             comment: data.comment || null,
             sender_id: user?.id || null,
@@ -712,7 +731,20 @@ export default function VeterinaryForm({
       }
     } catch (err) {
       console.error("Error submitting form:", err);
-      toast.error(`Failed to submit form: ${err instanceof Error ? err.message : String(err)}`);
+      // Provide more detailed error information in the toast
+      let errorMessage = "Failed to submit form";
+      if (err instanceof Error) {
+        errorMessage += `: ${err.message}`;
+      } else if (typeof err === 'object' && err !== null) {
+        try {
+          errorMessage += `: ${JSON.stringify(err)}`;
+        } catch {
+          errorMessage += `: ${String(err)}`;
+        }
+      } else {
+        errorMessage += `: ${String(err)}`;
+      }
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -1495,11 +1527,11 @@ export default function VeterinaryForm({
                                                           field.onChange(parseFloat(result.toFixed(2)));
                                                         } catch (error) {
                                                           console.error('Failed to evaluate expression:', error);
-                                                          field.onChange(parseFloat(value) || 0);
+                                                          field.onChange(parseFloat(value) || 1);
                                                         }
                                                       } else {
                                                         // Just convert to number if no operators
-                                                        field.onChange(parseFloat(value) || 0);
+                                                        field.onChange(parseFloat(value) || 1);
                                                       }
                                                       
                                                       // Force recalculation of totals
