@@ -1239,7 +1239,7 @@ export function InvoicesDataTable({
       )}
       
       <div className="overflow-x-auto">
-        <div className="rounded-md border w-full min-w-full overflow-hidden">
+        <div className="rounded-md border w-full overflow-hidden">
           <Table className="w-full">
             <TableHeader className="bg-muted/50">
               {table.getHeaderGroups().map((headerGroup) => (
