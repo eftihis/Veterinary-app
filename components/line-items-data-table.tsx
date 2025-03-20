@@ -46,7 +46,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -76,6 +75,7 @@ import { ViewInvoiceDialog } from "@/components/view-invoice-dialog"
 import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
 import { Invoice } from "@/components/invoices-data-table"
 import { Skeleton } from "@/components/ui/skeleton"
+import { TableSkeleton } from "@/components/table-skeleton"
 
 // Define our LineItem type based on our Supabase view structure
 export type LineItem = {
@@ -809,27 +809,19 @@ export function LineItemsDataTable({
 
   // Modify the loading condition to respect skipLoadingState
   if (loading && !skipLoadingState) {
-    return (
-      <div className="w-full rounded-md border p-6">
-        <div className="flex items-center space-x-4">
-          <Skeleton className="h-12 w-12 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-[250px]" />
-            <Skeleton className="h-4 w-[200px]" />
-          </div>
-        </div>
-      </div>
-    )
+    return <TableSkeleton rowCount={7} showDateFilter={true} showStatusFilter={true} columnCount={8} />
   }
 
   if (error) {
     return (
-      <div className="w-full rounded-md border border-red-500 p-6 bg-red-50">
-        <div className="flex items-center space-x-3">
-          <AlertCircle className="h-6 w-6 text-red-600" />
-          <div>
-            <h3 className="text-lg font-medium text-red-600">Error loading line items</h3>
-            <p className="text-red-600">{error}</p>
+      <div className="space-y-4 w-full">
+        <div className="rounded-md border border-red-200 p-6 bg-red-50">
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="h-6 w-6 text-red-600" />
+            <div>
+              <h3 className="text-lg font-medium text-red-600">Error loading line items</h3>
+              <p className="text-red-600">{error}</p>
+            </div>
           </div>
         </div>
       </div>
