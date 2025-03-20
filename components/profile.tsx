@@ -150,11 +150,15 @@ export default function UserProfile({
   // Profile form submission
   const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     try {
+      // Trim whitespace and capitalize first and last names
+      const first_name = values.firstName.trim().charAt(0).toUpperCase() + values.firstName.trim().slice(1);
+      const last_name = values.lastName.trim().charAt(0).toUpperCase() + values.lastName.trim().slice(1);
+
       const { success, error } = await updateProfile({
         display_name: values.fullName,
         contact: {
-          first_name: values.firstName,
-          last_name: values.lastName
+          first_name,
+          last_name
         }
       });
 
