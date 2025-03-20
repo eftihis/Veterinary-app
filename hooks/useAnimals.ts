@@ -80,6 +80,13 @@ export function useAnimals() {
     try {
       setError(null);
       
+      // Ensure the animal has a valid type
+      if (!animalData.type) {
+        animalData.type = "dog"; // Default to dog if no type is provided
+      }
+      
+      console.log("Adding animal with data:", animalData);
+      
       // Insert the new animal into the database
       const { data, error } = await supabase
         .from('animals')
@@ -87,12 +94,17 @@ export function useAnimals() {
         .select('id, name, type, breed, is_deceased, gender');
       
       if (error) {
+        console.error("Supabase error when adding animal:", error);
         throw error;
       }
       
       if (!data || data.length === 0) {
-        throw new Error('No data returned from insert operation');
+        const noDataError = new Error('No data returned from insert operation');
+        console.error(noDataError);
+        throw noDataError;
       }
+      
+      console.log("Successfully added animal:", data[0]);
       
       // Transform the new animal data for the combobox
       const newAnimal: AnimalOption = {
@@ -111,7 +123,7 @@ export function useAnimals() {
       return newAnimal;
     } catch (err) {
       console.error('Error adding animal:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      setError(err instanceof Error ? err.message : String(err));
       throw err;
     }
   };

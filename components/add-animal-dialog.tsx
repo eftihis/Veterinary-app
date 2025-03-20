@@ -96,7 +96,7 @@ export function AddAnimalDialog({
     resolver: zodResolver(animalFormSchema),
     defaultValues: {
       name: defaultAnimalName || "",
-      type: "",
+      type: "dog",
       breed: "",
       gender: "",
       weight: undefined,
@@ -110,7 +110,7 @@ export function AddAnimalDialog({
     if (open) {
       form.reset({
         name: defaultAnimalName || "",
-        type: "",
+        type: "dog",
         breed: "",
         gender: "",
         weight: undefined,
@@ -125,12 +125,19 @@ export function AddAnimalDialog({
     try {
       setIsSubmitting(true)
       
+      // Ensure animal type is set
+      if (!data.type) {
+        data.type = "dog"; // Default to dog if no type is provided
+      }
+      
+      console.log("Submitting animal data:", data);
+      
       // If onAnimalAdded is provided, use that instead of direct DB insert
       if (onAnimalAdded) {
         await onAnimalAdded(data);
       } else {
         // Default behavior - insert directly to DB
-        const { error } = await supabase.from("animals").insert({
+        const { data: insertedData, error } = await supabase.from("animals").insert({
           name: data.name,
           type: data.type,
           breed: data.breed || null,
@@ -140,9 +147,14 @@ export function AddAnimalDialog({
           microchip_number: data.microchip_number || null,
           notes: data.notes || null,
           status: "active",
-        })
+        }).select()
         
-        if (error) throw error
+        if (error) {
+          console.error("Supabase error adding animal:", error);
+          throw error;
+        }
+        
+        console.log("Animal added successfully:", insertedData);
       }
       
       toast.success("Animal added successfully")
@@ -154,7 +166,16 @@ export function AddAnimalDialog({
       }
     } catch (error) {
       console.error("Error adding animal:", error)
-      toast.error("Failed to add animal")
+      
+      // Try to extract a more useful error message
+      let errorMessage = "Failed to add animal";
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMessage += `: ${JSON.stringify(error)}`;
+      }
+      
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
