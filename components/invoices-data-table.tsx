@@ -366,6 +366,8 @@ export function InvoicesDataTable({
         .map((invoice: any) => invoice.veterinarian_id)
         .filter((id: string | null) => id !== null && id !== undefined);
       
+      console.log("Veterinarian IDs found:", veterinarianIds);
+      
       // Create a map to store veterinarian data
       let veterinarians: {[key: string]: any} = {};
       
@@ -376,6 +378,8 @@ export function InvoicesDataTable({
           .select('id, first_name, last_name')
           .in('id', veterinarianIds);
         
+        console.log("Veterinarian data fetched from contacts:", vetsData);
+        
         if (vetsError) {
           console.error("Error fetching veterinarians:", vetsError);
         } else if (vetsData) {
@@ -384,6 +388,8 @@ export function InvoicesDataTable({
             acc[vet.id] = vet;
             return acc;
           }, {});
+          
+          console.log("Veterinarians lookup object:", veterinarians);
         }
       }
       
@@ -428,6 +434,9 @@ export function InvoicesDataTable({
               first_name: vet.first_name,
               last_name: vet.last_name
             };
+            console.log(`Assigned veterinarian to invoice ${invoice.document_number}:`, veterinarianData);
+          } else if (invoice.veterinarian_id) {
+            console.log(`Veterinarian ID ${invoice.veterinarian_id} found in invoice ${invoice.document_number} but no matching contact data.`);
           }
           
           // Return a standardized invoice object with all required fields
@@ -466,6 +475,13 @@ export function InvoicesDataTable({
       });
       
       console.log("Successfully processed invoices:", processedData.length, "records");
+      console.log("Sample of processed invoices with veterinarian data:", 
+        processedData.slice(0, 3).map(invoice => ({
+          document_number: invoice.document_number,
+          veterinarian_id: invoice.veterinarian_id,
+          veterinarian: invoice.veterinarian
+        }))
+      );
       setInvoices(processedData);
     } catch (err) {
       console.error("Error fetching invoices:", err);
@@ -649,6 +665,8 @@ export function InvoicesDataTable({
       ),
       cell: ({ row }) => {
         const vet = row.getValue("veterinarian") as Invoice["veterinarian"];
+        
+        console.log("Rendering veterinarian cell for row:", row.original.document_number, "vet data:", vet);
         
         // Check if the veterinarian data is missing
         if (!vet) {
@@ -843,6 +861,18 @@ export function InvoicesDataTable({
       globalFilter,
     },
   })
+
+  // Debugging: log the state of the table to check if veterinarian data is present
+  React.useEffect(() => {
+    if (table.getRowModel().rows.length > 0) {
+      console.log("Table data check - first 3 rows veterinarian value:", 
+        table.getRowModel().rows.slice(0, 3).map(row => ({
+          document_number: row.original.document_number,
+          veterinarian_value: row.getValue("veterinarian")
+        }))
+      );
+    }
+  }, [table.getRowModel().rows]);
 
   if (loading && !skipLoadingState) {
     return (

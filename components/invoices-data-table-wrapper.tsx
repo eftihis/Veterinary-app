@@ -29,6 +29,7 @@ export default function InvoicesDataTableWrapper({
           document_number, 
           reference, 
           animal_id,
+          veterinarian_id,
           check_in_date, 
           check_out_date, 
           subtotal, 
@@ -47,6 +48,40 @@ export default function InvoicesDataTableWrapper({
           
         if (error) {
           throw error;
+        }
+        
+        console.log("Fetched raw invoice data:", data);
+        
+        // Get all veterinarian IDs to fetch their data
+        const veterinarianIds = data
+          .map((invoice: any) => invoice.veterinarian_id)
+          .filter((id: string | null) => id !== null && id !== undefined);
+        
+        console.log("Veterinarian IDs found in wrapper:", veterinarianIds);
+        
+        // Create a map to store veterinarian data
+        let veterinarians: {[key: string]: any} = {};
+        
+        // If we have veterinarian IDs, fetch their data
+        if (veterinarianIds.length > 0) {
+          const { data: vetsData, error: vetsError } = await supabase
+            .from('contacts')
+            .select('id, first_name, last_name')
+            .in('id', veterinarianIds);
+          
+          console.log("Veterinarian data fetched from contacts in wrapper:", vetsData);
+          
+          if (vetsError) {
+            console.error("Error fetching veterinarians in wrapper:", vetsError);
+          } else if (vetsData) {
+            // Convert to a lookup object
+            veterinarians = vetsData.reduce((acc: {[key: string]: any}, vet: any) => {
+              acc[vet.id] = vet;
+              return acc;
+            }, {});
+            
+            console.log("Veterinarians lookup object in wrapper:", veterinarians);
+          }
         }
         
         // Process data similar to how InvoicesDataTable would
@@ -72,14 +107,37 @@ export default function InvoicesDataTableWrapper({
             }
           }
           
+          // Get veterinarian data from our lookup
+          let veterinarianData = null;
+          if (invoice.veterinarian_id && veterinarians[invoice.veterinarian_id]) {
+            const vet = veterinarians[invoice.veterinarian_id];
+            veterinarianData = {
+              id: vet.id,
+              first_name: vet.first_name,
+              last_name: vet.last_name
+            };
+            console.log(`Assigned veterinarian to invoice ${invoice.document_number} in wrapper:`, veterinarianData);
+          } else if (invoice.veterinarian_id) {
+            console.log(`Veterinarian ID ${invoice.veterinarian_id} found in invoice ${invoice.document_number} but no matching contact data (wrapper).`);
+          }
+          
           return {
             ...invoice,
             animal: animalData,
+            veterinarian: veterinarianData,
             subtotal: invoice.subtotal || 0,
             discount_total: invoice.discount_total || 0,
             total: invoice.total || 0
           };
         });
+        
+        console.log("Processed invoices with veterinarian data in wrapper:", 
+          processedData.slice(0, 3).map(invoice => ({
+            document_number: invoice.document_number,
+            veterinarian_id: invoice.veterinarian_id,
+            veterinarian: invoice.veterinarian
+          }))
+        );
         
         // Calculate remaining time to meet minimum loading time
         const elapsedTime = Date.now() - startTime;
