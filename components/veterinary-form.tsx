@@ -110,6 +110,35 @@ type LineItem = {
   type?: "item" | "discount";
 };
 
+// Define the database format of line items
+interface DbLineItem {
+  id?: string;
+  description?: string;
+  item_id?: string;
+  item_name?: string;
+  quantity?: number;
+  price?: number;
+  type?: "item" | "discount";
+}
+
+// Define the shape of initialData coming from the database
+interface InitialInvoiceData {
+  id?: string;
+  document_number?: string;
+  reference?: string;
+  animal_id?: string;
+  animal_name?: string;
+  animals?: {
+    id?: string;
+    name: string;
+  };
+  veterinarian_id?: string;
+  check_in_date?: string;
+  check_out_date?: string;
+  line_items?: DbLineItem[];
+  comment?: string;
+}
+
 // Update the FormValues type
 type FormValues = Omit<z.infer<typeof formSchema>, 'lineItems'> & {
   lineItems: LineItem[];
@@ -160,7 +189,7 @@ export default function VeterinaryForm({
   suppressLoadingMessage = false
 }: {
   editMode?: boolean;
-  initialData?: any;
+  initialData?: InitialInvoiceData | null;
   onSuccess?: () => void;
   onFormChange?: () => void;
   suppressLoadingMessage?: boolean;
@@ -580,7 +609,7 @@ export default function VeterinaryForm({
         }
         
         // Convert line items from the database format to the form format
-        const formattedLineItems = (initialData.line_items || []).map((item: any, index: number) => ({
+        const formattedLineItems = (initialData.line_items || []).map((item: DbLineItem, index: number) => ({
           id: item.id || `item-${Date.now()}-${index}`,
           description: item.description || '',
           itemId: item.item_id || '',
