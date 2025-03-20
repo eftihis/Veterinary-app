@@ -75,6 +75,7 @@ import {
 import { ViewInvoiceDialog } from "@/components/view-invoice-dialog"
 import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
 import { Invoice } from "@/components/invoices-data-table"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Define our LineItem type based on our Supabase view structure
 export type LineItem = {
@@ -809,305 +810,293 @@ export function LineItemsDataTable({
   // Modify the loading condition to respect skipLoadingState
   if (loading && !skipLoadingState) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="w-full rounded-md border p-6">
+        <div className="flex items-center space-x-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="bg-red-50 text-red-700 p-4 rounded-md flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            <p>Error loading line items: {error}</p>
+      <div className="w-full rounded-md border border-red-500 p-6 bg-red-50">
+        <div className="flex items-center space-x-3">
+          <AlertCircle className="h-6 w-6 text-red-600" />
+          <div>
+            <h3 className="text-lg font-medium text-red-600">Error loading line items</h3>
+            <p className="text-red-600">{error}</p>
           </div>
-        </CardContent>
-      </Card>
-    );
+        </div>
+      </div>
+    )
   }
 
   return (
-    <>
-      <Card>
-        <CardContent className="p-6 overflow-x-auto">
-          <div className="flex flex-col gap-4 py-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <div className="w-full md:w-auto relative">
-                  <Input
-                    placeholder="Search line items by invoice, patient, or item..."
-                    value={globalFilter}
-                    onChange={(event) => setGlobalFilter(event.target.value)}
-                    className="w-full md:w-[350px] pr-8"
-                  />
-                  {globalFilter && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full"
-                      onClick={() => setGlobalFilter("")}
-                      aria-label="Clear search"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                <DateRangePicker 
-                  startDate={startDate}
-                  endDate={endDate}
-                  onStartDateChange={setStartDate}
-                  onEndDateChange={setEndDate}
-                  onClear={clearAllFilters}
-                />
-                
-                {/* Status Filter */}
-                <StatusFilter
-                  statusOptions={statusOptions}
-                  selectedStatuses={selectedStatuses}
-                  setSelectedStatuses={setSelectedStatuses}
-                  getStatusBadge={getStatusBadge}
-                />
-                
-                {/* Item Filter */}
-                <ItemFilter
-                  itemOptions={itemOptions}
-                  selectedItems={selectedItems}
-                  setSelectedItems={setSelectedItems}
-                />
-              </div>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    Columns <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {table
-                    .getAllColumns()
-                    .filter((column) => column.getCanHide())
-                    .map((column) => {
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={column.id}
-                          className="capitalize"
-                          checked={column.getIsVisible()}
-                          onCheckedChange={(value) =>
-                            column.toggleVisibility(!!value)
-                          }
-                        >
-                          {column.id}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            {filteredData.length !== lineItems.length && (
-              <div className="text-sm text-muted-foreground">
-                Showing {filteredData.length} of {lineItems.length} line items based on filters.
-              </div>
-            )}
-            
-            {/* Active Filters */}
-            <ActiveFilters
-              selectedStatuses={selectedStatuses}
-              toggleStatus={toggleStatus}
-              selectedItems={selectedItems}
-              toggleItem={toggleItem}
-              startDate={startDate}
-              endDate={endDate}
-              setStartDate={setStartDate}
-              setEndDate={setEndDate}
-              clearAllFilters={clearAllFilters}
+    <div className="space-y-4 w-full">
+      <div className="flex flex-col md:flex-row md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="w-full md:w-auto relative">
+            <Input
+              placeholder="Search line items by invoice, patient, or item..."
+              value={globalFilter}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className="w-full md:w-[350px] pr-8"
             />
+            {globalFilter && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full"
+                onClick={() => setGlobalFilter("")}
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
-          <div className="rounded-md border w-full min-w-full overflow-hidden">
-            <Table className="w-full">
-              <TableHeader className="bg-muted/50">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => {
-                      return (
-                        <TableHead key={header.id}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </TableHead>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      No line items found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between py-4">
-            <div className="text-sm text-muted-foreground">
-              Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
-              {table.getFilteredRowModel().rows.length} results
-            </div>
-            
-            <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
-              <div className="flex items-center justify-end sm:justify-start gap-2">
-                <p className="text-sm text-muted-foreground whitespace-nowrap">
-                  Rows per page
-                </p>
-                <Select
-                  value={table.getState().pagination.pageSize.toString()}
-                  onValueChange={(value) => {
-                    table.setPageSize(Number(value));
-                  }}
-                >
-                  <SelectTrigger className="h-8 w-[70px]">
-                    <SelectValue placeholder={table.getState().pagination.pageSize.toString()} />
-                  </SelectTrigger>
-                  <SelectContent side="top">
-                    {[10, 20, 30, 50, 100].map((pageSize) => (
-                      <SelectItem key={pageSize} value={pageSize.toString()}>
-                        {pageSize}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex items-center justify-end gap-2">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        onClick={() => table.previousPage()} 
-                        aria-disabled={!table.getCanPreviousPage()}
-                        className={!table.getCanPreviousPage() 
-                          ? "pointer-events-none opacity-50" 
-                          : "cursor-pointer"
-                        }
-                        tabIndex={!table.getCanPreviousPage() ? -1 : undefined}
-                      />
-                    </PaginationItem>
-                    
-                    {/* Generate page buttons - hide on small screens */}
-                    <div className="hidden sm:flex">
-                    {Array.from({ length: table.getPageCount() }).map((_, index) => {
-                      // Show limited number of pages to avoid cluttering the UI
-                      const pageNumber = index + 1;
-                      const isCurrent = table.getState().pagination.pageIndex === index;
-                      
-                      // Logic to determine which page numbers to show
-                      const shouldShowPageNumber =
-                        pageNumber === 1 || // First page
-                        pageNumber === table.getPageCount() || // Last page
-                        Math.abs(pageNumber - (table.getState().pagination.pageIndex + 1)) <= 1; // Pages around current
-                      
-                      // Show ellipsis when needed
-                      const showEllipsisBefore =
-                        index === 1 && table.getState().pagination.pageIndex > 2;
-                      const showEllipsisAfter =
-                        index === table.getPageCount() - 2 && 
-                        table.getState().pagination.pageIndex < table.getPageCount() - 3;
-                      
-                      if (showEllipsisBefore) {
-                        return (
-                          <PaginationItem key={`ellipsis-before`}>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        );
-                      }
-                      
-                      if (showEllipsisAfter) {
-                        return (
-                          <PaginationItem key={`ellipsis-after`}>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        );
-                      }
-                      
-                      if (shouldShowPageNumber) {
-                        return (
-                          <PaginationItem key={index}>
-                            <PaginationLink
-                              isActive={isCurrent}
-                              onClick={() => table.setPageIndex(index)}
-                              className="cursor-pointer"
-                            >
-                              {pageNumber}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      }
-                      
-                      return null;
-                    })}
-                    </div>
-                    
-                    <PaginationItem>
-                      <PaginationNext 
-                        onClick={() => table.nextPage()} 
-                        aria-disabled={!table.getCanNextPage()}
-                        className={!table.getCanNextPage() 
-                          ? "pointer-events-none opacity-50" 
-                          : "cursor-pointer"
-                        }
-                        tabIndex={!table.getCanNextPage() ? -1 : undefined}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <ViewInvoiceDialog
-        open={viewDialogOpen}
-        onOpenChange={setViewDialogOpen}
-        invoice={selectedInvoice}
+          <DateRangePicker 
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            onClear={clearAllFilters}
+          />
+          
+          {/* Status Filter */}
+          <StatusFilter
+            statusOptions={statusOptions}
+            selectedStatuses={selectedStatuses}
+            setSelectedStatuses={setSelectedStatuses}
+            getStatusBadge={getStatusBadge}
+          />
+          
+          {/* Item Filter */}
+          <ItemFilter
+            itemOptions={itemOptions}
+            selectedItems={selectedItems}
+            setSelectedItems={setSelectedItems}
+          />
+        </div>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              Columns <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      {filteredData.length !== lineItems.length && (
+        <div className="text-sm text-muted-foreground">
+          Showing {filteredData.length} of {lineItems.length} line items based on filters.
+        </div>
+      )}
+      
+      {/* Active Filters */}
+      <ActiveFilters
+        selectedStatuses={selectedStatuses}
+        toggleStatus={toggleStatus}
+        selectedItems={selectedItems}
+        toggleItem={toggleItem}
+        startDate={startDate}
+        endDate={endDate}
+        setStartDate={setStartDate}
+        setEndDate={setEndDate}
+        clearAllFilters={clearAllFilters}
       />
       
-      <EditInvoiceDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        invoice={selectedInvoice}
-        onInvoiceUpdated={refreshLineItems}
-      />
-    </>
+      <div className="overflow-x-auto">
+        <div className="rounded-md border w-full min-w-full overflow-hidden">
+          <Table className="w-full">
+            <TableHeader className="bg-muted/50">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No line items found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+      
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="text-sm text-muted-foreground">
+          Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
+          {table.getFilteredRowModel().rows.length} results
+        </div>
+        
+        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
+          <div className="flex items-center justify-end sm:justify-start gap-2">
+            <p className="text-sm text-muted-foreground whitespace-nowrap">
+              Rows per page
+            </p>
+            <Select
+              value={table.getState().pagination.pageSize.toString()}
+              onValueChange={(value) => {
+                table.setPageSize(Number(value));
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={table.getState().pagination.pageSize.toString()} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[10, 20, 30, 50, 100].map((pageSize) => (
+                  <SelectItem key={pageSize} value={pageSize.toString()}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center justify-end gap-2">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => table.previousPage()} 
+                    aria-disabled={!table.getCanPreviousPage()}
+                    className={!table.getCanPreviousPage() 
+                      ? "pointer-events-none opacity-50" 
+                      : "cursor-pointer"
+                    }
+                    tabIndex={!table.getCanPreviousPage() ? -1 : undefined}
+                  />
+                </PaginationItem>
+                
+                {/* Generate page buttons - hide on small screens */}
+                <div className="hidden sm:flex">
+                {Array.from({ length: table.getPageCount() }).map((_, index) => {
+                  // Show limited number of pages to avoid cluttering the UI
+                  const pageNumber = index + 1;
+                  const isCurrent = table.getState().pagination.pageIndex === index;
+                  
+                  // Logic to determine which page numbers to show
+                  const shouldShowPageNumber =
+                    pageNumber === 1 || // First page
+                    pageNumber === table.getPageCount() || // Last page
+                    Math.abs(pageNumber - (table.getState().pagination.pageIndex + 1)) <= 1; // Pages around current
+                  
+                  // Show ellipsis when needed
+                  const showEllipsisBefore =
+                    index === 1 && table.getState().pagination.pageIndex > 2;
+                  const showEllipsisAfter =
+                    index === table.getPageCount() - 2 && 
+                    table.getState().pagination.pageIndex < table.getPageCount() - 3;
+                  
+                  if (showEllipsisBefore) {
+                    return (
+                      <PaginationItem key={`ellipsis-before`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                  
+                  if (showEllipsisAfter) {
+                    return (
+                      <PaginationItem key={`ellipsis-after`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                  
+                  if (shouldShowPageNumber) {
+                    return (
+                      <PaginationItem key={index}>
+                        <PaginationLink
+                          isActive={isCurrent}
+                          onClick={() => table.setPageIndex(index)}
+                          className="cursor-pointer"
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+                  
+                  return null;
+                })}
+                </div>
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => table.nextPage()} 
+                    aria-disabled={!table.getCanNextPage()}
+                    className={!table.getCanNextPage() 
+                      ? "pointer-events-none opacity-50" 
+                      : "cursor-pointer"
+                    }
+                    tabIndex={!table.getCanNextPage() ? -1 : undefined}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 } 
