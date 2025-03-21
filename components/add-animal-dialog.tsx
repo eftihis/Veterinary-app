@@ -141,7 +141,7 @@ export function AddAnimalDialog({
         await onAnimalAdded(data);
       } else {
         // Default behavior - insert directly to DB
-        const { data: insertedData, error } = await supabase.from("animals").insert({
+        const { error: insertError } = await supabase.from("animals").insert({
           name: data.name,
           type: data.type,
           breed: data.breed || null,
@@ -151,11 +151,24 @@ export function AddAnimalDialog({
           microchip_number: data.microchip_number || null,
           notes: data.notes || null,
           status: "active",
-        }).select()
+        });
         
-        if (error) {
-          console.error("Supabase error adding animal:", error);
-          throw error;
+        if (insertError) {
+          console.error("Supabase error adding animal:", insertError);
+          throw insertError;
+        }
+        
+        // After successful insert, fetch the newly created record
+        const { data: insertedData, error: fetchError } = await supabase
+          .from("animals")
+          .select("*")
+          .eq("name", data.name)
+          .order("created_at", { ascending: false })
+          .limit(1);
+          
+        if (fetchError) {
+          console.error("Supabase error fetching added animal:", fetchError);
+          throw fetchError;
         }
         
         console.log("Animal added successfully:", insertedData);

@@ -90,14 +90,26 @@ export function useAnimals() {
       console.log("Adding animal with data:", animalData);
       
       // Insert the new animal into the database
-      const { data, error } = await supabase
+      const { error: insertError } = await supabase
         .from('animals')
-        .insert([animalData])
-        .select('id, name, type, breed, is_deceased, gender');
+        .insert([animalData]);
       
-      if (error) {
-        console.error("Supabase error when adding animal:", error);
-        throw error;
+      if (insertError) {
+        console.error("Supabase error when adding animal:", insertError);
+        throw insertError;
+      }
+      
+      // After successful insert, fetch the newly created record
+      const { data, error: fetchError } = await supabase
+        .from('animals')
+        .select('id, name, type, breed, is_deceased, gender')
+        .eq('name', animalData.name)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (fetchError) {
+        console.error("Supabase error when fetching new animal:", fetchError);
+        throw fetchError;
       }
       
       if (!data || data.length === 0) {
