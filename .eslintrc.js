@@ -24,9 +24,9 @@ module.exports = {
     "@typescript-eslint/ban-ts-comment": "off"
   },
   ignorePatterns: [
-    // Ignore Next.js build output
-    ".next/**/*",
-    "out/**/*",
-    "node_modules/**/*"
+    // Ignore Next.js build output completely
+    ".next/**",
+    "out/**",
+    "node_modules/**"
   ]
 }; 
