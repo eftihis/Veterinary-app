@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { format, parseISO, formatDistanceToNow, differenceInMonths, differenceInYears } from "date-fns"
+import { format, parseISO, differenceInMonths, differenceInYears } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import { Animal } from "@/components/animals-data-table"
 import { AnimalTimeline } from "@/components/animal-timeline"
@@ -10,16 +10,13 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
-  SheetFooter,
-  SheetClose
+  SheetFooter
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { 
   Dog, 
   Cat, 
@@ -30,13 +27,9 @@ import {
   Calendar,
   User,
   Clipboard,
-  Weight,
   FileEdit,
-  History,
-  Activity,
   Stethoscope,
-  AlertCircle,
-  XCircle
+  AlertCircle
 } from "lucide-react"
 
 interface AnimalDetailSheetProps {
@@ -61,13 +54,12 @@ export function AnimalDetailSheet({
     if (open && animalId) {
       fetchAnimalDetails()
     } else {
-      // Reset state when closed
       setAnimal(null)
       setLoading(true)
       setError(null)
       setActiveTab("overview")
     }
-  }, [open, animalId])
+  }, [open, animalId, fetchAnimalDetails])
   
   async function fetchAnimalDetails() {
     try {
