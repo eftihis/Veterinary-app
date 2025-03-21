@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:local": "NEXT_PUBLIC_BASE_URL=http://localhost:3000 NEXT_PUBLIC_SITE_URL=http://localhost:3000 NEXT_PUBLIC_DISABLE_XERO=true next dev",
-    "dev:tunnel": "NEXT_PUBLIC_BASE_URL=https://breezy-beers-turn.loca.lt NEXT_PUBLIC_SITE_URL=https://breezy-beers-turn.loca.lt NEXT_PUBLIC_DISABLE_XERO=false next dev",
+    "dev:tunnel": "NEXT_PUBLIC_BASE_URL=https://easy-shoes-mix.loca.lt NEXT_PUBLIC_SITE_URL=https://easy-shoes-mix.loca.lt NEXT_PUBLIC_DISABLE_XERO=false next dev",
     "tunnel": "npx localtunnel --port 3000 --subdomain breezy-beers-turn --allow-invalid-cert",
     "build": "next build",
     "start": "next start",
