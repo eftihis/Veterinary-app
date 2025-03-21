@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { callXeroApi } from '@/lib/xero-auth';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     console.log("Test connection endpoint called");
     
@@ -42,11 +42,11 @@ export async function GET(req: NextRequest) {
       }
       
       return response;
-    } catch (apiError: any) {
+    } catch (apiError: Error | unknown) {
       console.error("API error:", apiError);
       
       // Check if it's an authentication error
-      if (apiError.message && apiError.message.includes('Authentication error')) {
+      if (apiError instanceof Error && apiError.message.includes('Authentication error')) {
         return NextResponse.json({ 
           error: 'Authentication failed', 
           details: apiError.message 
@@ -55,14 +55,14 @@ export async function GET(req: NextRequest) {
       
       return NextResponse.json({ 
         error: 'Error fetching from Xero API', 
-        details: apiError.message 
+        details: apiError instanceof Error ? apiError.message : String(apiError) 
       }, { status: 500 });
     }
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
     console.error('Test connection error:', error);
     return NextResponse.json({ 
       error: 'Connection test failed', 
-      details: error.message 
+      details: error instanceof Error ? error.message : String(error) 
     }, { status: 500 });
   }
 }
