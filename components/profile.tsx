@@ -241,6 +241,42 @@ export default function UserProfile({
       // Check file size (200KB = 200 * 1024 bytes)
       const MAX_FILE_SIZE = 200 * 1024; // 200KB
       
+      // Create a new image element to get dimensions
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      
+      // Wait for image to load
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+      
+      // Create a canvas to crop the image to a square
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Determine the size of the square (use the smaller dimension)
+      const size = Math.min(img.width, img.height);
+      canvas.width = size;
+      canvas.height = size;
+      
+      // Calculate crop position (center of the image)
+      const offsetX = (img.width - size) / 2;
+      const offsetY = (img.height - size) / 2;
+      
+      // Draw the cropped image
+      ctx?.drawImage(img, offsetX, offsetY, size, size, 0, 0, size, size);
+      
+      // Convert canvas to Blob
+      const croppedBlob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else throw new Error("Failed to create image blob");
+        }, file.type);
+      });
+      
+      // Free memory
+      URL.revokeObjectURL(img.src);
+      
       // Configure compression options
       const options = {
         maxSizeMB: 0.2, // 200KB
@@ -256,8 +292,11 @@ export default function UserProfile({
         onError: undefined,
       };
 
-      // Compress the image
-      const compressedFile = await imageCompression(file, options);
+      // Compress the cropped image
+      const compressedFile = await imageCompression(
+        new File([croppedBlob], file.name, { type: file.type }),
+        options
+      );
       
       // Check if compression was successful
       if (compressedFile.size > MAX_FILE_SIZE) {
