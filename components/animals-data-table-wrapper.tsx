@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 interface AnimalsDataTableWrapperProps {
   onViewAnimal: (animal: Animal) => void
   onEditAnimal?: (animal: Animal) => void
-  onDeleteAnimal?: (animal: Animal) => void
+  onDeleteAnimal?: (animal: Animal | Animal[]) => void
   onAddEvent?: (animal: Animal) => void
 }
 

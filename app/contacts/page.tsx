@@ -28,6 +28,8 @@ export default function ContactsPage() {
   const [formDialogOpen, setFormDialogOpen] = useState(false)
   const [contactToEdit, setContactToEdit] = useState<Contact | undefined>(undefined)
   const [contactToDelete, setContactToDelete] = useState<Contact | undefined>(undefined)
+  const [contactsToDelete, setContactsToDelete] = useState<Contact[] | null>(null)
+  const [isBatchDelete, setIsBatchDelete] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -42,41 +44,79 @@ export default function ContactsPage() {
     setFormDialogOpen(true)
   }
   
-  function handleDeleteContact(contact: Contact) {
-    setContactToDelete(contact)
+  function handleDeleteContact(contact: Contact | Contact[]) {
+    if (Array.isArray(contact)) {
+      // Batch delete
+      setContactsToDelete(contact)
+      setIsBatchDelete(true)
+    } else {
+      // Single delete
+      setContactToDelete(contact)
+      setIsBatchDelete(false)
+    }
     setDeleteDialogOpen(true)
   }
   
   async function confirmDeleteContact() {
-    if (!contactToDelete) return
-    
     try {
       setIsDeleting(true)
       
-      // First check if this contact is linked to a profile
-      if (contactToDelete.profile_id) {
-        toast.error("Cannot delete a contact that is linked to a user profile")
-        return
+      if (isBatchDelete && contactsToDelete && contactsToDelete.length > 0) {
+        // Filter out contacts that have a profile_id
+        const deletableContacts = contactsToDelete.filter(contact => !contact.profile_id);
+        const nonDeletableCount = contactsToDelete.length - deletableContacts.length;
+        
+        if (deletableContacts.length === 0) {
+          toast.error('None of the selected contacts can be deleted because they are linked to user profiles.');
+          setIsDeleting(false);
+          setDeleteDialogOpen(false);
+          return;
+        }
+        
+        // Get IDs of contacts to delete
+        const contactIds = deletableContacts.map(contact => contact.id);
+        
+        // Delete the contacts
+        const { error } = await supabase
+          .from("contacts")
+          .delete()
+          .in("id", contactIds);
+        
+        if (error) throw error;
+        
+        let successMessage = `${deletableContacts.length} contacts deleted successfully`;
+        if (nonDeletableCount > 0) {
+          successMessage += `. ${nonDeletableCount} contact(s) could not be deleted because they are linked to user profiles.`;
+        }
+        toast.success(successMessage);
+      } else if (contactToDelete) {
+        // First check if this contact is linked to a profile
+        if (contactToDelete.profile_id) {
+          toast.error("Cannot delete a contact that is linked to a user profile")
+          setIsDeleting(false);
+          setDeleteDialogOpen(false);
+          return;
+        }
+        
+        // Delete the contact
+        const { error } = await supabase
+          .from("contacts")
+          .delete()
+          .eq("id", contactToDelete.id)
+        
+        if (error) throw error
+        
+        toast.success("Contact deleted successfully")
       }
-      
-      // Delete the contact
-      const { error } = await supabase
-        .from("contacts")
-        .delete()
-        .eq("id", contactToDelete.id)
-      
-      if (error) throw error
-      
-      toast.success("Contact deleted successfully")
       
       // Refresh the contact list
       setRefreshKey(prev => prev + 1)
     } catch (error) {
-      console.error("Error deleting contact:", error)
+      console.error("Error deleting contact(s):", error)
       toast.error(
         error instanceof Error 
-          ? `Failed to delete contact: ${error.message}`
-          : "Failed to delete contact. Please try again."
+          ? `Failed to delete contact(s): ${error.message}`
+          : "Failed to delete contact(s). Please try again."
       )
     } finally {
       setIsDeleting(false)
@@ -163,9 +203,15 @@ export default function ContactsPage() {
           onOpenChange={setDeleteDialogOpen}
           onConfirm={confirmDeleteContact}
           isDeleting={isDeleting}
-          title="Delete Contact"
-          description={`Are you sure you want to delete ${contactToDelete?.first_name} ${contactToDelete?.last_name}? This action cannot be undone.`}
-          entityName="contact"
+          title={isBatchDelete ? "Delete Multiple Contacts" : "Delete Contact"}
+          description={isBatchDelete 
+            ? `Are you sure you want to delete ${contactsToDelete?.length} selected contacts? This action cannot be undone.`
+            : (contactToDelete 
+              ? `Are you sure you want to delete ${contactToDelete?.first_name} ${contactToDelete?.last_name}? This action cannot be undone.`
+              : "Are you sure you want to delete this contact? This action cannot be undone."
+            )
+          }
+          entityName={isBatchDelete ? "contacts" : "contact"}
         />
       </div>
     </DashboardLayout>

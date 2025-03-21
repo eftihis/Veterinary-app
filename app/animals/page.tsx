@@ -31,9 +31,16 @@ export default function AnimalsPage() {
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null)
   const [addAnimalDialogOpen, setAddAnimalDialogOpen] = useState(false)
   const [animalToDelete, setAnimalToDelete] = useState<Animal | null>(null)
+  const [animalsToDelete, setAnimalsToDelete] = useState<Animal[] | null>(null)
+  const [isBatchDelete, setIsBatchDelete] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  
+  // Refresh the data after changes
+  const handleDataChanged = () => {
+    setRefreshKey(prev => prev + 1)
+  }
   
   // Open detail sheet when an animal is clicked
   const handleViewAnimal = (animal: Animal) => {
@@ -47,57 +54,85 @@ export default function AnimalsPage() {
     setEditDialogOpen(true)
   }
   
-  // Handle delete button click
-  const handleDeleteAnimal = (animal: Animal) => {
-    setAnimalToDelete(animal)
+  // Handle delete button click - supports both single and batch delete
+  const handleDeleteAnimal = (animal: Animal | Animal[]) => {
+    if (Array.isArray(animal)) {
+      // Batch delete
+      setAnimalsToDelete(animal)
+      setIsBatchDelete(true)
+    } else {
+      // Single delete
+      setAnimalToDelete(animal)
+      setIsBatchDelete(false)
+    }
     setDeleteDialogOpen(true)
   }
   
   // Handle confirming animal deletion
   const confirmDeleteAnimal = async () => {
-    if (!animalToDelete) return
-    
     try {
       setIsDeleting(true)
       
-      // Check if animal has any events
-      const { data: events, error: eventsError } = await supabase
-        .from('animal_events')
-        .select('id')
-        .eq('animal_id', animalToDelete.id)
-        .limit(1)
-      
-      if (eventsError) throw eventsError
-      
-      // If animal has events, ask for confirmation to delete them too
-      if (events && events.length > 0) {
+      if (isBatchDelete && animalsToDelete && animalsToDelete.length > 0) {
+        // Get all animal IDs to delete
+        const animalIds = animalsToDelete.map(animal => animal.id)
+        
         // Delete all related events first
         const { error: deleteEventsError } = await supabase
           .from('animal_events')
           .delete()
-          .eq('animal_id', animalToDelete.id)
+          .in('animal_id', animalIds)
         
         if (deleteEventsError) throw deleteEventsError
+        
+        // Delete all animals
+        const { error } = await supabase
+          .from('animals')
+          .delete()
+          .in('id', animalIds)
+        
+        if (error) throw error
+        
+        toast.success(`${animalsToDelete.length} animals deleted successfully`)
+      } else if (animalToDelete) {
+        // Check if animal has any events
+        const { data: events, error: eventsError } = await supabase
+          .from('animal_events')
+          .select('id')
+          .eq('animal_id', animalToDelete.id)
+          .limit(1)
+        
+        if (eventsError) throw eventsError
+        
+        // If animal has events, delete them first
+        if (events && events.length > 0) {
+          const { error: deleteEventsError } = await supabase
+            .from('animal_events')
+            .delete()
+            .eq('animal_id', animalToDelete.id)
+          
+          if (deleteEventsError) throw deleteEventsError
+        }
+        
+        // Delete the animal
+        const { error } = await supabase
+          .from('animals')
+          .delete()
+          .eq('id', animalToDelete.id)
+        
+        if (error) throw error
+        
+        toast.success("Animal deleted successfully")
       }
       
-      // Delete the animal
-      const { error } = await supabase
-        .from('animals')
-        .delete()
-        .eq('id', animalToDelete.id)
-      
-      if (error) throw error
-      
-      toast.success("Animal deleted successfully")
-      
       // Refresh the animal list
-      setRefreshKey(prev => prev + 1)
+      handleDataChanged()
     } catch (error) {
-      console.error("Error deleting animal:", error)
+      console.error("Error deleting animal(s):", error)
       toast.error(
         error instanceof Error 
-          ? `Failed to delete animal: ${error.message}`
-          : "Failed to delete animal. Please try again."
+          ? `Failed to delete animal(s): ${error.message}`
+          : "Failed to delete animal(s). Please try again."
       )
     } finally {
       setIsDeleting(false)
@@ -118,11 +153,6 @@ export default function AnimalsPage() {
     if (addEventButton) {
       addEventButton.click()
     }
-  }
-  
-  // Refresh the data after changes
-  const handleDataChanged = () => {
-    setRefreshKey(prev => prev + 1)
   }
   
   return (
@@ -195,12 +225,15 @@ export default function AnimalsPage() {
           onOpenChange={setDeleteDialogOpen}
           onConfirm={confirmDeleteAnimal}
           isDeleting={isDeleting}
-          title="Delete Animal"
-          description={animalToDelete 
-            ? `Are you sure you want to delete ${animalToDelete.name}? This will also delete all events and records for this animal. This action cannot be undone.`
-            : "Are you sure you want to delete this animal? This action cannot be undone."
+          title={isBatchDelete ? "Delete Multiple Animals" : "Delete Animal"}
+          description={isBatchDelete 
+            ? `Are you sure you want to delete ${animalsToDelete?.length} selected animals? This will also delete all events and records for these animals. This action cannot be undone.`
+            : (animalToDelete 
+              ? `Are you sure you want to delete ${animalToDelete.name}? This will also delete all events and records for this animal. This action cannot be undone.`
+              : "Are you sure you want to delete this animal? This action cannot be undone."
+            )
           }
-          entityName="animal"
+          entityName={isBatchDelete ? "animals" : "animal"}
         />
         
         <AddAnimalDialog

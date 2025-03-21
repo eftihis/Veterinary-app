@@ -94,7 +94,7 @@ export function ContactsDataTable({
   data: Contact[]
   onViewContact: (contact: Contact) => void
   onEditContact: (contact: Contact) => void
-  onDeleteContact: (contact: Contact) => void
+  onDeleteContact: (contact: Contact | Contact[]) => void
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -420,6 +420,14 @@ export function ContactsDataTable({
     },
   });
 
+  // Function to handle batch deleting multiple contacts
+  const handleBatchDelete = () => {
+    const selectedContacts = Object.keys(rowSelection).map(
+      idx => data[parseInt(idx)]
+    );
+    onDeleteContact(selectedContacts);
+  }
+
   return (
     <div className="space-y-4 overflow-hidden p-1">
       <div className="flex items-center justify-between pb-2 gap-4">
@@ -440,7 +448,42 @@ export function ContactsDataTable({
             </Button>
           )}
         </div>
-        <div className="flex justify-end">
+        <div className="flex items-center gap-2 self-end">
+          {/* Batch Actions - Show only when rows are selected */}
+          {Object.keys(rowSelection).length > 0 && (
+            <div className="flex items-center mr-2">
+              <span className="text-sm text-muted-foreground mr-2">
+                {Object.keys(rowSelection).length} selected
+              </span>
+              
+              {/* Bulk Actions Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-1"
+                  >
+                    Bulk Actions
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  
+                  {/* Delete Option */}
+                  <DropdownMenuItem 
+                    onClick={handleBatchDelete}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Selected
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9">

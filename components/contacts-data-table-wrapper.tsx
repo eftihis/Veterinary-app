@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 interface ContactsDataTableWrapperProps {
   onViewContact: (contact: Contact) => void
   onEditContact?: (contact: Contact) => void
-  onDeleteContact?: (contact: Contact) => void
+  onDeleteContact?: (contact: Contact | Contact[]) => void
 }
 
 export function ContactsDataTableWrapper({
