@@ -19,12 +19,11 @@ import Link from "next/link"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
-import { Invoice } from "@/components/invoices-data-table"
 
 export default function InvoicesPage() {
   const [refreshKey, setRefreshKey] = useState(0)
-  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null)
-  const [invoicesToDelete, setInvoicesToDelete] = useState<Invoice[] | null>(null)
+  const [invoiceToDelete, setInvoiceToDelete] = useState<any | null>(null)
+  const [invoicesToDelete, setInvoicesToDelete] = useState<any[] | null>(null)
   const [isBatchDelete, setIsBatchDelete] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -35,7 +34,7 @@ export default function InvoicesPage() {
   }
   
   // Handle delete button click - now supports both single and batch delete
-  const handleDeleteInvoice = (invoice: Invoice | Invoice[]) => {
+  const handleDeleteInvoice = (invoice: any | any[]) => {
     if (Array.isArray(invoice)) {
       // Batch delete
       setInvoicesToDelete(invoice)
@@ -49,7 +48,7 @@ export default function InvoicesPage() {
   }
   
   // Handle updating invoice status
-  const handleUpdateInvoiceStatus = async (invoices: Invoice[], newStatus: string) => {
+  const handleUpdateInvoiceStatus = async (invoices: any[], newStatus: string) => {
     try {
       // Validation logic: only draft can be submitted, only submitted can be reverted to draft
       const validStatusTransitions = {

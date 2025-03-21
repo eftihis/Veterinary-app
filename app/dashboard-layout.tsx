@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   SidebarInset,
   SidebarProvider,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 

@@ -139,17 +139,17 @@ export async function GET(req: NextRequest) {
           console.log("Tenant ID stored:", tenants[0].tenantId);
         }
       }
-    } catch (error: Error | unknown) {
+    } catch (error: any) {
       console.error("Error fetching tenants:", error);
       // Continue anyway, as we have the tokens
     }
 
     return response;
-  } catch (error: Error | unknown) {
+  } catch (error: any) {
     console.error('Xero callback error:', error);
     return NextResponse.json({ 
       error: 'Xero callback processing failed', 
-      details: error instanceof Error ? error.message : String(error) 
+      details: error.message 
     }, { status: 500 });
   }
 }

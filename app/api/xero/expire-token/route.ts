@@ -1,7 +1,8 @@
 // app/api/xero/expire-token/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // Set token expiry to a past time
     const pastTime = Date.now() - 3600 * 1000; // 1 hour ago

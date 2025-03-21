@@ -6,7 +6,7 @@ import DashboardLayout from "./dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, FileUp, PlusCircle } from "lucide-react";
+import { FileText, FileUp, PlusCircle, RefreshCw } from "lucide-react";
 
 export default function Home() {
   return (

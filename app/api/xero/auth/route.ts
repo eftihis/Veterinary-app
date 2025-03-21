@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // Check if Xero is disabled in this environment
     if (process.env.NEXT_PUBLIC_DISABLE_XERO === 'true') {

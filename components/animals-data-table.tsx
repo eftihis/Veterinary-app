@@ -20,7 +20,9 @@ import {
   Eye, 
   FileEdit, 
   Trash2,
+  Calendar as CalendarIcon,
   X,
+  Check,
   User,
   Dog,
   Cat,
@@ -31,6 +33,7 @@ import {
   Plus
 } from "lucide-react"
 import { format, formatDistanceToNow, parseISO, differenceInMonths, differenceInYears } from "date-fns"
+import { supabase } from "@/lib/supabase"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -53,6 +56,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import {
   Pagination,
   PaginationContent,

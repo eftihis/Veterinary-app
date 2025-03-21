@@ -134,34 +134,28 @@ export function AddAnimalDialog({
         data.type = data.type.toLowerCase();
       }
       
-      // Create a clean animal object with only the required fields
-      const animalData = {
-        name: data.name.trim(),
-        type: data.type,
-        breed: data.breed && data.breed.trim() ? data.breed.trim() : null,
-        gender: data.gender || null,
-        date_of_birth: data.date_of_birth ? data.date_of_birth.toISOString().split('T')[0] : null,
-        weight: typeof data.weight === 'number' ? data.weight : null,
-        microchip_number: data.microchip_number && data.microchip_number.trim() ? data.microchip_number.trim() : null,
-        notes: data.notes && data.notes.trim() ? data.notes.trim() : null,
-        status: "active",
-      };
-      
-      console.log("Submitting animal data:", animalData);
+      console.log("Submitting animal data:", data);
       
       // If onAnimalAdded is provided, use that instead of direct DB insert
       if (onAnimalAdded) {
         await onAnimalAdded(data);
       } else {
         // Default behavior - insert directly to DB
-        const { data: insertedData, error } = await supabase
-          .from("animals")
-          .insert(animalData)
-          .select();
+        const { data: insertedData, error } = await supabase.from("animals").insert({
+          name: data.name,
+          type: data.type,
+          breed: data.breed || null,
+          gender: data.gender || null,
+          date_of_birth: data.date_of_birth ? data.date_of_birth.toISOString() : null,
+          weight: data.weight || null,
+          microchip_number: data.microchip_number || null,
+          notes: data.notes || null,
+          status: "active",
+        }).select()
         
         if (error) {
           console.error("Supabase error adding animal:", error);
-          throw new Error(error.message || "Database error");
+          throw error;
         }
         
         console.log("Animal added successfully:", insertedData);
