@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { format, parseISO, differenceInMonths, differenceInYears } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import { Animal } from "@/components/animals-data-table"
@@ -50,38 +50,33 @@ export function AnimalDetailSheet({
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("overview")
   
-  useEffect(() => {
-    if (open && animalId) {
-      fetchAnimalDetails()
-    } else {
-      setAnimal(null)
-      setLoading(true)
-      setError(null)
-      setActiveTab("overview")
-    }
-  }, [open, animalId, fetchAnimalDetails])
-  
-  async function fetchAnimalDetails() {
+  const fetchAnimalDetails = useCallback(async () => {
+    if (!animalId || !open) return
+    
+    setLoading(true)
+    setError(null)
+    
     try {
-      setLoading(true)
-      setError(null)
-      
       const { data, error } = await supabase
         .from('animals')
         .select('*')
         .eq('id', animalId)
         .single()
-        
+      
       if (error) throw error
       
       setAnimal(data)
-    } catch (err) {
-      console.error("Error fetching animal details:", err)
-      setError(err instanceof Error ? err.message : 'An unknown error occurred')
+    } catch (error) {
+      console.error("Error fetching animal details:", error)
+      setError("Failed to load animal details")
     } finally {
       setLoading(false)
     }
-  }
+  }, [animalId, open])
+  
+  useEffect(() => {
+    fetchAnimalDetails()
+  }, [fetchAnimalDetails])
   
   // Get animal type icon
   function getAnimalTypeIcon(type: string) {
