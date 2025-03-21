@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { formatDistanceToNow, parseISO } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import { 
@@ -34,7 +34,17 @@ type TimelineEvent = {
   animal_id: string
   event_type: string
   event_date: string
-  details: any
+  details: {
+    description?: string
+    document_number?: string
+    previous_status?: string
+    new_status?: string
+    notes?: string
+    weight?: number
+    previous_weight?: number
+    price?: string
+    [key: string]: unknown
+  }
   created_by: string | null
   created_at: string
   updated_at: string
@@ -63,11 +73,7 @@ export function AnimalTimeline({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  useEffect(() => {
-    fetchEvents()
-  }, [animalId, eventType, limit])
-  
-  async function fetchEvents() {
+  const fetchEvents = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -97,7 +103,11 @@ export function AnimalTimeline({
     } finally {
       setLoading(false)
     }
-  }
+  }, [animalId, eventType, limit])
+  
+  useEffect(() => {
+    fetchEvents()
+  }, [fetchEvents])
   
   // Get icon based on event type
   function getEventIcon(eventType: string | null | undefined) {
@@ -167,10 +177,10 @@ export function AnimalTimeline({
           <div className="flex items-center">
             <span className="font-medium">
               Weight: {details.weight} kg
-              {details.previous_weight && (
+              {details.previous_weight && details.weight && (
                 <span className="text-muted-foreground ml-2">
                   {details.weight > details.previous_weight ? '▲' : '▼'} 
-                  {Math.abs(details.weight - details.previous_weight).toFixed(2)} kg
+                  {Math.abs((details.weight ?? 0) - (details.previous_weight ?? 0)).toFixed(2)} kg
                 </span>
               )}
             </span>
