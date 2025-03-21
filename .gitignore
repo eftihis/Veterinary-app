@@ -30,13 +30,14 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (except for development files we want to track)
+# env files
 .env
 .env.*
-# local env files
-.env*.local
-!.env.local
-!.env.localtunnel
+.env.local
+.env.development
+.env.test
+.env.production
+.env.localtunnel
 
 # vercel
 .vercel
