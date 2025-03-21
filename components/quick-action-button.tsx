@@ -136,7 +136,6 @@ export function QuickActionButton() {
       }
       
       console.log("Animal added successfully:", data[0]);
-      toast.success(`Animal "${animalData.name}" added successfully!`);
       
       // Dispatch a custom event to notify the animals table to refresh
       const refreshEvent = new CustomEvent('refreshAnimalsTable');
