@@ -13,9 +13,9 @@ type SessionResponse = {
 // Central service for all auth operations
 export const authService = {
   // Update user password with retry logic
-  updatePassword: async (newPassword: string, maxRetries = 2): Promise<{ data: any; error: any }> => {
+  updatePassword: async (newPassword: string, maxRetries = 2): Promise<{ data: { user: object | null }; error: Error | null }> => {
     let attempts = 0;
-    let lastError = null;
+    let lastError: Error | null = null;
     
     while (attempts <= maxRetries) {
       try {
@@ -27,7 +27,7 @@ export const authService = {
           new Promise<never>((_, reject) => 
             setTimeout(() => reject(new Error('Request timed out')), timeoutDuration)
           )
-        ]) as { data: any; error: any };
+        ]) as { data: { user: object | null }; error: Error | null };
         
         // If we get a successful response, return it
         if (result && !result.error) {
@@ -43,7 +43,7 @@ export const authService = {
         return result;
       } catch (error) {
         console.warn(`Password update attempt ${attempts + 1} failed:`, error);
-        lastError = error;
+        lastError = error instanceof Error ? error : new Error('Unknown error');
         attempts++;
         
         // Wait a bit longer before each retry (exponential backoff)
@@ -57,7 +57,7 @@ export const authService = {
     // If we've exhausted all retries
     console.error('Password update failed after', maxRetries + 1, 'attempts');
     return { 
-      data: null, 
+      data: { user: null }, 
       error: lastError || new Error('Password update failed after multiple attempts') 
     };
   },

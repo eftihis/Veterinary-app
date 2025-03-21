@@ -12,6 +12,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  Row
 } from "@tanstack/react-table"
 import { 
   ArrowUpDown, 
@@ -379,7 +380,7 @@ export function ContactsDataTable({
   ];
 
   // Custom filter function to search across multiple columns
-  const fuzzyFilter = (row: any, columnId: string, filterValue: string) => {
+  const fuzzyFilter = (row: Row<Contact>, columnId: string, filterValue: string) => {
     const searchValue = filterValue.toLowerCase();
     
     // Get the values to search in

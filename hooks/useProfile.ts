@@ -5,10 +5,12 @@ import { useAuth } from '@/lib/auth-context';
 export type ProfileUpdateData = {
   display_name?: string;
   avatar_url?: string;
+  email?: string;
   // Add other profile fields as needed
   contact?: {
     first_name?: string;
     last_name?: string;
+    email?: string;
   }
 };
 
@@ -40,7 +42,7 @@ export function useProfile() {
       // 1. Update profile data if needed
       if (Object.keys(profileData).length > 0) {
         // Add updated_at timestamp automatically
-        const updateData = {
+        const updateData: Omit<ProfileUpdateData, 'contact' | 'email'> & { updated_at: string } = {
           ...profileData,
           updated_at: new Date().toISOString()
         };
@@ -50,7 +52,7 @@ export function useProfile() {
         // NOTE: Do NOT try to update email here - it's protected
         // IMPORTANT: Remove any email field if present
         if ('email' in updateData) {
-          delete (updateData as any).email;
+          delete updateData.email;
         }
         
         const { error: updateError } = await supabase
@@ -68,8 +70,9 @@ export function useProfile() {
       // 2. Update contact data if needed
       if (contactData && Object.keys(contactData).length > 0 && success) {
         // IMPORTANT: Do NOT try to update email in contacts
-        if ('email' in contactData) {
-          delete (contactData as any).email;
+        const contactUpdateData = { ...contactData };
+        if ('email' in contactUpdateData) {
+          delete contactUpdateData.email;
         }
         
         // Get the contact_id from the profile
@@ -82,7 +85,7 @@ export function useProfile() {
         if (profileData?.contact_id) {
           const { error: contactError } = await supabase
             .from('contacts')
-            .update(contactData)
+            .update(contactUpdateData)
             .eq('id', profileData.contact_id);
           
           if (contactError) {

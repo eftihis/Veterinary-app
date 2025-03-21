@@ -17,7 +17,7 @@ type ContactFormInputData = {
   phone?: string | null;
   roles?: string[] | null;
   is_active: boolean;
-  [key: string]: any; // For any other properties
+  [key: string]: string | string[] | boolean | null | undefined; // More specific type for additional properties
 }
 
 export type ContactOption = {

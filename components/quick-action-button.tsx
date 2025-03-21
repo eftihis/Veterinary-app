@@ -92,7 +92,18 @@ export function QuickActionButton() {
     };
   }, [user, setIsDropdownOpen]);
 
-  const handleAddAnimal = async (animalData: any) => {
+  interface AnimalData {
+    name: string;
+    type: string;
+    breed?: string;
+    gender?: string;
+    dob?: string;
+    is_deceased?: boolean;
+    owner_id?: string;
+    notes?: string;
+  }
+
+  const handleAddAnimal = async (animalData: AnimalData) => {
     try {
       console.log("Adding animal from quick action:", animalData);
       

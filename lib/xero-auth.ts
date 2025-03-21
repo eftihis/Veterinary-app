@@ -8,7 +8,13 @@ interface TokenRefreshResult {
   cookies?: {
     name: string;
     value: string;
-    options: any;
+    options: {
+      expires: Date;
+      httpOnly: boolean;
+      secure: boolean;
+      sameSite: 'none' | 'lax' | 'strict';
+      path: string;
+    };
   }[];
 }
 
@@ -94,7 +100,7 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
           expires: new Date(expiryTime),
           httpOnly: true,
           secure: isSecureEnvironment,
-          sameSite: isSecureEnvironment ? 'none' : 'lax',
+          sameSite: isSecureEnvironment ? 'none' as const : 'lax' as const,
           path: '/'
         }
       },
@@ -105,7 +111,7 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
           expires: new Date(expiryTime),
           httpOnly: true,
           secure: isSecureEnvironment,
-          sameSite: isSecureEnvironment ? 'none' : 'lax',
+          sameSite: isSecureEnvironment ? 'none' as const : 'lax' as const,
           path: '/'
         }
       }
@@ -119,7 +125,7 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
           expires: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
           httpOnly: true,
           secure: isSecureEnvironment,
-          sameSite: isSecureEnvironment ? 'none' : 'lax',
+          sameSite: isSecureEnvironment ? 'none' as const : 'lax' as const,
           path: '/'
         }
       });
@@ -130,9 +136,12 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
       accessToken: tokens.access_token,
       cookies: newCookies
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Token refresh error:', error);
-    return { success: false, error: error.message || 'Token refresh failed' };
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Token refresh failed' 
+    };
   }
 }
 
