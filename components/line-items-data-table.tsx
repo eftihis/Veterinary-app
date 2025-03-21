@@ -710,10 +710,11 @@ export function LineItemsDataTable({
               setEndDate(undefined)
             }}
           />
-          <StatusFilter
+          <StatusFilter 
             statusOptions={statusOptions}
             selectedStatuses={selectedStatuses}
             setSelectedStatuses={setSelectedStatuses}
+            getStatusBadge={getStatusBadge}
           />
           <ItemFilter
             itemOptions={itemOptions}
