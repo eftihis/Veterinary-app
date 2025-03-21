@@ -21,7 +21,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -70,7 +69,7 @@ interface AddAnimalDialogProps {
   // New props to support the other components
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onAnimalAdded?: (animal: NewAnimalData) => void | Promise<any>;
+  onAnimalAdded?: (animal: NewAnimalData) => void | Promise<unknown>;
   defaultAnimalName?: string | null;
 }
 

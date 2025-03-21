@@ -1,10 +1,11 @@
 module.exports = {
   extends: ["next/core-web-vitals", "plugin:react-hooks/recommended"],
   rules: {
-    // Allow unused variables with underscore prefix
+    // Allow unused variables with underscore prefix and ignore patterns
     "@typescript-eslint/no-unused-vars": ["error", { 
       "argsIgnorePattern": "^_",
-      "varsIgnorePattern": "^_"
+      "varsIgnorePattern": "^_",
+      "destructuredArrayIgnorePattern": "^_"
     }],
     "@typescript-eslint/no-explicit-any": "off",
     "react/no-unescaped-entities": "off",

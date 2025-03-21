@@ -33,13 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -50,7 +43,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, Check, ChevronsUpDown, Loader2 } from "lucide-react"
+import { CalendarIcon, Loader2 } from "lucide-react"
 import { AnimalCombobox, AnimalOption } from "@/components/ui/animal-combobox"
 
 // Form schema for adding an event
@@ -202,7 +195,7 @@ export function AddEventDialog({
         }));
         
         setAnimalOptions(options);
-      } catch (error) {
+      } catch {
         toast.error("Failed to load animals");
         setAnimalOptions([]);
       } finally {
@@ -256,7 +249,7 @@ export function AddEventDialog({
       }
       
       // Prepare details object based on event type
-      let details: Record<string, any> = {}
+      let details: Record<string, unknown> = {}
       
       // Add common field
       if (data.notes) {
@@ -644,7 +637,7 @@ export function AddEventDialog({
                   <FormField
                     control={form.control}
                     name="animal_id"
-                    render={({ field }) => (
+                    render={() => (
                       <FormItem className="col-span-2">
                         <FormLabel>Animal</FormLabel>
                         <FormControl>
