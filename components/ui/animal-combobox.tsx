@@ -408,6 +408,7 @@ export function AnimalCombobox({
                         }}
                         onMouseEnter={() => setHighlightedIndex(filteredOptions.length)}
                         role="option"
+                        aria-selected={highlightedIndex === filteredOptions.length}
                         tabIndex={-1}
                         ref={(el) => {
                           itemsRef.current[filteredOptions.length] = el;

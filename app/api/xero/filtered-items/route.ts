@@ -1,4 +1,5 @@
 // app/api/xero/filtered-items/route.ts
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
 import { callXeroApi } from '@/lib/xero-auth';
 

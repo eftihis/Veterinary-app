@@ -9,6 +9,17 @@ import { Input } from "@/components/ui/input"
 import { ContactFormDialog } from "@/components/contact-form-dialog"
 import { NewContactData } from "@/hooks/useContacts"
 
+// Compatible type for what contact-form-dialog provides to onContactAdded
+type ContactFormInputData = {
+  first_name: string;
+  last_name: string;
+  email?: string | null;
+  phone?: string | null;
+  roles?: string[] | null;
+  is_active: boolean;
+  [key: string]: any; // For any other properties
+}
+
 export type ContactOption = {
   value: string // ID
   label: string // Full name
@@ -73,13 +84,24 @@ export function ContactCombobox({
   }, [options, selectedId]);
 
   // Handle adding a new contact
-  const handleAddContact = async (contactData: NewContactData) => {
+  const handleAddContact = async (contactData: ContactFormInputData) => {
     if (onAddContact) {
       try {
         console.log("Adding new contact:", contactData);
         
+        // Convert from ContactFormInputData to NewContactData
+        // Handle null values by converting them to undefined
+        const newContactData: NewContactData = {
+          first_name: contactData.first_name,
+          last_name: contactData.last_name,
+          email: contactData.email === null ? undefined : contactData.email,
+          phone: contactData.phone === null ? undefined : contactData.phone,
+          roles: contactData.roles || undefined,
+          is_active: contactData.is_active
+        };
+        
         // Call the parent's addContact function
-        const newContact = await onAddContact(contactData);
+        const newContact = await onAddContact(newContactData);
         
         console.log("Contact successfully added:", newContact);
         
@@ -416,6 +438,7 @@ export function ContactCombobox({
                         }}
                         onMouseEnter={() => setHighlightedIndex(filteredOptions.length)}
                         role="option"
+                        aria-selected={highlightedIndex === filteredOptions.length}
                         tabIndex={-1}
                         ref={(el) => {
                           itemsRef.current[filteredOptions.length] = el;

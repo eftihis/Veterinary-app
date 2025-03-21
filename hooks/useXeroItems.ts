@@ -123,7 +123,7 @@ export function useXeroItems() {
     fetchItems();
     
     return () => clearTimeout(loadingTimeout);
-  }, [fetchItems]); // Only depend on fetchItems, not loading
+  }, [fetchItems, loading, needsReauth]); // Include all dependencies
 
   return { 
     items, 

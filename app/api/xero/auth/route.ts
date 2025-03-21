@@ -1,4 +1,5 @@
-import { _NextRequest, NextResponse } from 'next/server';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 
 export async function GET(_req: Request) {

@@ -20,16 +20,16 @@ module.exports = {
     // Disable React specific rules that are problematic
     "react/no-unescaped-entities": "off",
     "react-hooks/exhaustive-deps": "warn", // Changed to warning instead of error
-    "jsx-a11y/role-has-required-aria-props": "off",
+    "jsx-a11y/role-has-required-aria-props": "warn", // Change to warning
     "@typescript-eslint/ban-ts-comment": "off"
   },
   overrides: [
     // Special rules for Next.js API routes
     {
-      files: ["app/api/**/*.ts"],
+      files: ["app/api/**/*.ts", "app/api/**/*.tsx", "pages/api/**/*.ts", "pages/api/**/*.tsx"],
       rules: {
-        // API routes often need unused request parameters
-        "@typescript-eslint/no-unused-vars": ["off"]
+        // API routes often need unused request parameters for Next.js API route syntax
+        "@typescript-eslint/no-unused-vars": "off"
       }
     }
   ],

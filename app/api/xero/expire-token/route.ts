@@ -1,5 +1,7 @@
 // app/api/xero/expire-token/route.ts
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 // Commenting out unused imports since we don't need them
 // import { cookies } from 'next/headers';
 

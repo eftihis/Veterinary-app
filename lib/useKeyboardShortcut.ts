@@ -25,11 +25,11 @@ export function useKeyboardShortcut(
     keyEvent = 'keydown',
   } = options;
 
-  // Normalize keys to array
-  const keysArray = Array.isArray(keys) ? keys : [keys];
-
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      // Normalize keys to array inside the callback
+      const keysArray = Array.isArray(keys) ? keys : [keys];
+      
       // Ignore shortcuts in input fields if disableOnInput is true
       if (
         disableOnInput &&
@@ -79,7 +79,7 @@ export function useKeyboardShortcut(
         }
       }
     },
-    [keysArray, callback, disableOnInput, preventDefault]
+    [callback, disableOnInput, preventDefault, keys]
   );
 
   useEffect(() => {
