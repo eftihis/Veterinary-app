@@ -9,7 +9,7 @@ const nextConfig = {
   
   // Allow cross-origin requests from localtunnel
   allowedDevOrigins: [
-    'https://easy-shoes-mix.loca.lt' // Your localtunnel URL
+    'https://huge-ads-divide.loca.lt' // Your localtunnel URL
   ],
   
   // Disable ESLint during build to avoid build failures due to ESLint errors
