@@ -89,10 +89,22 @@ export function useAnimals() {
       
       console.log("Adding animal with data:", animalData);
       
+      // Prepare the data for insertion
+      const animalRecord = {
+        name: animalData.name,
+        type: animalData.type,
+        breed: animalData.breed || null,
+        gender: animalData.gender || null,
+        date_of_birth: animalData.date_of_birth ? animalData.date_of_birth.toISOString() : null,
+        weight: animalData.weight || null,
+        microchip_number: animalData.microchip_number || null,
+        notes: animalData.notes || null
+      };
+      
       // Insert the new animal into the database
       const { error: insertError } = await supabase
         .from('animals')
-        .insert([animalData]);
+        .insert([animalRecord]);
       
       if (insertError) {
         console.error("Supabase error when adding animal:", insertError);
