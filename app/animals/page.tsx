@@ -8,7 +8,7 @@ import { AddAnimalDialog } from "@/components/add-animal-dialog"
 import { EditAnimalDialog } from "@/components/edit-animal-dialog"
 import { AddEventDialog } from "@/components/add-event-dialog"
 import { Button } from "@/components/ui/button"
-import { Dog, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import DashboardLayout from "../dashboard-layout"
 import {
   Breadcrumb,
@@ -29,7 +29,6 @@ export default function AnimalsPage() {
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null)
-  const [addEventDialogOpen, setAddEventDialogOpen] = useState(false)
   const [addAnimalDialogOpen, setAddAnimalDialogOpen] = useState(false)
   const [animalToDelete, setAnimalToDelete] = useState<Animal | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -114,8 +113,11 @@ export default function AnimalsPage() {
   // Handle add event for an existing animal
   const handleAddAnimalEvent = (animal: Animal) => {
     setSelectedAnimal(animal)
-    // Trigger the hidden button click
-    setAddEventDialogOpen(true)
+    // Find and click the hidden button instead of setting state
+    const addEventButton = document.getElementById("add-event-trigger") as HTMLButtonElement
+    if (addEventButton) {
+      addEventButton.click()
+    }
   }
   
   // Refresh the data after changes
