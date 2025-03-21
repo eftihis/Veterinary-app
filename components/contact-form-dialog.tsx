@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -39,7 +39,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { X, Loader2 } from "lucide-react"
 
 // Define the contact form schema
@@ -53,21 +52,23 @@ const contactFormSchema = z.object({
   state: z.string().optional().or(z.literal("")),
   postal_code: z.string().optional().or(z.literal("")),
   country: z.string().optional().or(z.literal("")),
-  roles: z.array(z.string()).optional(),
   notes: z.string().optional().or(z.literal("")),
   is_active: z.boolean().default(true),
 })
 
-type ContactFormValues = z.infer<typeof contactFormSchema>
+// Type for form values
+type ContactFormValues = z.infer<typeof contactFormSchema> & {
+  roles?: string[] | null;
+}
 
 interface ContactFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   contact?: Contact
   onSuccess?: () => void
-  onFormSubmit?: (contactData: any) => void
+  onFormSubmit?: (contactData: ContactFormValues) => void
   defaultContactName?: string
-  onContactAdded?: (contactData: any) => Promise<any>
+  onContactAdded?: (contactData: ContactFormValues) => Promise<unknown>
 }
 
 export function ContactFormDialog({
@@ -173,59 +174,27 @@ export function ContactFormDialog({
     console.log('Available roles updated:', availableRoles)
   }, [availableRoles])
   
-  // Fetch roles from Supabase
-  const fetchRoles = async () => {
+  // Fetch available roles
+  const fetchRoles = useCallback(async () => {
     setIsLoadingRoles(true);
-    console.log("Attempting to fetch roles...");
     
-    try {
-      // Fetch roles from the table with all fields and sort alphabetically
-      const { data, error } = await supabase
-        .from('roles')
-        .select('id, name, description')
-        .order('name');
-      
-      if (error) {
-        console.error("Error fetching roles:", error);
-        // Fallback to actual roles if database query fails
-        fallbackToDefaultRoles();
-        return;
-      }
-      
-      if (data && data.length > 0) {
-        console.log("Fetched roles:", data);
-        // Extract role names from the response
-        const roleNames = data.map((role) => role.name);
-        setAvailableRoles(roleNames);
-      } else {
-        console.warn("No roles found. Using default roles.");
-        fallbackToDefaultRoles();
-      }
-    } catch (error) {
-      console.error("Failed to fetch roles:", error);
-      fallbackToDefaultRoles();
-    } finally {
-      setIsLoadingRoles(false);
-    }
-  };
-  
-  // Helper to use default roles
-  const fallbackToDefaultRoles = () => {
+    // In a real app, you might fetch this from an API or database
+    // For this example, we'll use a hardcoded list
     const defaultRoles = [
-      "board member",
-      "emergency contact",
-      "external",
-      "owner",
+      "client",
+      "patient",
+      "staff",
       "veterinarian",
       "volunteer"
     ];
     setAvailableRoles(defaultRoles);
-  };
+    setIsLoadingRoles(false);
+  }, []);
   
   // Call fetchRoles when component mounts
   useEffect(() => {
     fetchRoles();
-  }, []);
+  }, [fetchRoles]);
   
   async function onSubmit(data: ContactFormValues) {
     try {
@@ -255,7 +224,7 @@ export function ContactFormDialog({
       Object.keys(data).forEach((key) => {
         const value = data[key as keyof ContactFormValues]
         if (typeof value === "string" && value.trim() === "") {
-          // @ts-ignore - We know what we're doing here
+          // @ts-expect-error - We're setting null for empty string fields which TypeScript doesn't like
           data[key as keyof ContactFormValues] = null
         }
       })
