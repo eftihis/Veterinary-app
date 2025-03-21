@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, ControllerRenderProps, ControllerFieldState } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, X, MoreHorizontal, Copy, Trash2, ChevronDown, GripVertical } from "lucide-react";
+import { CalendarIcon, Plus, MoreHorizontal, Copy, Trash2, ChevronDown, GripVertical } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
@@ -23,13 +23,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -39,7 +32,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
@@ -79,7 +71,7 @@ const formSchema = z.object({
   animalName: z.string().min(1, "Animal name is required"),
   animalId: z.string().optional(),
   veterinarianId: z.string().optional(),
-  checkInDate: z.date().optional().refine(date => !!date, { 
+  checkInDate: z.date().optional().refine(data => !!data, { 
     message: "Check-in date is required" 
   }),
   checkOutDate: z.date().optional()
@@ -87,7 +79,7 @@ const formSchema = z.object({
       message: "Check-out date is required" 
     })
     .refine(
-      date => {
+      () => {
         // We can't access ctx.data here due to type constraints
         // Instead, we'll validate this at the form level
         return true;
@@ -199,8 +191,17 @@ export default function VeterinaryForm({
   const [discountTotal, setDiscountTotal] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
   const { user } = useAuth(); // Get the authenticated user
-  const [isXeroDisabled, setIsXeroDisabled] = useState(false);
+  
+  // State variables for Xero integration
+  const [isXeroDisabled, setIsXeroDisabled] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // State for date picker popovers
+  const [checkInDateOpen, setCheckInDateOpen] = useState(false);
+  const [checkOutDateOpen, setCheckOutDateOpen] = useState(false);
+  
+  // For document number field validation
+  const [docNumberValidationError, setDocNumberValidationError] = useState<string | null>(null);
   
   useEffect(() => {
     const disableXero = process.env.NEXT_PUBLIC_DISABLE_XERO === 'true';
@@ -212,7 +213,6 @@ export default function VeterinaryForm({
 
   // Xero items hook - only use if Xero is enabled
   const { 
-    items: xeroItems, 
     loading: loadingXeroItems, 
     error: xeroItemsError, 
     needsReauth: xeroNeedsReauth,
@@ -232,8 +232,8 @@ export default function VeterinaryForm({
     return () => clearTimeout(componentTimeout);
   }, [loadingXeroItems]);
 
-  // Create a ref to store the calculateTotals function to avoid dependency issues
-  const calculateTotalsRef = useRef<Function | null>(null);
+  // Update the Function type reference
+  const calculateTotalsRef = useRef<(items: LineItem[]) => void>(null);
 
   // Initialize form with default values
   const form = useForm<FormValues>({
@@ -254,9 +254,10 @@ export default function VeterinaryForm({
 
   // Add custom validation for check-out date
   useEffect(() => {
-    const { checkInDate, checkOutDate } = form.watch();
+    const watchCheckInDate = form.watch("checkInDate");
+    const watchCheckOutDate = form.watch("checkOutDate");
     
-    if (checkInDate && checkOutDate && checkOutDate < checkInDate) {
+    if (watchCheckInDate && watchCheckOutDate && watchCheckOutDate < watchCheckInDate) {
       form.setError("checkOutDate", {
         type: "manual",
         message: "Check-out date must be after check-in date"
@@ -264,14 +265,13 @@ export default function VeterinaryForm({
     } else {
       form.clearErrors("checkOutDate");
     }
-  }, [form.watch("checkInDate"), form.watch("checkOutDate")]);
+  }, [form]);
 
   const { watch, setValue } = form;
   const lineItems = watch("lineItems");
 
   // Fetch animals
-  const {
-    animals: filteredAnimals,
+  const { 
     allAnimals: animalOptions, 
     loading: loadingAnimals, 
     error: animalsError,
@@ -404,7 +404,7 @@ export default function VeterinaryForm({
 
   // Set up form change tracking
   useEffect(() => {
-    const subscription = form.watch((value, { name, type }) => {
+    const subscription = form.watch((value) => {
       // This will run on ANY form value change
       if (value.lineItems) {
         calculateTotals(value.lineItems as LineItem[]);
@@ -693,12 +693,9 @@ export default function VeterinaryForm({
       
       console.log("Form submitted:", recordData);
       
-      // Save the invoice data to Supabase
-      let invoiceData;
-      
       if (editMode && initialData?.id) {
         // Update existing invoice
-        const { data: updatedData, error: updateError } = await supabase
+        const { error: updateError } = await supabase
           .from('invoices')
           .update({
             document_number: data.documentNumber,
@@ -719,10 +716,9 @@ export default function VeterinaryForm({
           .select();
         
         if (updateError) throw updateError;
-        invoiceData = updatedData;
       } else {
         // Create new invoice
-        const { data: newInvoice, error: insertError } = await supabase
+        const { error: insertError } = await supabase
           .from('invoices')
           .insert({
             document_number: data.documentNumber,
@@ -745,7 +741,6 @@ export default function VeterinaryForm({
           .select();
         
         if (insertError) throw insertError;
-        invoiceData = newInvoice;
       }
       
       // Show success toast
@@ -781,6 +776,158 @@ export default function VeterinaryForm({
     }
   };
 
+  // Render the check-in date field with controlled popover state
+  const renderCheckInDateField = useCallback(({ field }: { field: ControllerRenderProps<FormValues, "checkInDate"> }) => (
+    <FormItem className="flex flex-col">
+      <FormLabel>Check-in Date</FormLabel>
+      <Popover open={checkInDateOpen} onOpenChange={setCheckInDateOpen}>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full pl-3 text-left font-normal",
+                !field.value && "text-muted-foreground"
+              )}
+            >
+              {field.value ? (
+                format(field.value, "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={field.value || undefined}
+            onSelect={(date) => {
+              field.onChange(date);
+              // Close the popover when a date is selected
+              setCheckInDateOpen(false);
+            }}
+            disabled={(date) =>
+              date < new Date("1900-01-01")
+            }
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+      <FormMessage />
+    </FormItem>
+  ), [checkInDateOpen, setCheckInDateOpen]);
+
+  // Render the check-out date field with controlled popover state
+  const renderCheckOutDateField = useCallback(({ field }: { field: ControllerRenderProps<FormValues, "checkOutDate"> }) => (
+    <FormItem className="flex flex-col">
+      <FormLabel>Check-out Date</FormLabel>
+      <Popover open={checkOutDateOpen} onOpenChange={setCheckOutDateOpen}>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full pl-3 text-left font-normal",
+                !field.value && "text-muted-foreground"
+              )}
+            >
+              {field.value ? (
+                format(field.value, "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={field.value || undefined}
+            onSelect={(date) => {
+              field.onChange(date);
+              // Close the popover when a date is selected
+              setCheckOutDateOpen(false);
+            }}
+            disabled={(date) =>
+              date < new Date("1900-01-01")
+            }
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+      <FormMessage />
+    </FormItem>
+  ), [checkOutDateOpen, setCheckOutDateOpen]);
+
+  // Document number field renderer
+  const renderDocumentNumberField = useCallback(({ field, fieldState }: { 
+    field: ControllerRenderProps<FormValues, "documentNumber">, 
+    fieldState: ControllerFieldState 
+  }) => (
+    <FormItem>
+      <FormLabel className={fieldState.invalid && fieldState.isTouched ? "text-destructive" : ""}>
+        Document Number
+      </FormLabel>
+      <FormControl>
+        <Input 
+          {...field}
+          placeholder="XX-0000"
+          className={cn(
+            (fieldState.invalid && fieldState.isTouched) || docNumberValidationError 
+              ? "border-destructive ring-destructive focus-visible:ring-destructive" 
+              : ""
+          )}
+          value={field.value}
+          onChange={(e) => {
+            // Get the current value
+            let value = e.target.value;
+            
+            // Always apply formatting regardless of validation state
+            
+            // Convert to uppercase
+            value = value.toUpperCase();
+            
+            // Handle hyphen insertion
+            if (value.length === 2 && !value.includes('-')) {
+              // If we have exactly 2 characters and no hyphen, add it
+              value += '-';
+            } else if (value.length > 2 && !value.includes('-')) {
+              // If we have more than 2 characters but no hyphen, insert it
+              value = value.substring(0, 2) + '-' + value.substring(2);
+            }
+            
+            // Limit to 7 characters (XX-YYYY format)
+            if (value.length > 7) {
+              value = value.substring(0, 7);
+            }
+            
+            // Update the field value
+            field.onChange(value);
+          }}
+          onBlur={() => {
+            // Call the original onBlur to trigger validation
+            field.onBlur();
+            
+            // Check if the format is correct
+            const regex = /^[A-Za-z]{2}-\d{4}$/;
+            if (!regex.test(field.value)) {
+              setDocNumberValidationError("Document number must be in format XX-0000");
+            } else {
+              setDocNumberValidationError(null);
+            }
+          }}
+        />
+      </FormControl>
+      {fieldState.invalid && fieldState.isTouched && <FormMessage />}
+      {!fieldState.invalid && docNumberValidationError && (
+        <p className="text-sm font-medium text-destructive">{docNumberValidationError}</p>
+      )}
+    </FormItem>
+  ), [docNumberValidationError]);
+
   return (
     <>
       <Form {...form}>
@@ -789,14 +936,14 @@ export default function VeterinaryForm({
           className="space-y-8 max-w-4xl mx-auto"
         >
           {/* Show loading state if items are being fetched */}
-          {loadingXeroItems && (
+          {loadingXeroItems && !isXeroDisabled && (
             <div className="bg-blue-50 text-blue-700 p-4 rounded-md mb-4">
               <p>Loading items from Xero...</p>
             </div>
           )}
 
           {/* Display Xero API errors if any */}
-          {xeroItemsError && (
+          {xeroItemsError && !isXeroDisabled && (
             <div className="bg-red-50 text-red-700 p-4 rounded-md mb-4">
               <p>Error loading items from Xero: {xeroItemsError}</p>
             </div>
@@ -827,72 +974,7 @@ export default function VeterinaryForm({
                   <FormField
                     control={form.control}
                     name="documentNumber"
-                    render={({ field, fieldState }) => {
-                      // Track validation error separately from the formatting logic
-                      const [validationError, setValidationError] = useState<string | null>(null);
-                      
-                      return (
-                        <FormItem>
-                          <FormLabel className={fieldState.invalid && fieldState.isTouched ? "text-destructive" : ""}>
-                            Document Number
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field}
-                              placeholder="XX-0000"
-                              className={cn(
-                                (fieldState.invalid && fieldState.isTouched) || validationError 
-                                  ? "border-destructive ring-destructive focus-visible:ring-destructive" 
-                                  : ""
-                              )}
-                              value={field.value}
-                              onChange={(e) => {
-                                // Get the current value
-                                let value = e.target.value;
-                                
-                                // Always apply formatting regardless of validation state
-                                
-                                // Convert to uppercase
-                                value = value.toUpperCase();
-                                
-                                // Handle hyphen insertion
-                                if (value.length === 2 && !value.includes('-')) {
-                                  // If we have exactly 2 characters and no hyphen, add it
-                                  value += '-';
-                                } else if (value.length > 2 && !value.includes('-')) {
-                                  // If we have more than 2 characters but no hyphen, insert it
-                                  value = value.substring(0, 2) + '-' + value.substring(2);
-                                }
-                                
-                                // Limit to 7 characters (XX-YYYY format)
-                                if (value.length > 7) {
-                                  value = value.substring(0, 7);
-                                }
-                                
-                                // Update the field value
-                                field.onChange(value);
-                              }}
-                              onBlur={(e) => {
-                                // Call the original onBlur to trigger validation
-                                field.onBlur();
-                                
-                                // Check if the format is correct
-                                const regex = /^[A-Za-z]{2}-\d{4}$/;
-                                if (!regex.test(field.value)) {
-                                  setValidationError("Document number must be in format XX-0000");
-                                } else {
-                                  setValidationError(null);
-                                }
-                              }}
-                            />
-                          </FormControl>
-                          {fieldState.invalid && fieldState.isTouched && <FormMessage />}
-                          {!fieldState.invalid && validationError && (
-                            <p className="text-sm font-medium text-destructive">{validationError}</p>
-                          )}
-                        </FormItem>
-                      );
-                    }}
+                    render={renderDocumentNumberField}
                   />
 
                   <FormField
@@ -993,103 +1075,13 @@ export default function VeterinaryForm({
                 <FormField
                   control={form.control}
                   name="checkInDate"
-                  render={({ field }) => {
-                    // Add state to control popover open/close
-                    const [open, setOpen] = useState(false);
-                    
-                    return (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Check-in Date</FormLabel>
-                        <Popover open={open} onOpenChange={setOpen}>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value || undefined}
-                              onSelect={(date) => {
-                                field.onChange(date);
-                                // Close the popover when a date is selected
-                                setOpen(false);
-                              }}
-                              disabled={(date) =>
-                                date < new Date("1900-01-01")
-                              }
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
+                  render={renderCheckInDateField}
                 />
 
                 <FormField
                   control={form.control}
                   name="checkOutDate"
-                  render={({ field }) => {
-                    // Add state to control popover open/close
-                    const [open, setOpen] = useState(false);
-                    
-                    return (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Check-out Date</FormLabel>
-                        <Popover open={open} onOpenChange={setOpen}>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value || undefined}
-                              onSelect={(date) => {
-                                field.onChange(date);
-                                // Close the popover when a date is selected
-                                setOpen(false);
-                              }}
-                              disabled={(date) =>
-                                date < new Date("1900-01-01")
-                              }
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
+                  render={renderCheckOutDateField}
                 />
               </div>
             </CardContent>
@@ -2245,7 +2237,7 @@ export default function VeterinaryForm({
             </CardContent>
           </Card>
 
-          {/* Button section - conditionally render based on edit mode */}
+          {/* Button section - conditionally render based on edit mode with submission state */}
           <div className="flex justify-end gap-4">
             {editMode ? (
               <>
@@ -2262,31 +2254,35 @@ export default function VeterinaryForm({
                       onSuccess();
                     }
                   }}
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
                 <Button 
                   type="submit" 
                   className="px-8"
+                  disabled={isSubmitting}
                 >
-                  Save
+                  {isSubmitting ? "Saving..." : "Save"}
                 </Button>
               </>
             ) : (
               <>
-                {/* For create mode, show Save (does nothing) and Submit Invoice buttons */}
+                {/* For create mode, show Save and Submit Invoice buttons */}
                 <Button 
                   type="button" 
                   variant="outline"
                   className="px-8"
+                  disabled={isSubmitting}
                 >
                   Save
                 </Button>
                 <Button 
                   type="submit" 
                   className="px-8"
+                  disabled={isSubmitting}
                 >
-                  Submit
+                  {isSubmitting ? "Submitting..." : "Submit"}
                 </Button>
               </>
             )}
