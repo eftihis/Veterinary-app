@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { DataTableSkeleton } from "@/components/skeletons/data-table-skeleton";
-import { LineItemsDataTable } from "@/components/line-items-data-table";
+import { LineItemsDataTable, LineItem } from "@/components/line-items-data-table";
 import { supabase } from "@/lib/supabase";
 
 export default function LineItemsDataTableWrapper() {
   const [isLoading, setIsLoading] = useState(true);
-  const [preloadedLineItems, setPreloadedLineItems] = useState<any[]>([]);
+  const [preloadedLineItems, setPreloadedLineItems] = useState<LineItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {

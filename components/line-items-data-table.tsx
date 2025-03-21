@@ -12,6 +12,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  Row
 } from "@tanstack/react-table"
 import { 
   ArrowUpDown, 
@@ -345,27 +346,19 @@ export function LineItemsDataTable({
     }));
   }, [lineItems]);
   
-  // Function to refresh line items
+  // Fetch line items when refreshLineItems is called, but not on mount
   const refreshLineItems = React.useCallback(async () => {
-    // If we already have preloaded data and this is the initial mount, skip the fetch
-    if (preloadedData.length > 0 && lineItems === preloadedData) {
-      // Update filtered data with preloaded data
-      setFilteredData(preloadedData);
-      return;
+    if (!skipLoadingState) {
+      setLoading(true)
     }
-
+    
     try {
-      setLoading(true);
-      setError(null);
-      
       const { data, error } = await supabase
         .from('line_items_view')
         .select('*')
         .order('created_at', { ascending: false })
       
-      if (error) {
-        throw error
-      }
+      if (error) throw error
       
       console.log("Successfully fetched line items:", data.length, "records")
       setLineItems(data)
@@ -375,7 +368,7 @@ export function LineItemsDataTable({
     } finally {
       setLoading(false)
     }
-  }, [preloadedData]);
+  }, [skipLoadingState]);
 
   // Fetch line items from Supabase only if we don't have preloaded data
   React.useEffect(() => {
@@ -628,7 +621,7 @@ export function LineItemsDataTable({
   ];
 
   // Custom filter function to search across multiple columns
-  const fuzzyFilter = (row: any, columnId: string, filterValue: string) => {
+  const fuzzyFilter = (row: Row<LineItem>, columnId: string, filterValue: string) => {
     const searchValue = filterValue.toLowerCase();
     
     // Get the values to search in

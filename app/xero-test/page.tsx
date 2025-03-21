@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 export default function XeroTest() {
-  const [testResult, setTestResult] = useState<Record<string, unknown>>(null);
+  const [testResult, setTestResult] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [envInfo, setEnvInfo] = useState<{
     baseUrl: string;

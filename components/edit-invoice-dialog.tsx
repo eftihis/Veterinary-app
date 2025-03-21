@@ -20,7 +20,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
 import VeterinaryForm from "@/components/veterinary-form"
 import { Invoice } from "@/components/invoices-data-table"
 import { supabase } from "@/lib/supabase"
@@ -40,7 +39,7 @@ export function EditInvoiceDialog({
   onInvoiceUpdated
 }: EditInvoiceDialogProps) {
   const [loading, setLoading] = useState(false)
-  const [fullInvoiceData, setFullInvoiceData] = useState<any | null>(null)
+  const [fullInvoiceData, setFullInvoiceData] = useState<Record<string, unknown> | null>(null)
   const [isFormDirty, setIsFormDirty] = useState(false)
   const [showUnsavedChangesAlert, setShowUnsavedChangesAlert] = useState(false)
   
@@ -106,7 +105,7 @@ export function EditInvoiceDialog({
         
         // Ensure line items have consistent property names for the form
         if (processedData.line_items && processedData.line_items.length > 0) {
-          processedData.line_items = processedData.line_items.map((item: any) => {
+          processedData.line_items = processedData.line_items.map((item: Record<string, unknown>) => {
             return {
               ...item,
               itemId: item.item_id || item.itemId || "",
@@ -137,25 +136,14 @@ export function EditInvoiceDialog({
 
   // Handler for dialog's onOpenChange
   const handleOpenChange = (newOpenState: boolean) => {
-    // If trying to close the dialog and there are unsaved changes
     if (!newOpenState && isFormDirty) {
+      // If trying to close with unsaved changes, show alert instead
       setShowUnsavedChangesAlert(true)
       pendingCloseRef.current = true
-      return // Prevent closing until user confirms
+      return
     }
     
-    // Otherwise proceed with the open change
     onOpenChange(newOpenState)
-  }
-
-  // Close dialog handler
-  const handleClose = () => {
-    if (isFormDirty) {
-      setShowUnsavedChangesAlert(true)
-      pendingCloseRef.current = true
-    } else {
-      onOpenChange(false)
-    }
   }
   
   // Handle discard changes from alert dialog
@@ -195,7 +183,7 @@ export function EditInvoiceDialog({
           <DialogHeader>
             <DialogTitle>Edit Invoice {invoice?.document_number}</DialogTitle>
             <DialogDescription>
-              Make changes to the invoice and save when you're done.
+              Make changes to the invoice and save when you&apos;re done.
             </DialogDescription>
           </DialogHeader>
           
@@ -229,7 +217,7 @@ export function EditInvoiceDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes. Do you want to continue editing or discard your changes?
+              You have unsaved changes that will be lost if you continue.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

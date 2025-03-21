@@ -34,6 +34,16 @@ interface InvoiceDetailSheetProps {
   onEdit?: (invoice: Invoice) => void
 }
 
+interface LineItem {
+  id?: string;
+  description?: string;
+  item_id?: string;
+  item_name?: string;
+  quantity?: number;
+  price?: number;
+  type?: string;
+}
+
 // Format date
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '-'
@@ -270,7 +280,7 @@ export function InvoiceDetailSheet({
                     </TableHeader>
                     <TableBody>
                       {fullInvoiceData.line_items?.length > 0 ? (
-                        fullInvoiceData.line_items.map((item: any, index: number) => {
+                        fullInvoiceData.line_items.map((item: LineItem, index: number) => {
                           // Calculate line total
                           const quantity = Number(item.quantity) || 1; // Default to 1 if not specified
                           const price = Number(item.price) || 0;
@@ -279,7 +289,7 @@ export function InvoiceDetailSheet({
                           return (
                             <TableRow key={index}>
                               <TableCell className="font-medium">
-                                {item.itemName || item.item_name || '-'}
+                                {item.item_name || item.description || "Item"}
                                 {/* Show description on mobile as part of the item cell */}
                                 <div className="block sm:hidden text-xs text-muted-foreground mt-1">
                                   {item.description || '-'}
