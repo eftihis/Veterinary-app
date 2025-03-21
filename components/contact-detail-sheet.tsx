@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { format, parseISO, formatDistanceToNow } from "date-fns"
+import { format, parseISO } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import { Contact } from "@/components/contacts-data-table"
 import { 

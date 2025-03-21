@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { _NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 
 export async function GET(_req: Request) {

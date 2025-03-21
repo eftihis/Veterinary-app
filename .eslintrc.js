@@ -23,6 +23,16 @@ module.exports = {
     "jsx-a11y/role-has-required-aria-props": "off",
     "@typescript-eslint/ban-ts-comment": "off"
   },
+  overrides: [
+    // Special rules for Next.js API routes
+    {
+      files: ["app/api/**/*.ts"],
+      rules: {
+        // API routes often need unused request parameters
+        "@typescript-eslint/no-unused-vars": ["off"]
+      }
+    }
+  ],
   ignorePatterns: [
     // Ignore Next.js build output completely
     ".next/**",

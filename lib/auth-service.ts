@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import { toast } from 'sonner';
+// Removing unused import
+// import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 
 type SessionResponse = {

@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/hooks/useProfile';
-import { Loader2, Upload, User, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Upload, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -181,7 +181,7 @@ export default function UserProfile({
       const loadingToastId = toast.loading("Updating password...");
       
       // Use the auth service instead of direct Supabase call
-      const { data, error } = await authService.updatePassword(values.newPassword);
+      const { error } = await authService.updatePassword(values.newPassword);
       
       // Dismiss loading toast
       toast.dismiss(loadingToastId);
@@ -613,7 +613,7 @@ export default function UserProfile({
           </CardContent>
           <CardFooter className="border-t bg-muted/20 px-6 py-4">
             <p className="text-xs text-muted-foreground">
-              For security purposes, you'll be required to log in again after changing your password.
+              For security purposes, you&apos;ll be required to log in again after changing your password.
             </p>
           </CardFooter>
         </Card>

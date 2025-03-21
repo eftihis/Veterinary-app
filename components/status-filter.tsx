@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronDown, X } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,14 +26,12 @@ interface StatusFilterProps {
   statusOptions: StatusOption[]
   selectedStatuses: string[]
   setSelectedStatuses: React.Dispatch<React.SetStateAction<string[]>>
-  getStatusBadge: (status: string) => React.ReactNode
 }
 
 export function StatusFilter({
   statusOptions,
   selectedStatuses,
   setSelectedStatuses,
-  getStatusBadge
 }: StatusFilterProps) {
   // Keep track of dropdown open state
   const [open, setOpen] = React.useState(false)
