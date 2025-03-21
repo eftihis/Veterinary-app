@@ -26,7 +26,7 @@ let cachedItems: FormattedXeroItem[] | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Check if we have valid cached data
     const currentTime = Date.now();

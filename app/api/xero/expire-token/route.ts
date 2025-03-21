@@ -1,26 +1,22 @@
 // app/api/xero/expire-token/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+// Commenting out unused imports since we don't need them
+// import { cookies } from 'next/headers';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Set token expiry to a past time
-    const pastTime = Date.now() - 3600 * 1000; // 1 hour ago
+    const response = NextResponse.json({ success: true });
     
-    // Create response
-    const response = NextResponse.json({ message: "Token expired for testing" });
-    
-    // Set the cookie on the response
-    response.cookies.set('xero_token_expiry', pastTime.toString(), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/'
-    });
+    // Clear cookies by setting expired dates
+    response.cookies.set('xero_access_token', '', { maxAge: 0 });
+    response.cookies.set('xero_refresh_token', '', { maxAge: 0 });
+    response.cookies.set('xero_id_token', '', { maxAge: 0 });
+    response.cookies.set('xero_expires_at', '', { maxAge: 0 });
     
     return response;
   } catch (error) {
-    console.error('Error expiring token:', error);
-    return NextResponse.json({ error: 'Failed to expire token' }, { status: 500 });
+    console.error('Error expiring tokens:', error);
+    return NextResponse.json({ success: false, error: 'Failed to expire tokens' }, { status: 500 });
   }
 }

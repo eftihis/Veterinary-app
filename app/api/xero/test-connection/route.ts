@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callXeroApi } from '@/lib/xero-auth';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     console.log("Test connection endpoint called");
     
