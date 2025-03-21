@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:local": "NEXT_PUBLIC_BASE_URL=http://localhost:3000 NEXT_PUBLIC_SITE_URL=http://localhost:3000 NEXT_PUBLIC_DISABLE_XERO=true next dev",
-    "dev:ngrok": "NEXT_PUBLIC_BASE_URL=https://00f7-2a02-587-c41f-ed7a-8e8-9568-1ffe-8338.ngrok-free.app NEXT_PUBLIC_SITE_URL=https://00f7-2a02-587-c41f-ed7a-8e8-9568-1ffe-8338.ngrok-free.app NEXT_PUBLIC_DISABLE_XERO=false next dev",
+    "dev:ngrok": "NEXT_PUBLIC_BASE_URL=https://efca-2a02-1388-2153-3f85-6cc9-8371-6f0a-f382.ngrok-free.app NEXT_PUBLIC_SITE_URL=https://efca-2a02-1388-2153-3f85-6cc9-8371-6f0a-f382.ngrok-free.app NEXT_PUBLIC_DISABLE_XERO=false next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

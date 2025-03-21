@@ -125,11 +125,14 @@ export function AddAnimalDialog({
     try {
       setIsSubmitting(true)
       
-      // Ensure animal type is set to a valid value
+      // Ensure animal type is set to a valid value and properly formatted
       const validTypes = ["dog", "cat", "bird", "rabbit", "rodent", "other"];
       if (!data.type || !validTypes.includes(data.type.toLowerCase())) {
         console.warn("Invalid animal type provided, defaulting to 'dog'");
         data.type = "dog"; // Default to dog if no type is provided
+      } else {
+        // Make sure type is consistently lowercase to match database constraint
+        data.type = data.type.toLowerCase();
       }
       
       console.log("Submitting animal data:", data);
