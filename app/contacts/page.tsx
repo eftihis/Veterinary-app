@@ -63,36 +63,98 @@ export default function ContactsPage() {
       
       if (isBatchDelete && contactsToDelete && contactsToDelete.length > 0) {
         // Filter out contacts that have a profile_id
-        const deletableContacts = contactsToDelete.filter(contact => !contact.profile_id);
-        const nonDeletableCount = contactsToDelete.length - deletableContacts.length;
+        const profileLinkedContacts = contactsToDelete.filter(contact => contact.profile_id);
+        
+        // Check for contacts with invoices or other dependencies
+        const contactIds = contactsToDelete.map(contact => contact.id);
+        
+        // Check which contacts have related invoices (as veterinarians)
+        const { data: contactsWithInvoices, error: invoicesError } = await supabase
+          .from('invoices')
+          .select('veterinarian_id')
+          .in('veterinarian_id', contactIds);
+          
+        if (invoicesError) throw invoicesError;
+        
+        // Get unique contact IDs with invoices
+        const contactIdsWithInvoices = contactsWithInvoices
+          ? [...new Set(contactsWithInvoices.map(invoice => invoice.veterinarian_id))]
+          : [];
+          
+        // Contacts that can be deleted (no profile, no invoices)
+        const deletableContacts = contactsToDelete.filter(contact => 
+          !contact.profile_id && !contactIdsWithInvoices.includes(contact.id)
+        );
+        
+        // Count contacts that can't be deleted and why
+        const profileLinkedCount = profileLinkedContacts.length;
+        const invoiceLinkedCount = contactsToDelete.filter(contact => 
+          !contact.profile_id && contactIdsWithInvoices.includes(contact.id)
+        ).length;
         
         if (deletableContacts.length === 0) {
-          toast.error('None of the selected contacts can be deleted because they are linked to user profiles.');
+          let errorMessage = 'None of the selected contacts can be deleted because they ';
+          if (profileLinkedCount > 0 && invoiceLinkedCount > 0) {
+            errorMessage += 'are either linked to user profiles or have associated invoices.';
+          } else if (profileLinkedCount > 0) {
+            errorMessage += 'are linked to user profiles.';
+          } else {
+            errorMessage += 'have associated invoices.';
+          }
+          toast.error(errorMessage);
           setIsDeleting(false);
           setDeleteDialogOpen(false);
           return;
         }
         
         // Get IDs of contacts to delete
-        const contactIds = deletableContacts.map(contact => contact.id);
+        const deletableContactIds = deletableContacts.map(contact => contact.id);
         
         // Delete the contacts
         const { error } = await supabase
           .from("contacts")
           .delete()
-          .in("id", contactIds);
+          .in("id", deletableContactIds);
         
         if (error) throw error;
         
-        let successMessage = `${deletableContacts.length} contacts deleted successfully`;
-        if (nonDeletableCount > 0) {
-          successMessage += `. ${nonDeletableCount} contact(s) could not be deleted because they are linked to user profiles.`;
+        // Build detailed success message
+        let successMessage = `${deletableContacts.length} contact(s) deleted successfully`;
+        const failureDetails = [];
+        
+        if (profileLinkedCount > 0) {
+          failureDetails.push(`${profileLinkedCount} linked to user profiles`);
         }
+        
+        if (invoiceLinkedCount > 0) {
+          failureDetails.push(`${invoiceLinkedCount} with associated invoices`);
+        }
+        
+        if (failureDetails.length > 0) {
+          successMessage += `. ${contactsToDelete.length - deletableContacts.length} contact(s) could not be deleted (${failureDetails.join(', ')}).`;
+        }
+        
         toast.success(successMessage);
       } else if (contactToDelete) {
         // First check if this contact is linked to a profile
         if (contactToDelete.profile_id) {
-          toast.error("Cannot delete a contact that is linked to a user profile")
+          toast.error("Cannot delete a contact that is linked to a user profile");
+          setIsDeleting(false);
+          setDeleteDialogOpen(false);
+          return;
+        }
+        
+        // Check if contact has any invoices associated (as veterinarian)
+        const { data: invoices, error: invoicesError } = await supabase
+          .from('invoices')
+          .select('id')
+          .eq('veterinarian_id', contactToDelete.id)
+          .limit(1);
+          
+        if (invoicesError) throw invoicesError;
+        
+        if (invoices && invoices.length > 0) {
+          toast.error(`Cannot delete ${contactToDelete.first_name} ${contactToDelete.last_name} because they have associated invoices.`);
           setIsDeleting(false);
           setDeleteDialogOpen(false);
           return;
@@ -102,25 +164,31 @@ export default function ContactsPage() {
         const { error } = await supabase
           .from("contacts")
           .delete()
-          .eq("id", contactToDelete.id)
+          .eq("id", contactToDelete.id);
         
-        if (error) throw error
+        if (error) throw error;
         
-        toast.success("Contact deleted successfully")
+        toast.success(`${contactToDelete.first_name} ${contactToDelete.last_name} deleted successfully`);
       }
       
       // Refresh the contact list
-      setRefreshKey(prev => prev + 1)
+      setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error("Error deleting contact(s):", error)
-      toast.error(
-        error instanceof Error 
-          ? `Failed to delete contact(s): ${error.message}`
-          : "Failed to delete contact(s). Please try again."
-      )
+      console.error("Error deleting contact(s):", error);
+      
+      // Handle foreign key constraint violation specifically
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23503') {
+        toast.error('Some contacts could not be deleted because they have associated records.');
+      } else {
+        toast.error(
+          error instanceof Error 
+            ? `Failed to delete contact(s): ${error.message}`
+            : "Failed to delete contact(s). Please try again."
+        );
+      }
     } finally {
-      setIsDeleting(false)
-      setDeleteDialogOpen(false)
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
     }
   }
   

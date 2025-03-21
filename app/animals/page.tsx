@@ -77,24 +77,71 @@ export default function AnimalsPage() {
         // Get all animal IDs to delete
         const animalIds = animalsToDelete.map(animal => animal.id)
         
-        // Delete all related events first
+        // First check which animals have invoices and can't be deleted
+        const { data: animalsWithInvoices, error: checkError } = await supabase
+          .from('invoices')
+          .select('animal_id')
+          .in('animal_id', animalIds)
+          .order('animal_id')
+        
+        if (checkError) throw checkError
+        
+        // Get unique animal IDs with invoices
+        const animalIdsWithInvoices = animalsWithInvoices 
+          ? [...new Set(animalsWithInvoices.map(invoice => invoice.animal_id))]
+          : []
+        
+        // Filter animals that can be deleted (no invoices)
+        const deletableAnimalIds = animalIds.filter(id => !animalIdsWithInvoices.includes(id))
+        const nonDeletableAnimalIds = animalIds.filter(id => animalIdsWithInvoices.includes(id))
+        
+        if (deletableAnimalIds.length === 0) {
+          toast.error('None of the selected animals can be deleted because they have associated invoices.')
+          setIsDeleting(false)
+          setDeleteDialogOpen(false)
+          return
+        }
+        
+        // Delete events for deletable animals first
         const { error: deleteEventsError } = await supabase
           .from('animal_events')
           .delete()
-          .in('animal_id', animalIds)
+          .in('animal_id', deletableAnimalIds)
         
         if (deleteEventsError) throw deleteEventsError
         
-        // Delete all animals
+        // Delete only the animals that can be deleted
         const { error } = await supabase
           .from('animals')
           .delete()
-          .in('id', animalIds)
+          .in('id', deletableAnimalIds)
         
         if (error) throw error
         
-        toast.success(`${animalsToDelete.length} animals deleted successfully`)
+        // Prepare the success message
+        let successMessage = `${deletableAnimalIds.length} animal(s) deleted successfully`
+        if (nonDeletableAnimalIds.length > 0) {
+          successMessage += `. ${nonDeletableAnimalIds.length} animal(s) could not be deleted because they have associated invoices.`
+        }
+        toast.success(successMessage)
       } else if (animalToDelete) {
+        // For single animal delete, first check if it has any invoices
+        const { data: invoices, error: invoicesError } = await supabase
+          .from('invoices')
+          .select('id')
+          .eq('animal_id', animalToDelete.id)
+          .limit(1)
+        
+        if (invoicesError) throw invoicesError
+        
+        // If animal has invoices, it can't be deleted
+        if (invoices && invoices.length > 0) {
+          toast.error(`Cannot delete ${animalToDelete.name} because it has associated invoices.`)
+          setIsDeleting(false)
+          setDeleteDialogOpen(false)
+          return
+        }
+        
         // Check if animal has any events
         const { data: events, error: eventsError } = await supabase
           .from('animal_events')
@@ -122,18 +169,24 @@ export default function AnimalsPage() {
         
         if (error) throw error
         
-        toast.success("Animal deleted successfully")
+        toast.success(`${animalToDelete.name} deleted successfully`)
       }
       
       // Refresh the animal list
       handleDataChanged()
     } catch (error) {
       console.error("Error deleting animal(s):", error)
-      toast.error(
-        error instanceof Error 
-          ? `Failed to delete animal(s): ${error.message}`
-          : "Failed to delete animal(s). Please try again."
-      )
+      
+      // Handle foreign key constraint violation specifically
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23503') {
+        toast.error('Some animals could not be deleted because they have associated invoices.')
+      } else {
+        toast.error(
+          error instanceof Error 
+            ? `Failed to delete animal(s): ${error.message}`
+            : "Failed to delete animal(s). Please try again."
+        )
+      }
     } finally {
       setIsDeleting(false)
       setDeleteDialogOpen(false)
