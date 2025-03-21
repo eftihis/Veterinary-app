@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+"use client";
 
+import { useState, useEffect, useCallback, useRef } from 'react';
+
+// Define the XeroItem type locally
 type XeroItem = {
   value: string;
   label: string;
@@ -15,12 +18,20 @@ const CLIENT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 export function useXeroItems() {
   const [items, setItems] = useState<XeroItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [needsReauth, setNeedsReauth] = useState(false);
   const [allItems, setAllItems] = useState<XeroItem[]>([]);
+  const isFetchingRef = useRef(false);
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
+    // Prevent multiple simultaneous fetches and don't fetch if we already know auth is required
+    if (isFetchingRef.current || needsReauth) {
+      return;
+    }
+
+    isFetchingRef.current = true;
+
     try {
       // Check if we're in local development mode with Xero disabled
       if (process.env.NEXT_PUBLIC_DISABLE_XERO === 'true') {
@@ -28,6 +39,7 @@ export function useXeroItems() {
         setItems([]);
         setAllItems([]);
         setLoading(false);
+        isFetchingRef.current = false;
         return;
       }
 
@@ -37,12 +49,13 @@ export function useXeroItems() {
         console.log("Using client-side cached Xero items");
         setAllItems(clientCache);
         setItems(clientCache);
+        setLoading(false);
+        isFetchingRef.current = false;
         return;
       }
       
       setLoading(true);
       setError(null);
-      setNeedsReauth(false);
       
       // Add a timeout to prevent hanging forever
       const timeoutPromise = new Promise<Response>((_, reject) => {
@@ -71,6 +84,7 @@ export function useXeroItems() {
       const fetchedItems = data.items || [];
       setAllItems(fetchedItems);
       setItems(fetchedItems);
+      setLoading(false);
     } catch (err) {
       console.error('Error fetching Xero items:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch items');
@@ -79,24 +93,26 @@ export function useXeroItems() {
       setLoading(false);
       
       // Provide empty items to prevent UI issues
-      if (items.length === 0) {
-        setItems([]);
-        setAllItems([]);
-      }
+      setItems([]);
+      setAllItems([]);
     } finally {
-      setLoading(false);
+      isFetchingRef.current = false;
     }
-  };
+  }, [needsReauth]); // Only depend on needsReauth
 
-  const handleReauth = () => {
+  const handleReauth = useCallback(() => {
     window.location.href = '/api/xero/auth';
-  };
+  }, []);
 
   useEffect(() => {
-    // Set a loading timeout as a safety net
+    // Don't try to fetch if we already know authentication has failed
+    if (needsReauth) {
+      return;
+    }
+
+    // Set a timeout to handle slow loading
     const loadingTimeout = setTimeout(() => {
       if (loading) {
-        console.log("Loading timeout triggered for Xero items");
         setLoading(false);
         setError("Loading timed out");
         setItems([]);
@@ -107,7 +123,7 @@ export function useXeroItems() {
     fetchItems();
     
     return () => clearTimeout(loadingTimeout);
-  }, []);
+  }, [fetchItems]); // Only depend on fetchItems, not loading
 
   return { 
     items, 

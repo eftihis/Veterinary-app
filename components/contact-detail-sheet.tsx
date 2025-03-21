@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { format, parseISO } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import { Contact } from "@/components/contacts-data-table"
@@ -46,19 +46,7 @@ export function ContactDetailSheet({
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("overview")
   
-  useEffect(() => {
-    if (open && contactId) {
-      fetchContactDetails()
-    } else {
-      // Reset state when closed
-      setContact(null)
-      setLoading(true)
-      setError(null)
-      setActiveTab("overview")
-    }
-  }, [open, contactId])
-  
-  async function fetchContactDetails() {
+  const fetchContactDetails = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -78,7 +66,19 @@ export function ContactDetailSheet({
     } finally {
       setLoading(false)
     }
-  }
+  }, [contactId])
+  
+  useEffect(() => {
+    if (open && contactId) {
+      fetchContactDetails()
+    } else {
+      // Reset state when closed
+      setContact(null)
+      setLoading(true)
+      setError(null)
+      setActiveTab("overview")
+    }
+  }, [open, contactId, fetchContactDetails])
   
   function handleEdit() {
     if (contact && onEdit) {
