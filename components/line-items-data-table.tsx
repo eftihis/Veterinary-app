@@ -714,7 +714,6 @@ export function LineItemsDataTable({
             statusOptions={statusOptions}
             selectedStatuses={selectedStatuses}
             setSelectedStatuses={setSelectedStatuses}
-            getStatusBadge={getStatusBadge}
           />
           <ItemFilter
             itemOptions={itemOptions}

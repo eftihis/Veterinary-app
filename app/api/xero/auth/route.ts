@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 
+// Prevent Next.js from attempting to statically generate this route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(_req: Request) {
   try {
     // Check if Xero is disabled in this environment
