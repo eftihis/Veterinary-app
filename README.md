@@ -20,6 +20,24 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Using External Access with Localtunnel
+
+For features that require external access (such as Xero integration), you need to use localtunnel to expose your local development server:
+
+1. Run the application with the localtunnel configuration:
+   ```bash
+   npm run dev:tunnel
+   ```
+
+2. In a separate terminal, start the localtunnel service:
+   ```bash
+   npm run tunnel
+   ```
+
+3. Access your application at `https://breezy-beers-turn.loca.lt`
+
+This will enable features that require HTTPS and external accessibility.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
@@ -34,3 +52,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Development with External Access
+
+To develop with external access (for OAuth callbacks, webhooks, etc.):
+
+1. Run the application with tunneling:
+   ```bash
+   npm run dev:tunnel
+   ```
+
+2. In a separate terminal, start the tunnel:
+   ```bash
+   npm run tunnel
+   ```
+
+3. Use the provided tunnel URL for external services.

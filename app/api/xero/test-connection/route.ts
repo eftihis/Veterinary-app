@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     if (process.env.NEXT_PUBLIC_DISABLE_XERO === 'true') {
       console.error("Xero integration is disabled in this environment");
       return NextResponse.json(
-        { error: "Xero integration is disabled in this environment. Please use HTTPS/ngrok URL." },
+        { error: "Xero integration is disabled in this environment. Please use HTTPS/localtunnel URL." },
         { status: 400 }
       );
     }

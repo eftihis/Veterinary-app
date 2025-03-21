@@ -39,7 +39,7 @@ export default function XeroTest() {
     
     // Prevent connection attempt if Xero is disabled
     if (process.env.NEXT_PUBLIC_DISABLE_XERO === 'true') {
-      setError('Xero integration is disabled in this environment. Please use the ngrok URL instead of localhost.');
+      setError('Xero integration is disabled in this environment. Please use the localtunnel URL instead of localhost.');
       return;
     }
     
@@ -53,7 +53,7 @@ export default function XeroTest() {
       
       // Prevent test if Xero is disabled
       if (process.env.NEXT_PUBLIC_DISABLE_XERO === 'true') {
-        setError('Xero integration is disabled in this environment. Please use the ngrok URL instead of localhost.');
+        setError('Xero integration is disabled in this environment. Please use the localtunnel URL instead of localhost.');
         return;
       }
       
@@ -108,8 +108,9 @@ export default function XeroTest() {
             <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff3cd', color: '#856404', borderRadius: '4px' }}>
               <p><strong>Note:</strong> Xero integration is disabled in this environment. To enable Xero integration:</p>
               <ol style={{ marginLeft: '20px' }}>
-                <li>Use your ngrok URL instead of localhost</li>
-                <li>Run the app with <code>npm run dev:ngrok</code> instead of <code>npm run dev</code></li>
+                <li>Use your localtunnel URL instead of localhost</li>
+                <li>Run the app with <code>npm run dev:tunnel</code> instead of <code>npm run dev</code></li>
+                <li>In a separate terminal, run <code>npm run tunnel</code> to start the localtunnel</li>
               </ol>
             </div>
           )}

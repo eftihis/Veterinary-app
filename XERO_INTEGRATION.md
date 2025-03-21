@@ -44,3 +44,22 @@ This approach ensures that:
 When running reports:
 - Line items with negative prices are identified as discounts
 - The `discount_total` field provides a quick way to find invoices with discounts 
+
+## Local Development with Xero Integration
+
+To test the Xero integration during local development:
+
+1. Use localtunnel to make your local server accessible:
+   ```bash
+   # In one terminal window:
+   npm run dev:tunnel
+   
+   # In another terminal window:
+   npm run tunnel
+   ```
+
+2. Your app will be accessible at `https://breezy-beers-turn.loca.lt`
+
+3. Xero integration requires HTTPS, so ensure you're using the localtunnel URL, not localhost
+
+This ensures that the Xero OAuth flow can redirect back to your local development environment. 

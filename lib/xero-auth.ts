@@ -22,7 +22,7 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
     console.error("Xero integration is disabled in this environment");
     return { 
       success: false, 
-      error: 'Xero integration is disabled in this environment. Please use HTTPS/ngrok URL.' 
+      error: 'Xero integration is disabled in this environment. Please use HTTPS/localtunnel URL.' 
     };
   }
 
@@ -142,7 +142,7 @@ export async function ensureValidToken(): Promise<TokenRefreshResult> {
 export async function callXeroApi(endpoint: string, options: RequestInit = {}) {
   // Check if Xero is disabled in this environment
   if (process.env.NEXT_PUBLIC_DISABLE_XERO === 'true') {
-    throw new Error('Xero integration is disabled in this environment. Please use HTTPS/ngrok URL.');
+    throw new Error('Xero integration is disabled in this environment. Please use HTTPS/localtunnel URL.');
   }
 
   // First, ensure we have a valid token
