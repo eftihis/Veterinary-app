@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 export default function XeroTest() {
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<Record<string, unknown>>(null);
   const [error, setError] = useState<string | null>(null);
   const [envInfo, setEnvInfo] = useState<{
     baseUrl: string;
@@ -65,8 +65,8 @@ export default function XeroTest() {
       } else {
         setError(data.error || data.details || 'Connection test failed');
       }
-    } catch (err: any) {
-      setError(err?.message || 'Failed to test connection');
+    } catch (err: Error | unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to test connection');
     }
   };
 
@@ -74,7 +74,7 @@ export default function XeroTest() {
     try {
       await fetch('/api/xero/expire-token');
       alert('Token expired for testing');
-    } catch (err) {
+    } catch (_err) { // eslint-disable-line @typescript-eslint/no-unused-vars
       alert('Failed to expire token');
     }
   };
