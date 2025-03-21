@@ -125,7 +125,7 @@ export function AddAnimalDialog({
       setIsSubmitting(true)
       
       // Ensure animal type is set to a valid value and properly formatted
-      const validTypes = ["dog", "cat", "bird", "rabbit", "rodent", "other"];
+      const validTypes = ["dog", "cat", "other"];
       if (!data.type || !validTypes.includes(data.type.toLowerCase())) {
         console.warn("Invalid animal type provided, defaulting to 'dog'");
         data.type = "dog"; // Default to dog if no type is provided
@@ -248,9 +248,6 @@ export function AddAnimalDialog({
                       <SelectContent>
                         <SelectItem value="dog">Dog</SelectItem>
                         <SelectItem value="cat">Cat</SelectItem>
-                        <SelectItem value="bird">Bird</SelectItem>
-                        <SelectItem value="rabbit">Rabbit</SelectItem>
-                        <SelectItem value="rodent">Rodent</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>

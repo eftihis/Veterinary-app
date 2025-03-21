@@ -81,11 +81,14 @@ export function useAnimals() {
       setError(null);
       
       // Ensure the animal has a valid type
-      const validTypes = ["dog", "cat", "bird", "rabbit", "rodent", "other"];
+      const validTypes = ["dog", "cat", "other"];
       if (!animalData.type || !validTypes.includes(animalData.type.toLowerCase())) {
         console.warn("Invalid animal type provided, defaulting to 'dog'");
         animalData.type = "dog"; // Default to 'dog' if invalid or no type is provided
       }
+      
+      // Make sure type is consistently lowercase to match database constraint
+      animalData.type = animalData.type.toLowerCase();
       
       console.log("Adding animal with data:", animalData);
       

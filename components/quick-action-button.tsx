@@ -108,10 +108,14 @@ export function QuickActionButton() {
       console.log("Adding animal from quick action:", animalData);
       
       // Ensure the animal has a valid type
-      if (!animalData.type) {
-        console.warn("No animal type provided, defaulting to 'other'");
-        animalData.type = "other"; // Default to 'other' if no type is provided
+      const validTypes = ["dog", "cat", "other"];
+      if (!animalData.type || !validTypes.includes(animalData.type.toLowerCase())) {
+        console.warn("Invalid animal type provided, defaulting to 'dog'");
+        animalData.type = "dog"; // Default to 'dog' if no type is provided
       }
+      
+      // Make sure type is consistently lowercase to match database constraint
+      animalData.type = animalData.type.toLowerCase();
       
       // Insert the animal into the database
       const { data, error } = await supabase
