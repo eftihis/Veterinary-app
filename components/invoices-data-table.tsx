@@ -1117,7 +1117,6 @@ export function InvoicesDataTable({
             statusOptions={statusOptions}
             selectedStatuses={selectedStatuses}
             setSelectedStatuses={setSelectedStatuses}
-            getStatusBadge={getStatusBadge}
           />
         </div>
         
