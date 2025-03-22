@@ -36,6 +36,7 @@ export default function AnimalsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [addEventDialogOpen, setAddEventDialogOpen] = useState(false)
   
   // Refresh the data after changes
   const handleDataChanged = () => {
@@ -201,11 +202,7 @@ export default function AnimalsPage() {
   // Handle add event for an existing animal
   const handleAddAnimalEvent = (animal: Animal) => {
     setSelectedAnimal(animal)
-    // Find and click the hidden button instead of setting state
-    const addEventButton = document.getElementById("add-event-trigger") as HTMLButtonElement
-    if (addEventButton) {
-      addEventButton.click()
-    }
+    setAddEventDialogOpen(true)
   }
   
   return (
@@ -299,15 +296,9 @@ export default function AnimalsPage() {
           <AddEventDialog
             animalId={selectedAnimal.id}
             onSuccess={handleDataChanged}
-          >
-            <Button
-              id="add-event-trigger"
-              className="hidden"
-              variant="outline"
-            >
-              Add Event
-            </Button>
-          </AddEventDialog>
+            open={addEventDialogOpen}
+            onOpenChange={setAddEventDialogOpen}
+          />
         )}
       </div>
     </DashboardLayout>
