@@ -333,6 +333,9 @@ export function AddEventDialog({
       // Prepare details object based on event type
       let details: Record<string, unknown> = {}
       
+      // Contact ID to use in the dedicated column
+      let contactIdForColumn: string | null = null;
+      
       // Add type-specific fields
       switch (data.event_type) {
         case "weight":
@@ -391,7 +394,12 @@ export function AddEventDialog({
               
               // If changing TO adopted/foster and we have a contact_id, set the owner
               if ((data.details.new_status === "adopted" || data.details.new_status === "foster") && data.contact_id) {
+                // This will be stored in the proper contact_id column now
+                contactIdForColumn = data.contact_id;
+                
+                // Also keep it in details for backward compatibility
                 details.contact_id = data.contact_id;
+                
                 updateData.owner_id = data.contact_id;
               } 
               // If changing FROM adopted/foster TO something else, clear the owner
@@ -436,8 +444,11 @@ export function AddEventDialog({
           // Mandatory fields first
           details.reason = data.details.reason
           
-          // Store veterinarian information if available (this is semi-mandatory)
+          // Store veterinarian information in the proper column
           if (data.contact_id) {
+            contactIdForColumn = data.contact_id;
+            
+            // Keep it in details for backward compatibility
             details.veterinarian_id = data.contact_id
           }
           
@@ -457,14 +468,15 @@ export function AddEventDialog({
         details.notes = data.notes
       }
       
-      // Insert the event with created_by field
+      // Insert the event with created_by field and contact_id in proper column
       try {
         console.log("Attempting to insert event:", {
           animal_id: actualAnimalId,
           event_type: data.event_type,
           event_date: data.event_date.toISOString(),
           details,
-          created_by: user?.id
+          created_by: user?.id,
+          contact_id: contactIdForColumn
         });
         
         // First check if the table exists and we have access to it
@@ -495,7 +507,8 @@ export function AddEventDialog({
           event_type: data.event_type,
           event_date: data.event_date.toISOString(),
           details,
-          created_by: user?.id
+          created_by: user?.id,
+          contact_id: contactIdForColumn
         }).select();
         
         if (error) {

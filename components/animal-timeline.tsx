@@ -51,6 +51,11 @@ type TimelineEvent = {
   updated_at: string
   is_deleted: boolean
   is_invoice_item: boolean
+  contact_id: string | null
+  contact_first_name: string | null
+  contact_last_name: string | null
+  contact_email: string | null
+  contact_roles: string[] | null
 }
 
 interface AnimalTimelineProps {
@@ -132,6 +137,27 @@ export function AnimalTimeline({
     };
   }, [fetchEvents, animalId])
   
+  // Helper function to get contact name
+  const getContactName = (event: TimelineEvent): string => {
+    // First check if we have contact information from the view
+    if (event.contact_first_name && event.contact_last_name) {
+      return `${event.contact_first_name} ${event.contact_last_name}`;
+    }
+    
+    // Fallback to contact_id if name isn't available
+    if (event.contact_id) {
+      return event.contact_id;
+    }
+    
+    // If we still don't have contact info, check the details field
+    const details = event.details;
+    if (hasKey(details, 'contact_id') && details.contact_id) {
+      return String(details.contact_id);
+    }
+    
+    return 'Unknown';
+  };
+  
   // Get icon based on event type
   function getEventIcon(eventType: string | null | undefined) {
     const iconProps = { className: "h-4 w-4 mr-2" }
@@ -187,9 +213,9 @@ export function AnimalTimeline({
               Status changed from {structuredDetails.previous_status || 'unknown'} to {structuredDetails.new_status || ''}
             </span>
           </div>
-          {structuredDetails.contact_id && (
+          {(event.contact_id || structuredDetails.contact_id) && (
             <div className="text-sm mt-1">
-              <span className="font-medium">Contact ID:</span> {structuredDetails.contact_id}
+              <span className="font-medium">Contact:</span> {getContactName(event)}
             </div>
           )}
           {structuredDetails.reason && (
@@ -301,9 +327,9 @@ export function AnimalTimeline({
               <span className="font-medium">Reason:</span> {structuredDetails.reason}
             </div>
           )}
-          {structuredDetails.veterinarian_id && (
+          {(event.contact_id || structuredDetails.veterinarian_id) && (
             <div className="text-sm mt-1">
-              <span className="font-medium">Veterinarian ID:</span> {structuredDetails.veterinarian_id}
+              <span className="font-medium">Veterinarian:</span> {getContactName(event)}
             </div>
           )}
           {structuredDetails.findings && (
@@ -346,12 +372,28 @@ export function AnimalTimeline({
         <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-2">
           {Object.entries(structuredDetails)
             .filter(([key]) => key !== 'notes') // We already showed notes
-            .map(([key, value]) => (
-              <div key={key} className="text-xs">
-                <span className="font-medium capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
-                <span className="text-muted-foreground">{value}</span>
-              </div>
-            ))}
+            .map(([key, value]) => {
+              // For contact_id fields, display the contact name instead
+              if (key.includes('contact_id') || key.includes('veterinarian_id') || key.includes('owner_id')) {
+                // Skip this field if we're already showing the contact name above
+                if (event.contact_first_name && event.contact_last_name) {
+                  return null;
+                }
+                return (
+                  <div key={key} className="text-xs">
+                    <span className="font-medium capitalize">{key.replace(/_/g, ' ').replace('_id', '')}:</span>{' '}
+                    <span className="text-muted-foreground">{value}</span>
+                  </div>
+                );
+              }
+              
+              return (
+                <div key={key} className="text-xs">
+                  <span className="font-medium capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
+                  <span className="text-muted-foreground">{value}</span>
+                </div>
+              );
+            }).filter(Boolean)}
         </div>
       </div>
     )
