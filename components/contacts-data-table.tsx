@@ -64,6 +64,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { RoleFilter } from "@/components/role-filter"
 
 // Define Contact type based on Supabase structure
 export type Contact = {
@@ -106,6 +107,19 @@ export function ContactsDataTable({
   })
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
+  
+  // Role filter state
+  const [selectedRoles, setSelectedRoles] = React.useState<string[]>([])
+  const [filteredData, setFilteredData] = React.useState<Contact[]>(data)
+  
+  // Available role options
+  const roleOptions = [
+    { value: "client", label: "Client" },
+    { value: "patient", label: "Patient" },
+    { value: "staff", label: "Staff" },
+    { value: "veterinarian", label: "Veterinarian" },
+    { value: "volunteer", label: "Volunteer" }
+  ]
 
   // Adjust column visibility based on screen size
   React.useEffect(() => {
@@ -176,6 +190,40 @@ export function ContactsDataTable({
     // Remove event listener on cleanup
     return () => window.removeEventListener('resize', updateColumnVisibility);
   }, []);
+
+  // Update filtered data based on selected roles
+  React.useEffect(() => {
+    // Apply role filters if any are selected
+    if (selectedRoles.length > 0) {
+      // Filter contacts that have at least one of the selected roles
+      const filtered = data.filter(contact => {
+        if (!contact.roles || contact.roles.length === 0) return false;
+        
+        // Check if any of the contact's roles match the selected roles (case insensitive)
+        return contact.roles.some(role => 
+          selectedRoles.includes(role.toLowerCase())
+        );
+      });
+      setFilteredData(filtered);
+    } else {
+      setFilteredData(data);
+    }
+  }, [data, selectedRoles]);
+
+  // Handle role selection toggle
+  const toggleRole = (role: string) => {
+    setSelectedRoles(prev => 
+      prev.includes(role) 
+        ? prev.filter(r => r !== role) 
+        : [...prev, role]
+    )
+  }
+  
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSelectedRoles([]);
+    setGlobalFilter("");
+  }
 
   const columns: ColumnDef<Contact>[] = [
     {
@@ -298,8 +346,12 @@ export function ContactsDataTable({
       },
       filterFn: (row, id, filterValue) => {
         const roles = row.getValue(id) as string[] | null;
-        if (!roles) return false;
-        return roles.some(role => filterValue.includes(role));
+        if (!roles || roles.length === 0) return false;
+        
+        // Check if any of the contact's roles match any of the selected roles
+        return roles.some(role => 
+          filterValue.includes(role.toLowerCase())
+        );
       },
     },
     {
@@ -399,7 +451,7 @@ export function ContactsDataTable({
   };
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -430,24 +482,34 @@ export function ContactsDataTable({
 
   return (
     <div className="space-y-4 overflow-hidden p-1">
-      <div className="flex items-center justify-between pb-2 gap-4">
-        <div className="flex w-full max-w-sm items-center space-x-2">
-          <Input
-            placeholder="Search contacts..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-9"
+      <div className="flex flex-col sm:flex-row items-center justify-between pb-2 gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 w-full">
+          <div className="w-full md:w-auto relative">
+            <Input
+              placeholder="Search contacts..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="h-9"
+            />
+            {globalFilter && (
+              <Button 
+                variant="ghost" 
+                onClick={() => setGlobalFilter("")}
+                className="h-9 px-2 absolute right-0 top-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          {/* Role Filter */}
+          <RoleFilter
+            roleOptions={roleOptions}
+            selectedRoles={selectedRoles}
+            setSelectedRoles={setSelectedRoles}
           />
-          {globalFilter && (
-            <Button 
-              variant="ghost" 
-              onClick={() => setGlobalFilter("")}
-              className="h-9 px-2"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
         </div>
+        
         <div className="flex items-center gap-2 self-end">
           {/* Batch Actions - Show only when rows are selected */}
           {Object.keys(rowSelection).length > 0 && (
@@ -512,6 +574,38 @@ export function ContactsDataTable({
           </DropdownMenu>
         </div>
       </div>
+      
+      {/* Active Filters */}
+      {selectedRoles.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-2 pb-2">
+          <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>
+          
+          {selectedRoles.map(role => (
+            <Badge key={role} variant="secondary" className="flex items-center gap-1">
+              <span className="capitalize">{role}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => toggleRole(role)}
+              >
+                <X className="h-3 w-3" />
+                <span className="sr-only">Remove {role} filter</span>
+              </Button>
+            </Badge>
+          ))}
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={clearAllFilters}
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
+      
       <div className="rounded-md border w-full min-w-full overflow-hidden">
         <div className="overflow-x-auto">
           <Table className="w-full">
@@ -568,6 +662,9 @@ export function ContactsDataTable({
         <div className="text-sm text-muted-foreground">
           Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
           {table.getFilteredRowModel().rows.length} results
+          {filteredData.length !== data.length && (
+            <span> (filtered from {data.length} total contacts)</span>
+          )}
         </div>
         
         <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
