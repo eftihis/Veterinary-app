@@ -471,26 +471,8 @@ export function AddEventDialog({
           if (data.details.lot_number) details.lot_number = data.details.lot_number
           if (data.details.expiry_date) details.expiry_date = data.details.expiry_date
           
-          // Update the animal's last vaccination date
-          try {
-            console.log(`Updating animal's last vaccination date to ${data.event_date.toISOString()}`);
-            
-            const { error: updateError } = await supabase
-              .from("animals")
-              .update({ 
-                last_vaccination_date: data.event_date.toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq("id", actualAnimalId);
-              
-            if (updateError) {
-              console.error("Error updating animal's vaccination date:", updateError);
-              toast.error("Event added but failed to update animal's vaccination record");
-            }
-          } catch (updateErr) {
-            console.error("Exception updating animal vaccination date:", updateErr);
-            toast.error("Error occurred while updating animal's vaccination record");
-          }
+          // Store the vaccination date in the event details instead of trying to update a non-existent column
+          details.vaccination_date = data.event_date.toISOString()
           
           break
           
@@ -502,26 +484,8 @@ export function AddEventDialog({
           if (data.details.frequency) details.frequency = data.details.frequency
           if (data.details.duration) details.duration = data.details.duration
           
-          // Update the animal's last medication date
-          try {
-            console.log(`Updating animal's last medication date to ${data.event_date.toISOString()}`);
-            
-            const { error: updateError } = await supabase
-              .from("animals")
-              .update({ 
-                last_medication_date: data.event_date.toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq("id", actualAnimalId);
-              
-            if (updateError) {
-              console.error("Error updating animal's medication date:", updateError);
-              toast.error("Event added but failed to update animal's medication record");
-            }
-          } catch (updateErr) {
-            console.error("Exception updating animal medication date:", updateErr);
-            toast.error("Error occurred while updating animal's medication record");
-          }
+          // Store the medication date in the event details instead of trying to update a non-existent column
+          details.medication_date = data.event_date.toISOString()
           
           break
           
@@ -625,26 +589,8 @@ export function AddEventDialog({
             details.findings = data.details.findings
           }
           
-          // Update the animal's last vet visit date
-          try {
-            console.log(`Updating animal's last vet visit date to ${data.event_date.toISOString()}`);
-            
-            const { error: updateError } = await supabase
-              .from("animals")
-              .update({ 
-                last_vet_visit_date: data.event_date.toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq("id", actualAnimalId);
-              
-            if (updateError) {
-              console.error("Error updating animal's vet visit date:", updateError);
-              toast.error("Event added but failed to update animal's vet visit record");
-            }
-          } catch (updateErr) {
-            console.error("Exception updating animal vet visit date:", updateErr);
-            toast.error("Error occurred while updating animal's vet visit record");
-          }
+          // Store the visit date in the event details instead of trying to update a non-existent column
+          details.visit_date = data.event_date.toISOString()
           
           break
           
