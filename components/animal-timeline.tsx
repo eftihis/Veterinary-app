@@ -27,6 +27,7 @@ import {
   Plus
 } from "lucide-react"
 import { AddEventDialog } from "@/components/add-event-dialog"
+import { hasKey, getStructuredDetails } from "@/components/timeline-utils"
 
 // Type for timeline events
 type TimelineEvent = {
@@ -159,17 +160,18 @@ export function AnimalTimeline({
   // Render appropriate content based on event type
   function renderEventContent(event: TimelineEvent) {
     const { event_type, details, is_invoice_item } = event
+    const structuredDetails = getStructuredDetails(details);
     
     // For invoice items (medical procedures)
     if (is_invoice_item) {
       return (
         <div>
-          {details.description && (
-            <p className="text-sm text-muted-foreground mt-1">{details.description}</p>
+          {structuredDetails.description && (
+            <p className="text-sm text-muted-foreground mt-1">{structuredDetails.description}</p>
           )}
-          {details.document_number && (
+          {structuredDetails.document_number && (
             <div className="text-xs text-muted-foreground mt-2">
-              Invoice: {details.document_number}
+              Invoice: {structuredDetails.document_number}
             </div>
           )}
         </div>
@@ -177,38 +179,154 @@ export function AnimalTimeline({
     }
     
     // For status changes
-    if (event_type === 'STATUS_CHANGE') {
+    if (event_type === 'STATUS_CHANGE' || event_type === 'status_change') {
       return (
         <div>
           <div className="flex items-center">
             <span className="font-medium">
-              Status changed from {details.previous_status || 'unknown'} to {details.new_status}
+              Status changed from {structuredDetails.previous_status || 'unknown'} to {structuredDetails.new_status || ''}
             </span>
           </div>
-          {details.notes && (
-            <p className="text-sm text-muted-foreground mt-1">{details.notes}</p>
+          {structuredDetails.contact_id && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Contact ID:</span> {structuredDetails.contact_id}
+            </div>
+          )}
+          {structuredDetails.reason && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Reason:</span> {structuredDetails.reason}
+            </div>
+          )}
+          {structuredDetails.notes && (
+            <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
           )}
         </div>
       )
     }
     
     // For weight measurements
-    if (event_type === 'WEIGHT_MEASUREMENT') {
+    if (event_type === 'WEIGHT_MEASUREMENT' || event_type === 'weight') {
+      const weightVal = hasKey(details, 'weight') ? Number(details.weight) : 0;
+      const prevWeightVal = hasKey(details, 'previous_weight') ? Number(details.previous_weight) : 0;
+      const unit = structuredDetails.unit || 'kg';
+      
       return (
         <div>
           <div className="flex items-center">
             <span className="font-medium">
-              Weight: {details.weight} kg
-              {details.previous_weight && details.weight && (
+              Weight: {structuredDetails.weight} {unit}
+              {hasKey(details, 'previous_weight') && hasKey(details, 'weight') && (
                 <span className="text-muted-foreground ml-2">
-                  {details.weight > details.previous_weight ? '▲' : '▼'} 
-                  {Math.abs((details.weight ?? 0) - (details.previous_weight ?? 0)).toFixed(2)} kg
+                  {weightVal > prevWeightVal ? '▲' : '▼'} 
+                  {Math.abs(weightVal - prevWeightVal).toFixed(2)} {unit}
                 </span>
               )}
             </span>
           </div>
-          {details.notes && (
-            <p className="text-sm text-muted-foreground mt-1">{details.notes}</p>
+          {structuredDetails.notes && (
+            <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
+          )}
+        </div>
+      )
+    }
+    
+    // For vaccinations
+    if (event_type === 'vaccination') {
+      return (
+        <div>
+          {structuredDetails.name && (
+            <div className="text-sm">
+              <span className="font-medium">Vaccine:</span> {structuredDetails.name}
+            </div>
+          )}
+          {structuredDetails.brand && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Brand:</span> {structuredDetails.brand}
+            </div>
+          )}
+          {structuredDetails.lot_number && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Lot Number:</span> {structuredDetails.lot_number}
+            </div>
+          )}
+          {structuredDetails.expiry_date && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Expiry Date:</span> {structuredDetails.expiry_date}
+            </div>
+          )}
+          {structuredDetails.notes && (
+            <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
+          )}
+        </div>
+      )
+    }
+    
+    // For medications
+    if (event_type === 'medication') {
+      return (
+        <div>
+          {structuredDetails.name && (
+            <div className="text-sm">
+              <span className="font-medium">Medication:</span> {structuredDetails.name}
+            </div>
+          )}
+          {structuredDetails.dosage && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Dosage:</span> {structuredDetails.dosage}
+            </div>
+          )}
+          {structuredDetails.frequency && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Frequency:</span> {structuredDetails.frequency}
+            </div>
+          )}
+          {structuredDetails.duration && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Duration:</span> {structuredDetails.duration}
+            </div>
+          )}
+          {structuredDetails.notes && (
+            <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
+          )}
+        </div>
+      )
+    }
+    
+    // For veterinary visits
+    if (event_type === 'visit') {
+      return (
+        <div>
+          {structuredDetails.reason && (
+            <div className="text-sm">
+              <span className="font-medium">Reason:</span> {structuredDetails.reason}
+            </div>
+          )}
+          {structuredDetails.veterinarian_id && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Veterinarian ID:</span> {structuredDetails.veterinarian_id}
+            </div>
+          )}
+          {structuredDetails.findings && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Findings:</span> {structuredDetails.findings}
+            </div>
+          )}
+          {structuredDetails.notes && (
+            <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
+          )}
+        </div>
+      )
+    }
+    
+    // For notes
+    if (event_type === 'note') {
+      return (
+        <div>
+          {structuredDetails.content && (
+            <p className="text-sm">{structuredDetails.content}</p>
+          )}
+          {structuredDetails.notes && structuredDetails.content !== structuredDetails.notes && (
+            <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
           )}
         </div>
       )
@@ -220,17 +338,18 @@ export function AnimalTimeline({
         <div className="flex items-center">
           <span className="font-medium">{event_type}</span>
         </div>
-        {details.notes && (
-          <p className="text-sm text-muted-foreground mt-1">{details.notes}</p>
+        {structuredDetails.notes && (
+          <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
         )}
-        {/* Render any other details as key-value pairs, excluding notes which we already showed */}
+        
+        {/* Display details in a consistent order */}
         <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-2">
-          {Object.entries(details)
-            .filter(([key]) => key !== 'notes')
+          {Object.entries(structuredDetails)
+            .filter(([key]) => key !== 'notes') // We already showed notes
             .map(([key, value]) => (
               <div key={key} className="text-xs">
                 <span className="font-medium capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
-                <span className="text-muted-foreground">{String(value)}</span>
+                <span className="text-muted-foreground">{value}</span>
               </div>
             ))}
         </div>

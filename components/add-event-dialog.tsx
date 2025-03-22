@@ -333,35 +333,35 @@ export function AddEventDialog({
       // Prepare details object based on event type
       let details: Record<string, unknown> = {}
       
-      // Add common field
-      if (data.notes) {
-        details.notes = data.notes
-      }
-      
       // Add type-specific fields
       switch (data.event_type) {
         case "weight":
+          // Mandatory field first
           details.weight = parseFloat(data.details.weight)
           details.unit = "kg"
           break
           
         case "vaccination":
+          // Mandatory fields first
           details.name = data.details.name
+          // Optional fields after
           details.brand = data.details.brand
           details.lot_number = data.details.lot_number
           details.expiry_date = data.details.expiry_date
           break
           
         case "medication":
+          // Mandatory field first
           details.name = data.details.name
+          // Optional fields after
           details.dosage = data.details.dosage
           details.frequency = data.details.frequency
           details.duration = data.details.duration
           break
           
         case "status_change":
+          // Mandatory field first
           details.new_status = data.details.new_status
-          details.reason = data.details.reason
           
           // Always update the animal's status regardless of what it is changing to
           try {
@@ -420,24 +420,41 @@ export function AddEventDialog({
             console.error("Exception updating animal status:", updateErr);
             toast.error("Error occurred while updating animal's status");
           }
+          
+          // Add optional fields after all mandatory fields
+          if (data.details.reason) {
+            details.reason = data.details.reason;
+          }
           break
           
         case "note":
+          // Mandatory field first
           details.content = data.details.content
           break
           
         case "visit":
+          // Mandatory fields first
           details.reason = data.details.reason
-          details.findings = data.details.findings
           
-          // Store veterinarian information
+          // Store veterinarian information if available (this is semi-mandatory)
           if (data.contact_id) {
             details.veterinarian_id = data.contact_id
+          }
+          
+          // Optional fields after
+          if (data.details.findings) {
+            details.findings = data.details.findings
           }
           break
           
         default:
-          details = data.details
+          // For unknown event types, just use the details as provided
+          details = structureObjectWithMandatoryFirst(data.details)
+      }
+      
+      // Add common field last, as it's optional
+      if (data.notes) {
+        details.notes = data.notes
       }
       
       // Insert the event with created_by field
@@ -511,6 +528,39 @@ export function AddEventDialog({
     } finally {
       setIsSubmitting(false)
     }
+  }
+  
+  // Helper function to structure an object with mandatory fields first
+  function structureObjectWithMandatoryFirst(obj: Record<string, unknown>): Record<string, unknown> {
+    // This is a simple implementation that ensures a consistent order
+    // You can customize this based on your specific needs for each event type
+    const result: Record<string, unknown> = {};
+    
+    // Known mandatory fields for different event types
+    const mandatoryFields = [
+      'new_status',  // For status changes
+      'weight',      // For weight records
+      'name',        // For vaccinations, medications
+      'content',     // For notes
+      'reason',      // For visits and status changes
+      'contact_id'   // For status changes when adopted/fostered
+    ];
+    
+    // Add mandatory fields first (if they exist in the object)
+    for (const field of mandatoryFields) {
+      if (obj[field] !== undefined) {
+        result[field] = obj[field];
+      }
+    }
+    
+    // Then add all other fields
+    for (const [key, value] of Object.entries(obj)) {
+      if (!mandatoryFields.includes(key)) {
+        result[key] = value;
+      }
+    }
+    
+    return result;
   }
   
   // Render different form fields based on event type
