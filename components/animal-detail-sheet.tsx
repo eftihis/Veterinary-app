@@ -24,12 +24,22 @@ import {
   Rabbit, 
   Rat, 
   HelpCircle, 
-  Calendar,
   User,
   Clipboard,
   FileEdit,
   AlertCircle
 } from "lucide-react"
+
+// Define Contact interface for type safety
+interface Contact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  roles?: string[];
+  [key: string]: string | string[] | number | boolean | null | undefined; // Instead of 'any'
+}
 
 interface AnimalDetailSheetProps {
   open: boolean
@@ -48,6 +58,8 @@ export function AnimalDetailSheet({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("overview")
+  const [ownerDetails, setOwnerDetails] = useState<Contact | null>(null)
+  const [loadingOwner, setLoadingOwner] = useState(false)
   
   const fetchAnimalDetails = useCallback(async () => {
     if (!animalId || !open) return
@@ -65,6 +77,25 @@ export function AnimalDetailSheet({
       if (error) throw error
       
       setAnimal(data)
+      
+      // Fetch owner information if owner_id exists
+      if (data.owner_id) {
+        setLoadingOwner(true)
+        const { data: ownerData, error: ownerError } = await supabase
+          .from('contacts')
+          .select('*')
+          .eq('id', data.owner_id)
+          .single()
+        
+        if (ownerError) {
+          console.error("Error fetching owner details:", ownerError)
+        } else {
+          setOwnerDetails(ownerData)
+        }
+        setLoadingOwner(false)
+      } else {
+        setOwnerDetails(null)
+      }
     } catch (error) {
       console.error("Error fetching animal details:", error)
       setError("Failed to load animal details")
@@ -97,26 +128,6 @@ export function AnimalDetailSheet({
     }
   }
   
-  // Get status badge variant based on status
-  function getStatusBadgeVariant(status: string | null) {
-    switch(status?.toLowerCase()) {
-      case 'active':
-        return "default"
-      case 'adopted':
-        return "secondary"
-      case 'foster':
-        return "secondary"
-      case 'treatment':
-        return "destructive"
-      case 'quarantine':
-        return "outline"
-      case 'deceased':
-        return "destructive"
-      default:
-        return "outline"
-    }
-  }
-  
   function handleEdit() {
     if (animal && onEdit) {
       onEdit(animal)
@@ -128,20 +139,23 @@ export function AnimalDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-xl overflow-y-auto p-6">
         <SheetHeader className="pb-4">
-          <SheetTitle className="text-2xl font-bold flex items-center">
-            {!loading && animal && getAnimalTypeIcon(animal.type)}
-            {loading ? <Skeleton className="h-8 w-48" /> : animal?.name}
-          </SheetTitle>
-          
-          {!loading && animal && (
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant={getStatusBadgeVariant(animal.status)}>
+          <div className="flex items-center gap-2 mb-1">
+            <SheetTitle className="text-2xl font-bold flex items-center">
+              {!loading && animal && getAnimalTypeIcon(animal.type)}
+              {loading ? <Skeleton className="h-8 w-48" /> : animal?.name}
+            </SheetTitle>
+            
+            {!loading && animal && (
+              <Badge variant="outline" className="capitalize">
                 {animal.status || (animal.is_deceased ? 'Deceased' : 'Active')}
               </Badge>
-              {animal.breed && (
-                <Badge variant="outline">{animal.breed}</Badge>
-              )}
-            </div>
+            )}
+          </div>
+          
+          {!loading && animal && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Created {format(parseISO(animal.created_at), 'PP')} • Updated {format(parseISO(animal.updated_at), 'PP')}
+            </p>
           )}
         </SheetHeader>
         
@@ -263,70 +277,51 @@ export function AnimalDetailSheet({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="py-4 px-5 pt-0">
-                    <div className="text-sm">
-                      {animal.owner_id ? (
-                        <p className="font-medium">Owner information available</p>
-                      ) : (
-                        <p className="text-muted-foreground italic">No owner information available</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="py-3">
-                    <CardTitle className="text-base font-medium flex items-center">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Dates
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-3">
-                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                      <div>
-                        <dt className="text-muted-foreground">Date of Birth</dt>
-                        <dd className="font-medium">
-                          {animal.date_of_birth ? 
-                            format(parseISO(animal.date_of_birth), 'PP') : 
-                            '-'
-                          }
-                        </dd>
-                      </div>
-                      
-                      {animal.is_deceased && (
-                        <div>
-                          <dt className="text-muted-foreground">Date of Death</dt>
-                          <dd className="font-medium">
-                            {animal.date_of_death ? 
-                              format(parseISO(animal.date_of_death), 'PP') : 
-                              '-'
-                            }
-                          </dd>
+                    {animal.owner_id ? (
+                      loadingOwner ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-4 w-1/2" />
                         </div>
-                      )}
-                      
-                      <div>
-                        <dt className="text-muted-foreground">Created At</dt>
-                        <dd className="font-medium">
-                          {format(parseISO(animal.created_at), 'PP')}
-                        </dd>
-                      </div>
-                      
-                      <div>
-                        <dt className="text-muted-foreground">Last Updated</dt>
-                        <dd className="font-medium">
-                          {format(parseISO(animal.updated_at), 'PP')}
-                        </dd>
-                      </div>
-                    </dl>
+                      ) : ownerDetails ? (
+                        <div className="text-sm space-y-2">
+                          <div>
+                            <dt className="text-muted-foreground">Name</dt>
+                            <dd className="font-medium">
+                              {ownerDetails.first_name} {ownerDetails.last_name}
+                            </dd>
+                          </div>
+                          {ownerDetails.email && (
+                            <div>
+                              <dt className="text-muted-foreground">Email</dt>
+                              <dd className="font-medium">{ownerDetails.email}</dd>
+                            </div>
+                          )}
+                          {ownerDetails.phone && (
+                            <div>
+                              <dt className="text-muted-foreground">Phone</dt>
+                              <dd className="font-medium">{ownerDetails.phone}</dd>
+                            </div>
+                          )}
+                          {ownerDetails.roles && ownerDetails.roles.length > 0 && (
+                            <div>
+                              <dt className="text-muted-foreground">Role</dt>
+                              <dd className="font-medium capitalize">
+                                {ownerDetails.roles.join(', ')}
+                              </dd>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-orange-500">
+                          Owner ID exists but details could not be loaded
+                        </p>
+                      )
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">No owner information available</p>
+                    )}
                   </CardContent>
                 </Card>
-                
-                {/* Recent events for overview */}
-                <AnimalTimeline
-                  animalId={animal.id}
-                  limit={3}
-                  showAddButton={false}
-                />
               </TabsContent>
               
               <TabsContent value="timeline" className="mt-4">
