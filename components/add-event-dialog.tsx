@@ -404,6 +404,63 @@ export function AddEventDialog({
           // Mandatory field first
           details.weight = data.details.weight === "" ? null : parseFloat(String(data.details.weight))
           details.unit = "kg"
+          
+          // Also update the animal's weight in the animals table
+          try {
+            const weightValue = data.details.weight === "" ? null : parseFloat(String(data.details.weight));
+            
+            // Validate weight against database limits
+            if (weightValue !== null) {
+              if (weightValue < 0 || weightValue > 999.99) {
+                console.error(`Weight value ${weightValue} is outside the valid range (0-999.99)`);
+                toast.error("Weight value is outside the allowed range (0-999.99 kg)");
+              } else {
+                // Get the current animal weight first to store as previous_weight
+                const { data: animalData, error: fetchError } = await supabase
+                  .from("animals")
+                  .select("weight")
+                  .eq("id", actualAnimalId)
+                  .single();
+                
+                if (fetchError) {
+                  console.error("Error fetching animal weight:", fetchError);
+                } else {
+                  const currentWeight = animalData?.weight;
+                  console.log(`Changing animal weight from ${currentWeight}kg to ${weightValue}kg`);
+                  
+                  // Save the current weight as previous_weight in the details object
+                  if (currentWeight !== null && currentWeight !== undefined) {
+                    details.previous_weight = currentWeight;
+                  }
+                }
+                
+                console.log(`Updating animal weight to ${weightValue}kg`);
+                
+                const { error: updateError } = await supabase
+                  .from("animals")
+                  .update({ 
+                    weight: weightValue,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq("id", actualAnimalId);
+                  
+                if (updateError) {
+                  console.error("Error updating animal weight:", updateError);
+                  
+                  // Check for numeric overflow error
+                  if (updateError.code === '22003') {
+                    toast.error("Weight value exceeds the database limit. Maximum weight is 999.99 kg.");
+                  } else {
+                    toast.error("Event added but failed to update animal's weight");
+                  }
+                }
+              }
+            }
+          } catch (updateErr) {
+            console.error("Exception updating animal weight:", updateErr);
+            toast.error("Error occurred while updating animal's weight");
+          }
+          
           break
           
         case "vaccination":
@@ -413,6 +470,28 @@ export function AddEventDialog({
           if (data.details.brand) details.brand = data.details.brand
           if (data.details.lot_number) details.lot_number = data.details.lot_number
           if (data.details.expiry_date) details.expiry_date = data.details.expiry_date
+          
+          // Update the animal's last vaccination date
+          try {
+            console.log(`Updating animal's last vaccination date to ${data.event_date.toISOString()}`);
+            
+            const { error: updateError } = await supabase
+              .from("animals")
+              .update({ 
+                last_vaccination_date: data.event_date.toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", actualAnimalId);
+              
+            if (updateError) {
+              console.error("Error updating animal's vaccination date:", updateError);
+              toast.error("Event added but failed to update animal's vaccination record");
+            }
+          } catch (updateErr) {
+            console.error("Exception updating animal vaccination date:", updateErr);
+            toast.error("Error occurred while updating animal's vaccination record");
+          }
+          
           break
           
         case "medication":
@@ -422,6 +501,28 @@ export function AddEventDialog({
           if (data.details.dosage) details.dosage = data.details.dosage
           if (data.details.frequency) details.frequency = data.details.frequency
           if (data.details.duration) details.duration = data.details.duration
+          
+          // Update the animal's last medication date
+          try {
+            console.log(`Updating animal's last medication date to ${data.event_date.toISOString()}`);
+            
+            const { error: updateError } = await supabase
+              .from("animals")
+              .update({ 
+                last_medication_date: data.event_date.toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", actualAnimalId);
+              
+            if (updateError) {
+              console.error("Error updating animal's medication date:", updateError);
+              toast.error("Event added but failed to update animal's medication record");
+            }
+          } catch (updateErr) {
+            console.error("Exception updating animal medication date:", updateErr);
+            toast.error("Error occurred while updating animal's medication record");
+          }
+          
           break
           
         case "status_change":
@@ -523,6 +624,28 @@ export function AddEventDialog({
           if (data.details.findings) {
             details.findings = data.details.findings
           }
+          
+          // Update the animal's last vet visit date
+          try {
+            console.log(`Updating animal's last vet visit date to ${data.event_date.toISOString()}`);
+            
+            const { error: updateError } = await supabase
+              .from("animals")
+              .update({ 
+                last_vet_visit_date: data.event_date.toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", actualAnimalId);
+              
+            if (updateError) {
+              console.error("Error updating animal's vet visit date:", updateError);
+              toast.error("Event added but failed to update animal's vet visit record");
+            }
+          } catch (updateErr) {
+            console.error("Exception updating animal vet visit date:", updateErr);
+            toast.error("Error occurred while updating animal's vet visit record");
+          }
+          
           break
           
         default:
@@ -657,16 +780,34 @@ export function AddEventDialog({
                 <FormControl>
                   <Input 
                     type="number" 
-                    step="0.1"
-                    placeholder="Enter weight in kg" 
+                    step="0.01"
+                    min="0"
+                    max="999.99"
+                    placeholder="Enter weight in kg (max 999.99)" 
                     value={field.value}
                     onChange={(e) => {
-                      // Use empty string if value is empty, otherwise use the value
-                      field.onChange(e.target.value === "" ? "" : e.target.value);
+                      const value = e.target.value;
+                      // Use empty string if value is empty, otherwise validate and use the value
+                      if (value === "") {
+                        field.onChange("");
+                      } else {
+                        const numValue = parseFloat(value);
+                        // Check if the value exceeds database limits
+                        if (numValue > 999.99) {
+                          // Limit to maximum allowed value
+                          field.onChange("999.99");
+                          toast.error("Weight cannot exceed 999.99 kg");
+                        } else {
+                          field.onChange(value);
+                        }
+                      }
                     }}
                     onBlur={field.onBlur}
                   />
                 </FormControl>
+                <FormDescription>
+                  Maximum weight: 999.99 kg
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

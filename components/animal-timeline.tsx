@@ -238,21 +238,25 @@ export function AnimalTimeline({
     // For weight measurements
     if (event_type === 'WEIGHT_MEASUREMENT' || event_type === 'weight') {
       const weightVal = hasKey(details, 'weight') ? Number(details.weight) : 0;
-      const prevWeightVal = hasKey(details, 'previous_weight') ? Number(details.previous_weight) : 0;
+      const prevWeightVal = hasKey(details, 'previous_weight') ? Number(details.previous_weight) : null;
       const unit = structuredDetails.unit || 'kg';
       
       return (
         <div>
           <div className="flex items-center">
-            <span className="font-medium">
-              Weight: {structuredDetails.weight} {unit}
-              {hasKey(details, 'previous_weight') && hasKey(details, 'weight') && (
-                <span className="text-muted-foreground ml-2">
-                  {weightVal > prevWeightVal ? '▲' : '▼'} 
-                  {Math.abs(weightVal - prevWeightVal).toFixed(2)} {unit}
+            {prevWeightVal !== null ? (
+              <span className="text-sm font-medium">
+                {prevWeightVal.toFixed(2)} <span className="mx-2">→</span> {weightVal.toFixed(2)} {unit}
+                <span className={`ml-2 ${weightVal > prevWeightVal ? 'text-green-500' : weightVal < prevWeightVal ? 'text-red-500' : ''}`}>
+                  {weightVal > prevWeightVal ? '▲' : weightVal < prevWeightVal ? '▼' : ''}
+                  {weightVal !== prevWeightVal && ` ${Math.abs(weightVal - prevWeightVal).toFixed(2)} ${unit}`}
                 </span>
-              )}
-            </span>
+              </span>
+            ) : (
+              <span className="font-medium">
+                Weight: {weightVal.toFixed(2)} {unit}
+              </span>
+            )}
           </div>
           {structuredDetails.notes && (
             <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
