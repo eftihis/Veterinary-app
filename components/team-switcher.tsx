@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { ChevronsUpDown, Plus } from "lucide-react"
+import Image from "next/image"
 
 import {
   DropdownMenu,
@@ -19,12 +20,24 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
+// Helper component to render either an icon component or an SVG image
+const LogoDisplay = ({ logo }: { logo: React.ElementType | string }) => {
+  if (typeof logo === 'string') {
+    // It's a path to an image
+    return <Image src={logo} alt="Logo" width={16} height={16} className="size-4" />
+  } else {
+    // It's a React component
+    const IconComponent = logo as React.ElementType;
+    return <IconComponent className="size-4" />
+  }
+}
+
 export function TeamSwitcher({
   teams,
 }: {
   teams: {
     name: string
-    logo: React.ElementType
+    logo: React.ElementType | string
     plan: string
   }[]
 }) {
@@ -45,7 +58,7 @@ export function TeamSwitcher({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                <activeTeam.logo className="size-4" />
+                <LogoDisplay logo={activeTeam.logo} />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{activeTeam.name}</span>
@@ -70,7 +83,7 @@ export function TeamSwitcher({
                 className="gap-2 p-2"
               >
                 <div className="flex size-6 items-center justify-center rounded-md border">
-                  <team.logo className="size-3.5 shrink-0" />
+                  <LogoDisplay logo={team.logo} />
                 </div>
                 {team.name}
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>

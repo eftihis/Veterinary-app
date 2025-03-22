@@ -4,7 +4,6 @@ import * as React from "react"
 import {
   BookOpen,
   Frame,
-  GalleryVerticalEnd,
   Map,
   PieChart,
   Receipt,
@@ -31,7 +30,7 @@ const data = {
   teams: [
     {
       name: "PAWS",
-      logo: GalleryVerticalEnd,
+      logo: "/paws-logo.svg",
       plan: "Animal Welfare Society",
     },
   ],
