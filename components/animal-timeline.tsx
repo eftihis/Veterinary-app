@@ -195,6 +195,11 @@ export function AnimalTimeline({
           {structuredDetails.description && (
             <p className="text-sm text-muted-foreground mt-1">{structuredDetails.description}</p>
           )}
+          {(event.contact_id || structuredDetails.veterinarian_id) && (
+            <div className="text-sm mt-1">
+              <span className="font-medium">Veterinarian:</span> {getContactName(event)}
+            </div>
+          )}
           {structuredDetails.document_number && (
             <div className="text-xs text-muted-foreground mt-2">
               Invoice: {structuredDetails.document_number}
@@ -209,8 +214,8 @@ export function AnimalTimeline({
       return (
         <div>
           <div className="flex items-center">
-            <span className="font-medium">
-              Status changed from {structuredDetails.previous_status || 'unknown'} to {structuredDetails.new_status || ''}
+            <span className="text-sm font-medium">
+              {structuredDetails.previous_status || 'unknown'} <span className="mx-2">→</span> {structuredDetails.new_status || ''}
             </span>
           </div>
           {(event.contact_id || structuredDetails.contact_id) && (
