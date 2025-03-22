@@ -211,7 +211,7 @@ export function QuickActionButton() {
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                 <Plus className="size-4" />
               </div>
-              <div className="ml-2 font-medium">Add Animal Event</div>
+              <div className="ml-2 font-medium">Add Event</div>
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={() => {

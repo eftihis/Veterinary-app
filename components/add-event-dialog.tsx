@@ -285,12 +285,20 @@ export function AddEventDialog({
       try {
         setLoadingContacts(true);
         
-        // Load all contacts without filtering by role
-        const { data, error } = await supabase
+        // Base query to load all active contacts
+        const query = supabase
           .from("contacts")
           .select("id, first_name, last_name, roles, email, phone, is_active")
           .eq("is_active", true) // Only show active contacts
           .order("last_name");
+        
+        // Apply role filter for visit events - only show veterinarians
+        if (eventType === "visit") {
+          // Filter for contacts where roles array contains "veterinarian"
+          query.contains('roles', ['veterinarian']);
+        }
+        
+        const { data, error } = await query;
         
         if (error) {
           console.error("Database error:", error);
@@ -1025,7 +1033,6 @@ export function AddEventDialog({
                 <FormItem>
                   <FormLabel>
                     {getContactConfig().label}
-                    <span className="text-xs text-muted-foreground ml-1">(all contacts)</span>
                   </FormLabel>
                   <FormControl>
                     <ContactCombobox
@@ -1034,11 +1041,11 @@ export function AddEventDialog({
                       onSelect={handleContactSelect}
                       loading={loadingContacts}
                       placeholder={getContactConfig().label ? `${getContactConfig().label}` : "Select contact"}
-                      emptyMessage={"No contacts found"}
+                      emptyMessage={"No veterinarians found"}
                     />
                   </FormControl>
                   <FormDescription>
-                    Select any contact to assign as veterinarian for this visit
+                    Select a veterinarian for this visit
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -1097,7 +1104,7 @@ export function AddEventDialog({
       {children && !isControlled && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Animal Event</DialogTitle>
+          <DialogTitle>Add Event</DialogTitle>
           <DialogDescription>
             Record a new event for your animal
           </DialogDescription>
