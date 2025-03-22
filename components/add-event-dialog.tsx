@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -45,6 +45,7 @@ import {
 import { cn } from "@/lib/utils"
 import { CalendarIcon, Loader2 } from "lucide-react"
 import { AnimalCombobox, AnimalOption } from "@/components/ui/animal-combobox"
+import { ContactCombobox, ContactOption } from "@/components/ui/contact-combobox"
 
 // Form schema for adding an event
 const eventFormSchema = z.object({
@@ -53,6 +54,7 @@ const eventFormSchema = z.object({
   event_date: z.date(),
   details: z.record(z.string(), z.any()).default({}),
   notes: z.string().optional(),
+  contact_id: z.string().optional(),
 })
 
 type EventFormValues = z.infer<typeof eventFormSchema>
@@ -91,7 +93,9 @@ export function AddEventDialog({
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [animalOptions, setAnimalOptions] = useState<AnimalOption[]>([])
+  const [contactOptions, setContactOptions] = useState<ContactOption[]>([])
   const [loadingAnimals, setLoadingAnimals] = useState(false)
+  const [loadingContacts, setLoadingContacts] = useState(false)
   const [connectionError, setConnectionError] = useState<string | null>(null)
   
   // Check Supabase connection on initialization
@@ -151,6 +155,7 @@ export function AddEventDialog({
       event_date: new Date(),
       details: {},
       notes: "",
+      contact_id: "",
     },
   })
   
@@ -218,6 +223,84 @@ export function AddEventDialog({
   // Watch the event type to conditionally render fields
   const eventType = form.watch("event_type")
   const selectedAnimalId = form.watch("animal_id")
+  const newStatus = form.watch("details.new_status")
+  
+  // Determine if we need to show the contact selector
+  const shouldShowContactSelector = 
+    (eventType === "status_change" && (newStatus === "adopted" || newStatus === "foster")) || 
+    eventType === "visit"
+
+  // Get the appropriate contact label and type based on event
+  const getContactConfig = useCallback(() => {
+    if (eventType === "status_change") {
+      if (newStatus === "adopted") return { label: "New Owner", type: "owner" }
+      if (newStatus === "foster") return { label: "Foster Parent", type: "foster" }
+      return { label: "", type: "" }
+    } else if (eventType === "visit") {
+      return { label: "Veterinarian", type: "veterinarian" }
+    }
+    return { label: "", type: "" }
+  }, [eventType, newStatus])
+  
+  // Fetch contacts when needed
+  useEffect(() => {
+    if (!shouldShowContactSelector || !isOpen) return;
+    
+    async function fetchContacts() {
+      try {
+        setLoadingContacts(true);
+        const contactConfig = getContactConfig();
+        
+        let query = supabase
+          .from("contacts")
+          .select("id, first_name, last_name, roles, email, phone, is_active")
+          .order("last_name");
+        
+        // Filter by contact type if needed
+        if (contactConfig.type) {
+          query = query.contains('roles', [contactConfig.type]);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error("Database error:", error);
+          toast.error(`Failed to load contacts: ${error.message}`);
+          setContactOptions([]);
+          return;
+        }
+        
+        // Map to contact options
+        const options: ContactOption[] = (data || []).map(contact => ({
+          value: contact.id,
+          label: `${contact.first_name} ${contact.last_name}`,
+          email: contact.email,
+          phone: contact.phone,
+          roles: contact.roles,
+          isActive: contact.is_active,
+        }));
+        
+        setContactOptions(options);
+      } catch (error) {
+        console.error("Error fetching contacts:", error);
+        toast.error("Failed to load contacts");
+        setContactOptions([]);
+      } finally {
+        setLoadingContacts(false);
+      }
+    }
+    
+    fetchContacts();
+  }, [shouldShowContactSelector, eventType, newStatus, isOpen, getContactConfig]);
+
+  // Handle contact selection
+  const handleContactSelect = (contact: ContactOption | null) => {
+    if (contact) {
+      form.setValue("contact_id", contact.value);
+    } else {
+      form.setValue("contact_id", "");
+    }
+  };
   
   // Reset form when dialog opens/closes
   useEffect(() => {
@@ -230,6 +313,7 @@ export function AddEventDialog({
           event_date: new Date(),
           details: {},
           notes: "",
+          contact_id: "",
         });
       }, 300); // Small delay to ensure dialog is fully closed
     }
@@ -281,6 +365,28 @@ export function AddEventDialog({
           details.old_status = data.details.old_status
           details.new_status = data.details.new_status
           details.reason = data.details.reason
+          
+          // If status is adopted or fostered and contact_id is provided
+          if (
+            (data.details.new_status === "adopted" || data.details.new_status === "foster") && 
+            data.contact_id
+          ) {
+            details.contact_id = data.contact_id
+            
+            // Also update the animal's owner_id
+            const { error: updateError } = await supabase
+              .from("animals")
+              .update({ 
+                owner_id: data.contact_id,
+                status: data.details.new_status // Update status as well
+              })
+              .eq("id", actualAnimalId)
+              
+            if (updateError) {
+              console.error("Error updating animal owner:", updateError)
+              toast.error("Event added but failed to update animal's owner")
+            }
+          }
           break
           
         case "note":
@@ -290,14 +396,19 @@ export function AddEventDialog({
         case "visit":
           details.reason = data.details.reason
           details.findings = data.details.findings
+          
+          // Store veterinarian information
+          if (data.contact_id) {
+            details.veterinarian_id = data.contact_id
+          }
           break
           
         default:
           details = data.details
       }
       
-      // Insert the event
-      const { error } = await supabase.from("animal_events").insert({
+      // Insert the event - fix table name from "animal_events" to "animal_timeline"
+      const { error } = await supabase.from("animal_timeline").insert({
         animal_id: actualAnimalId,
         event_type: data.event_type,
         event_date: data.event_date.toISOString(),
@@ -313,6 +424,12 @@ export function AddEventDialog({
       if (onSuccess) {
         onSuccess()
       }
+      
+      // Dispatch a custom event to notify the timeline to refresh
+      const refreshEvent = new CustomEvent('refreshAnimalTimeline', { 
+        detail: { animalId: actualAnimalId } 
+      });
+      window.dispatchEvent(refreshEvent);
     } catch (error) {
       console.error("Error adding event:", error)
       toast.error("Failed to add event")
@@ -520,6 +637,30 @@ export function AddEventDialog({
               />
             </div>
             
+            {/* Show contact selector for adopted or foster statuses */}
+            {(newStatus === "adopted" || newStatus === "foster") && (
+              <FormField
+                control={form.control}
+                name="contact_id"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>{getContactConfig().label}</FormLabel>
+                    <FormControl>
+                      <ContactCombobox
+                        options={contactOptions}
+                        selectedId={form.watch("contact_id") || ""}
+                        onSelect={handleContactSelect}
+                        loading={loadingContacts}
+                        placeholder={getContactConfig().label ? `Select ${getContactConfig().label.toLowerCase()}` : "Select contact"}
+                        emptyMessage={getContactConfig().type ? `No ${getContactConfig().type}s found` : "No contacts found"}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
             <FormField
               control={form.control}
               name="details.reason"
@@ -564,6 +705,28 @@ export function AddEventDialog({
       case "visit":
         return (
           <>
+            {/* Add veterinarian selector for visits */}
+            <FormField
+              control={form.control}
+              name="contact_id"
+              render={() => (
+                <FormItem>
+                  <FormLabel>{getContactConfig().label}</FormLabel>
+                  <FormControl>
+                    <ContactCombobox
+                      options={contactOptions}
+                      selectedId={form.watch("contact_id") || ""}
+                      onSelect={handleContactSelect}
+                      loading={loadingContacts}
+                      placeholder={getContactConfig().label ? `Select ${getContactConfig().label.toLowerCase()}` : "Select contact"}
+                      emptyMessage={getContactConfig().type ? `No ${getContactConfig().type}s found` : "No contacts found"}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          
             <FormField
               control={form.control}
               name="details.reason"

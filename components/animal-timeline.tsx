@@ -107,7 +107,25 @@ export function AnimalTimeline({
   
   useEffect(() => {
     fetchEvents()
-  }, [fetchEvents])
+    
+    // Add event listener for refreshing the timeline
+    const handleRefreshTimeline = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      // Only refresh if event is for this animal or no specific animal
+      if (!customEvent.detail?.animalId || customEvent.detail.animalId === animalId) {
+        console.log("Refreshing animal timeline for:", animalId);
+        fetchEvents();
+      }
+    };
+    
+    // Listen for the custom refresh event
+    window.addEventListener('refreshAnimalTimeline', handleRefreshTimeline);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('refreshAnimalTimeline', handleRefreshTimeline);
+    };
+  }, [fetchEvents, animalId])
   
   // Get icon based on event type
   function getEventIcon(eventType: string | null | undefined) {
