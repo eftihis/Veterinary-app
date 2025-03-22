@@ -70,6 +70,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { TypeFilter } from "@/components/type-filter"
 
 // Define Animal type based on Supabase structure
 export type Animal = {
@@ -138,6 +139,17 @@ export function AnimalsDataTable({
   })
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
+  
+  // Type filter state
+  const [selectedTypes, setSelectedTypes] = React.useState<string[]>([])
+  const [filteredData, setFilteredData] = React.useState<Animal[]>(data)
+
+  // Animal type options
+  const typeOptions = [
+    { value: "dog", label: "Dog" },
+    { value: "cat", label: "Cat" },
+    { value: "other", label: "Other" }
+  ]
 
   // Adjust column visibility based on screen size
   React.useEffect(() => {
@@ -296,7 +308,7 @@ export function AnimalsDataTable({
         )
       },
       filterFn: (row, id, value) => {
-        return value.includes(row.getValue(id))
+        return value.includes((row.getValue(id) as string).toLowerCase())
       },
     },
     {
@@ -464,7 +476,7 @@ export function AnimalsDataTable({
   ]
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     filterFns: {
       fuzzy: fuzzyFilter,
@@ -498,26 +510,64 @@ export function AnimalsDataTable({
     }
   }
 
+  // Update filtered data when type selections change
+  React.useEffect(() => {
+    // Apply type filters if any are selected
+    if (selectedTypes.length > 0) {
+      const filtered = data.filter(animal => 
+        selectedTypes.includes(animal.type.toLowerCase())
+      );
+      setFilteredData(filtered);
+    } else {
+      setFilteredData(data);
+    }
+  }, [data, selectedTypes]);
+
+  // Handle type selection toggle
+  const toggleType = (type: string) => {
+    setSelectedTypes(prev => 
+      prev.includes(type) 
+        ? prev.filter(t => t !== type) 
+        : [...prev, type]
+    )
+  }
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSelectedTypes([]);
+    setGlobalFilter("");
+  }
+
   return (
     <div className="space-y-4 overflow-hidden p-1">
-      <div className="flex items-center justify-between pb-2 gap-4">
-        <div className="flex w-full max-w-sm items-center space-x-2">
-          <Input
-            placeholder="Search animals..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-9"
+      <div className="flex flex-col sm:flex-row items-center justify-between pb-2 gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 w-full">
+          <div className="w-full md:w-auto relative">
+            <Input
+              placeholder="Search animals..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="h-9"
+            />
+            {globalFilter && (
+              <Button 
+                variant="ghost" 
+                onClick={() => setGlobalFilter("")}
+                className="h-9 px-2 absolute right-0 top-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          {/* Type Filter */}
+          <TypeFilter
+            typeOptions={typeOptions}
+            selectedTypes={selectedTypes}
+            setSelectedTypes={setSelectedTypes}
           />
-          {globalFilter && (
-            <Button 
-              variant="ghost" 
-              onClick={() => setGlobalFilter("")}
-              className="h-9 px-2"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
         </div>
+        
         <div className="flex items-center gap-2 self-end">
           {/* Batch Actions - Show only when rows are selected */}
           {Object.keys(rowSelection).length > 0 && (
@@ -582,6 +632,38 @@ export function AnimalsDataTable({
           </DropdownMenu>
         </div>
       </div>
+      
+      {/* Active Filters */}
+      {selectedTypes.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-2 pb-2">
+          <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>
+          
+          {selectedTypes.map(type => (
+            <Badge key={type} variant="secondary" className="flex items-center gap-1">
+              <span className="capitalize">{type}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => toggleType(type)}
+              >
+                <X className="h-3 w-3" />
+                <span className="sr-only">Remove {type} filter</span>
+              </Button>
+            </Badge>
+          ))}
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={clearAllFilters}
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
+
       <div className="rounded-md border w-full min-w-full overflow-hidden">
         <div className="overflow-x-auto">
           <Table className="w-full">
@@ -638,6 +720,9 @@ export function AnimalsDataTable({
         <div className="text-sm text-muted-foreground">
           Showing {Math.min(table.getFilteredRowModel().rows.length, table.getState().pagination.pageSize)} of{" "}
           {table.getFilteredRowModel().rows.length} results
+          {filteredData.length !== data.length && (
+            <span> (filtered from {data.length} total animals)</span>
+          )}
         </div>
         
         <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6">
