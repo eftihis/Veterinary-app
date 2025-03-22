@@ -237,11 +237,11 @@ export function AddEventDialog({
   // Get the appropriate contact label and type based on event
   const getContactConfig = useCallback(() => {
     if (eventType === "status_change") {
-      if (newStatus === "adopted") return { label: "New Owner", type: "owner" }
-      if (newStatus === "foster") return { label: "Foster Parent", type: "foster" }
+      if (newStatus === "adopted") return { label: "Select Owner", type: "owner" }
+      if (newStatus === "foster") return { label: "Select Foster Parent", type: "foster" }
       return { label: "", type: "" }
     } else if (eventType === "visit") {
-      return { label: "Veterinarian", type: "veterinarian" }
+      return { label: "Select Veterinarian", type: "veterinarian" }
     }
     return { label: "", type: "" }
   }, [eventType, newStatus])
@@ -253,19 +253,13 @@ export function AddEventDialog({
     async function fetchContacts() {
       try {
         setLoadingContacts(true);
-        const contactConfig = getContactConfig();
         
-        let query = supabase
+        // Load all contacts without filtering by role
+        const { data, error } = await supabase
           .from("contacts")
           .select("id, first_name, last_name, roles, email, phone, is_active")
+          .eq("is_active", true) // Only show active contacts
           .order("last_name");
-        
-        // Filter by contact type if needed
-        if (contactConfig.type) {
-          query = query.contains('roles', [contactConfig.type]);
-        }
-        
-        const { data, error } = await query;
         
         if (error) {
           console.error("Database error:", error);
@@ -369,32 +363,62 @@ export function AddEventDialog({
           details.new_status = data.details.new_status
           details.reason = data.details.reason
           
-          // If status is adopted or fostered and contact_id is provided
-          if (
-            (data.details.new_status === "adopted" || data.details.new_status === "foster") && 
-            data.contact_id
-          ) {
-            details.contact_id = data.contact_id
+          // Always update the animal's status regardless of what it is changing to
+          try {
+            // Get the current animal status first
+            const { data: animalData, error: fetchError } = await supabase
+              .from("animals")
+              .select("status, owner_id")
+              .eq("id", actualAnimalId)
+              .single();
             
-            // Also update the animal's owner_id
-            try {
+            if (fetchError) {
+              console.error("Error fetching animal status:", fetchError);
+            } else {
+              const currentStatus = animalData?.status;
+              const currentOwnerId = animalData?.owner_id;
+              console.log(`Changing animal status from ${currentStatus} to ${data.details.new_status}`);
+              
+              // Prepare update data with a proper type
+              const updateData: {
+                status: string;
+                updated_at: string;
+                owner_id?: string | null;
+              } = {
+                status: data.details.new_status,
+                updated_at: new Date().toISOString()
+              };
+              
+              // If changing TO adopted/foster and we have a contact_id, set the owner
+              if ((data.details.new_status === "adopted" || data.details.new_status === "foster") && data.contact_id) {
+                details.contact_id = data.contact_id;
+                updateData.owner_id = data.contact_id;
+              } 
+              // If changing FROM adopted/foster TO something else, clear the owner
+              else if ((currentStatus === "adopted" || currentStatus === "foster") && 
+                      data.details.new_status !== "adopted" && data.details.new_status !== "foster") {
+                updateData.owner_id = null;
+                
+                // Store the previous owner in the event details for reference
+                if (currentOwnerId) {
+                  details.previous_owner_id = currentOwnerId;
+                }
+              }
+              
+              // Update the animal record
               const { error: updateError } = await supabase
                 .from("animals")
-                .update({ 
-                  owner_id: data.contact_id,
-                  status: data.details.new_status, // Update status as well
-                  updated_at: new Date().toISOString() // Add timestamp for updated_at
-                })
-                .eq("id", actualAnimalId)
+                .update(updateData)
+                .eq("id", actualAnimalId);
                 
               if (updateError) {
-                console.error("Error updating animal owner:", updateError)
-                toast.error("Event added but failed to update animal's owner")
+                console.error("Error updating animal status:", updateError);
+                toast.error("Event added but failed to update animal's status");
               }
-            } catch (updateErr) {
-              console.error("Exception updating animal owner:", updateErr)
-              toast.error("Error occurred while updating animal's owner")
             }
+          } catch (updateErr) {
+            console.error("Exception updating animal status:", updateErr);
+            toast.error("Error occurred while updating animal's status");
           }
           break
           
@@ -665,17 +689,23 @@ export function AddEventDialog({
                 name="contact_id"
                 render={() => (
                   <FormItem>
-                    <FormLabel>{getContactConfig().label}</FormLabel>
+                    <FormLabel>
+                      {getContactConfig().label}
+                      <span className="text-xs text-muted-foreground ml-1">(all contacts)</span>
+                    </FormLabel>
                     <FormControl>
                       <ContactCombobox
                         options={contactOptions}
                         selectedId={form.watch("contact_id") || ""}
                         onSelect={handleContactSelect}
                         loading={loadingContacts}
-                        placeholder={getContactConfig().label ? `Select ${getContactConfig().label.toLowerCase()}` : "Select contact"}
-                        emptyMessage={getContactConfig().type ? `No ${getContactConfig().type}s found` : "No contacts found"}
+                        placeholder={getContactConfig().label ? `${getContactConfig().label}` : "Select contact"}
+                        emptyMessage={"No contacts found"}
                       />
                     </FormControl>
+                    <FormDescription>
+                      Select any contact to assign as {newStatus === "adopted" ? "owner" : "foster parent"}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -732,17 +762,23 @@ export function AddEventDialog({
               name="contact_id"
               render={() => (
                 <FormItem>
-                  <FormLabel>{getContactConfig().label}</FormLabel>
+                  <FormLabel>
+                    {getContactConfig().label}
+                    <span className="text-xs text-muted-foreground ml-1">(all contacts)</span>
+                  </FormLabel>
                   <FormControl>
                     <ContactCombobox
                       options={contactOptions}
                       selectedId={form.watch("contact_id") || ""}
                       onSelect={handleContactSelect}
                       loading={loadingContacts}
-                      placeholder={getContactConfig().label ? `Select ${getContactConfig().label.toLowerCase()}` : "Select contact"}
-                      emptyMessage={getContactConfig().type ? `No ${getContactConfig().type}s found` : "No contacts found"}
+                      placeholder={getContactConfig().label ? `${getContactConfig().label}` : "Select contact"}
+                      emptyMessage={"No contacts found"}
                     />
                   </FormControl>
+                  <FormDescription>
+                    Select any contact to assign as veterinarian for this visit
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
