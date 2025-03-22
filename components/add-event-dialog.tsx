@@ -382,6 +382,11 @@ export function AddEventDialog({
               const currentOwnerId = animalData?.owner_id;
               console.log(`Changing animal status from ${currentStatus} to ${data.details.new_status}`);
               
+              // Save the current status as previous_status in the details object
+              if (currentStatus) {
+                details.previous_status = currentStatus;
+              }
+              
               // Prepare update data with a proper type
               const updateData: {
                 status: string;
