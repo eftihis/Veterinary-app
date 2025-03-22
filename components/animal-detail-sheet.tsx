@@ -28,7 +28,6 @@ import {
   User,
   Clipboard,
   FileEdit,
-  Stethoscope,
   AlertCircle
 } from "lucide-react"
 
@@ -169,10 +168,9 @@ export function AnimalDetailSheet({
         ) : animal ? (
           <div className="space-y-6 px-1">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid grid-cols-3">
+              <TabsList className="grid grid-cols-2">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                <TabsTrigger value="medical">Medical</TabsTrigger>
               </TabsList>
               
               <TabsContent value="overview" className="space-y-5 mt-4">
@@ -338,22 +336,6 @@ export function AnimalDetailSheet({
                     showAddButton={true}
                   />
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="medical" className="mt-4 space-y-5">
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <CardTitle className="text-base font-medium flex items-center">
-                      <Stethoscope className="h-4 w-4 mr-2" />
-                      Medical Records
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    <p className="text-sm text-muted-foreground">
-                      Medical records will appear here.
-                    </p>
-                  </CardContent>
-                </Card>
               </TabsContent>
             </Tabs>
           </div>
