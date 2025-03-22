@@ -157,7 +157,38 @@ export function AddEventDialog({
       animal_id: animalId || "", // Use provided animalId or empty string
       event_type: "",
       event_date: new Date(),
-      details: {},
+      details: {
+        // Initialize all possible fields for all event types
+        // Weight
+        weight: "",
+        unit: "",
+        
+        // Vaccination
+        name: "",
+        brand: "",
+        lot_number: "",
+        expiry_date: "",
+        
+        // Medication
+        dosage: "",
+        frequency: "",
+        duration: "",
+        
+        // Status Change
+        new_status: "",
+        previous_status: "",
+        reason: "",
+        
+        // Note
+        content: "",
+        
+        // Visit
+        findings: "",
+        
+        // Common fields that might be in details
+        veterinarian_id: "",
+        contact_id: "",
+      },
       notes: "",
       contact_id: "",
     },
@@ -309,7 +340,38 @@ export function AddEventDialog({
           animal_id: animalId || "",
           event_type: "",
           event_date: new Date(),
-          details: {},
+          details: {
+            // Initialize all possible fields for all event types
+            // Weight
+            weight: "",
+            unit: "",
+            
+            // Vaccination
+            name: "",
+            brand: "",
+            lot_number: "",
+            expiry_date: "",
+            
+            // Medication
+            dosage: "",
+            frequency: "",
+            duration: "",
+            
+            // Status Change
+            new_status: "",
+            previous_status: "",
+            reason: "",
+            
+            // Note
+            content: "",
+            
+            // Visit
+            findings: "",
+            
+            // Common fields that might be in details
+            veterinarian_id: "",
+            contact_id: "",
+          },
           notes: "",
           contact_id: "",
         });
@@ -340,31 +402,31 @@ export function AddEventDialog({
       switch (data.event_type) {
         case "weight":
           // Mandatory field first
-          details.weight = parseFloat(data.details.weight)
+          details.weight = data.details.weight === "" ? null : parseFloat(String(data.details.weight))
           details.unit = "kg"
           break
           
         case "vaccination":
           // Mandatory fields first
-          details.name = data.details.name
+          details.name = data.details.name || ""
           // Optional fields after
-          details.brand = data.details.brand
-          details.lot_number = data.details.lot_number
-          details.expiry_date = data.details.expiry_date
+          if (data.details.brand) details.brand = data.details.brand
+          if (data.details.lot_number) details.lot_number = data.details.lot_number
+          if (data.details.expiry_date) details.expiry_date = data.details.expiry_date
           break
           
         case "medication":
           // Mandatory field first
-          details.name = data.details.name
+          details.name = data.details.name || ""
           // Optional fields after
-          details.dosage = data.details.dosage
-          details.frequency = data.details.frequency
-          details.duration = data.details.duration
+          if (data.details.dosage) details.dosage = data.details.dosage
+          if (data.details.frequency) details.frequency = data.details.frequency
+          if (data.details.duration) details.duration = data.details.duration
           break
           
         case "status_change":
           // Mandatory field first
-          details.new_status = data.details.new_status
+          details.new_status = data.details.new_status || ""
           
           // Always update the animal's status regardless of what it is changing to
           try {
@@ -597,7 +659,12 @@ export function AddEventDialog({
                     type="number" 
                     step="0.1"
                     placeholder="Enter weight in kg" 
-                    {...field}
+                    value={field.value}
+                    onChange={(e) => {
+                      // Use empty string if value is empty, otherwise use the value
+                      field.onChange(e.target.value === "" ? "" : e.target.value);
+                    }}
+                    onBlur={field.onBlur}
                   />
                 </FormControl>
                 <FormMessage />
@@ -616,7 +683,12 @@ export function AddEventDialog({
                 <FormItem>
                   <FormLabel>Vaccine Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Vaccine name" {...field} />
+                    <Input 
+                      placeholder="Vaccine name" 
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -631,7 +703,12 @@ export function AddEventDialog({
                   <FormItem>
                     <FormLabel>Brand</FormLabel>
                     <FormControl>
-                      <Input placeholder="Vaccine brand" {...field} />
+                      <Input 
+                        placeholder="Vaccine brand" 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -645,7 +722,12 @@ export function AddEventDialog({
                   <FormItem>
                     <FormLabel>Lot Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="Lot number" {...field} />
+                      <Input 
+                        placeholder="Lot number" 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -665,7 +747,12 @@ export function AddEventDialog({
                 <FormItem>
                   <FormLabel>Medication Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Medication name" {...field} />
+                    <Input 
+                      placeholder="Medication name" 
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -680,7 +767,12 @@ export function AddEventDialog({
                   <FormItem>
                     <FormLabel>Dosage</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. 10mg" {...field} />
+                      <Input 
+                        placeholder="e.g. 10mg" 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -694,7 +786,12 @@ export function AddEventDialog({
                   <FormItem>
                     <FormLabel>Frequency</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Twice daily" {...field} />
+                      <Input 
+                        placeholder="e.g. Twice daily" 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -709,7 +806,12 @@ export function AddEventDialog({
                 <FormItem>
                   <FormLabel>Duration</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. 7 days" {...field} />
+                    <Input 
+                      placeholder="e.g. 7 days" 
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -790,7 +892,9 @@ export function AddEventDialog({
                     <Textarea 
                       placeholder="Reason for status change"
                       className="resize-none"
-                      {...field}
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
                     />
                   </FormControl>
                   <FormMessage />
@@ -812,7 +916,9 @@ export function AddEventDialog({
                   <Textarea 
                     placeholder="Note content"
                     className="resize-none min-h-[100px]"
-                    {...field}
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
                   />
                 </FormControl>
                 <FormMessage />
@@ -859,7 +965,12 @@ export function AddEventDialog({
                 <FormItem>
                   <FormLabel>Reason for Visit</FormLabel>
                   <FormControl>
-                    <Input placeholder="Reason for visit" {...field} />
+                    <Input 
+                      placeholder="Reason for visit" 
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -876,7 +987,9 @@ export function AddEventDialog({
                     <Textarea 
                       placeholder="Visit findings and observations"
                       className="resize-none"
-                      {...field}
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
                     />
                   </FormControl>
                   <FormMessage />
@@ -1034,7 +1147,9 @@ export function AddEventDialog({
                         <Textarea 
                           placeholder="Any additional notes about this event"
                           className="resize-none"
-                          {...field}
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
                         />
                       </FormControl>
                       <FormMessage />
