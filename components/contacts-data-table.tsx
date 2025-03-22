@@ -514,7 +514,7 @@ export function ContactsDataTable({
           {/* Batch Actions - Show only when rows are selected */}
           {Object.keys(rowSelection).length > 0 && (
             <div className="flex items-center mr-2">
-              <span className="text-sm text-muted-foreground mr-2">
+              <span className="text-sm text-muted-foreground mr-2 whitespace-nowrap">
                 {Object.keys(rowSelection).length} selected
               </span>
               
