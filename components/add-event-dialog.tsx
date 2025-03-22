@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { format } from "date-fns"
+import { useAuth } from "@/lib/auth-context"
 
 import {
   Dialog,
@@ -76,6 +77,9 @@ export function AddEventDialog({
   open: controlledOpen,
   onOpenChange
 }: AddEventDialogProps) {
+  // Get the authenticated user
+  const { user } = useAuth();
+  
   // Use internal state only if open is not controlled from parent
   const [internalOpen, setInternalOpen] = useState(false)
   
@@ -362,7 +366,6 @@ export function AddEventDialog({
           break
           
         case "status_change":
-          details.old_status = data.details.old_status
           details.new_status = data.details.new_status
           details.reason = data.details.reason
           
@@ -374,17 +377,23 @@ export function AddEventDialog({
             details.contact_id = data.contact_id
             
             // Also update the animal's owner_id
-            const { error: updateError } = await supabase
-              .from("animals")
-              .update({ 
-                owner_id: data.contact_id,
-                status: data.details.new_status // Update status as well
-              })
-              .eq("id", actualAnimalId)
-              
-            if (updateError) {
-              console.error("Error updating animal owner:", updateError)
-              toast.error("Event added but failed to update animal's owner")
+            try {
+              const { error: updateError } = await supabase
+                .from("animals")
+                .update({ 
+                  owner_id: data.contact_id,
+                  status: data.details.new_status, // Update status as well
+                  updated_at: new Date().toISOString() // Add timestamp for updated_at
+                })
+                .eq("id", actualAnimalId)
+                
+              if (updateError) {
+                console.error("Error updating animal owner:", updateError)
+                toast.error("Event added but failed to update animal's owner")
+              }
+            } catch (updateErr) {
+              console.error("Exception updating animal owner:", updateErr)
+              toast.error("Error occurred while updating animal's owner")
             }
           }
           break
@@ -407,29 +416,71 @@ export function AddEventDialog({
           details = data.details
       }
       
-      // Insert the event - fix table name from "animal_events" to "animal_timeline"
-      const { error } = await supabase.from("animal_timeline").insert({
-        animal_id: actualAnimalId,
-        event_type: data.event_type,
-        event_date: data.event_date.toISOString(),
-        details,
-      })
-      
-      if (error) throw error
-      
-      toast.success("Event added successfully")
-      form.reset()
-      handleOpenChange(false)
-      
-      if (onSuccess) {
-        onSuccess()
+      // Insert the event with created_by field
+      try {
+        console.log("Attempting to insert event:", {
+          animal_id: actualAnimalId,
+          event_type: data.event_type,
+          event_date: data.event_date.toISOString(),
+          details,
+          created_by: user?.id
+        });
+        
+        // First check if the table exists and we have access to it
+        const { error: testError } = await supabase
+          .from('animal_events')
+          .select('id')
+          .limit(1);
+        
+        if (testError) {
+          console.error("Table access test failed:", testError);
+          
+          // Try to check if the table exists at all
+          const { error: schemaError } = await supabase.rpc('get_table_definition', { 
+            table_name: 'animal_events' 
+          });
+          
+          if (schemaError) {
+            console.error("Table definition check failed:", schemaError);
+          }
+          
+          throw new Error(`Cannot access animal_events table: ${testError.message}`);
+        }
+        
+        console.log("Table access test successful, proceeding with insert");
+        
+        const { error, data: insertedData } = await supabase.from("animal_events").insert({
+          animal_id: actualAnimalId,
+          event_type: data.event_type,
+          event_date: data.event_date.toISOString(),
+          details,
+          created_by: user?.id
+        }).select();
+        
+        if (error) {
+          console.error("Database insert error:", error)
+          throw error;
+        }
+        
+        console.log("Event inserted successfully:", insertedData);
+        
+        toast.success("Event added successfully")
+        form.reset()
+        handleOpenChange(false)
+        
+        if (onSuccess) {
+          onSuccess()
+        }
+        
+        // Dispatch a custom event to notify the timeline to refresh
+        const refreshEvent = new CustomEvent('refreshAnimalTimeline', { 
+          detail: { animalId: actualAnimalId } 
+        });
+        window.dispatchEvent(refreshEvent);
+      } catch (insertError) {
+        console.error("Error inserting event:", insertError)
+        toast.error(`Failed to add event: ${insertError instanceof Error ? insertError.message : 'Unknown error'}`)
       }
-      
-      // Dispatch a custom event to notify the timeline to refresh
-      const refreshEvent = new CustomEvent('refreshAnimalTimeline', { 
-        detail: { animalId: actualAnimalId } 
-      });
-      window.dispatchEvent(refreshEvent);
     } catch (error) {
       console.error("Error adding event:", error)
       toast.error("Failed to add event")
@@ -578,64 +629,34 @@ export function AddEventDialog({
       case "status_change":
         return (
           <>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="details.old_status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Previous Status</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="adopted">Adopted</SelectItem>
-                        <SelectItem value="foster">Foster</SelectItem>
-                        <SelectItem value="treatment">Treatment</SelectItem>
-                        <SelectItem value="quarantine">Quarantine</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="details.new_status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>New Status</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="adopted">Adopted</SelectItem>
-                        <SelectItem value="foster">Foster</SelectItem>
-                        <SelectItem value="treatment">Treatment</SelectItem>
-                        <SelectItem value="quarantine">Quarantine</SelectItem>
-                        <SelectItem value="deceased">Deceased</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="details.new_status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New Status</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="adopted">Adopted</SelectItem>
+                      <SelectItem value="foster">Foster</SelectItem>
+                      <SelectItem value="treatment">Treatment</SelectItem>
+                      <SelectItem value="quarantine">Quarantine</SelectItem>
+                      <SelectItem value="deceased">Deceased</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             {/* Show contact selector for adopted or foster statuses */}
             {(newStatus === "adopted" || newStatus === "foster") && (

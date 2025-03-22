@@ -110,11 +110,15 @@ export function AnimalTimeline({
     
     // Add event listener for refreshing the timeline
     const handleRefreshTimeline = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      // Only refresh if event is for this animal or no specific animal
-      if (!customEvent.detail?.animalId || customEvent.detail.animalId === animalId) {
-        console.log("Refreshing animal timeline for:", animalId);
-        fetchEvents();
+      try {
+        const customEvent = event as CustomEvent;
+        // Only refresh if event is for this animal or no specific animal
+        if (!customEvent.detail?.animalId || customEvent.detail.animalId === animalId) {
+          console.log("Refreshing animal timeline for:", animalId);
+          fetchEvents();
+        }
+      } catch (error) {
+        console.error("Error handling timeline refresh event:", error);
       }
     };
     
