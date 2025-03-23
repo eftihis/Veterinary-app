@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { InvoiceWithJoins } from "@/hooks/useInvoiceWithJoins"
+import { InvoicePDFActions } from "@/components/invoice-pdf"
 
 interface PublicInvoiceViewProps {
   invoice: InvoiceWithJoins
@@ -72,6 +73,10 @@ export function PublicInvoiceView({ invoice }: PublicInvoiceViewProps) {
           <div className="flex items-center gap-2 mt-1">
             {getStatusBadge(invoice.status)}
           </div>
+        </div>
+        
+        <div>
+          <InvoicePDFActions invoice={invoice} />
         </div>
       </div>
         

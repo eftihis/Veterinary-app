@@ -36,6 +36,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { InvoicePDFActions } from "@/components/invoice-pdf"
 
 interface InvoiceDetailSheetProps {
   open: boolean
@@ -493,16 +494,22 @@ export function InvoiceDetailSheet({
             </Button>
           </div>
           
-          {invoice && !loading && onEdit && (
-            <Button
-              size="sm"
-              onClick={handleEdit}
-              className="flex items-center"
-            >
-              <FileEdit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {fullInvoiceData && (
+              <InvoicePDFActions invoice={fullInvoiceData} />
+            )}
+            
+            {invoice && !loading && onEdit && (
+              <Button
+                size="sm"
+                onClick={handleEdit}
+                className="flex items-center"
+              >
+                <FileEdit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
+          </div>
         </SheetFooter>
       </SheetContent>
     </Sheet>

@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth-context";
 import { ProfileInitializer } from "@/components/profile-initializer";
 import { QuickActionButton } from "@/components/quick-action-button";
+import { PDFProvider } from "@/contexts/pdf-context";
 
 const roboto = Roboto({
   variable: "--font-geist-sans",
@@ -33,13 +34,15 @@ export default function RootLayout({
       <body
         className={`${roboto.variable} ${robotoMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <ProfileInitializer>
-            {children}
-          </ProfileInitializer>
-          <Toaster position="top-right" />
-          <QuickActionButton />
-        </AuthProvider>
+        <PDFProvider>
+          <AuthProvider>
+            <ProfileInitializer>
+              {children}
+            </ProfileInitializer>
+            <Toaster position="top-right" />
+            <QuickActionButton />
+          </AuthProvider>
+        </PDFProvider>
       </body>
     </html>
   );
