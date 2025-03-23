@@ -6,9 +6,8 @@ import { supabase } from '@/lib/supabase'
 import { Image as ImageIcon, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
+import React from 'react'
 
-// Maximum file size: 200KB (in bytes)
-const MAX_FILE_SIZE = 200 * 1024;
 // Target width for resizing
 const TARGET_WIDTH = 1200;
 
@@ -31,6 +30,9 @@ export function ImageUpload({
   const [isRemoving, setIsRemoving] = useState(false)
   const [processingProgress, setProcessingProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Use maxSizeMB parameter to calculate MAX_FILE_SIZE in bytes
+  const maxFileSizeBytes = React.useMemo(() => Math.round(maxSizeMB * 1024 * 1024), [maxSizeMB])
 
   const handleUploadClick = () => {
     if (fileInputRef.current) {
@@ -119,11 +121,11 @@ export function ImageUpload({
       setProcessingProgress(50)
       
       // Check file size after resize (must be under 200KB)
-      if (resizedBlob.size > MAX_FILE_SIZE) {
+      if (resizedBlob.size > maxFileSizeBytes) {
         setIsUploading(false)
         setProcessingProgress(0)
         toast.error(`Image is too large (${(resizedBlob.size/1024).toFixed(1)}KB). 
-          Maximum size is 200KB. Please use a smaller or more compressible image.`)
+          Maximum size is ${maxSizeMB}MB. Please use a smaller or more compressible image.`)
         return
       }
       
@@ -263,7 +265,7 @@ export function ImageUpload({
             <>
               <p className="text-sm font-medium">Click to upload</p>
               <p className="text-xs text-muted-foreground">
-                JPG, PNG, GIF or WebP (max. 200KB)
+                JPG, PNG, GIF or WebP (max. {maxSizeMB}MB)
               </p>
               <p className="text-xs text-muted-foreground">
                 Images will be resized to 1200px width

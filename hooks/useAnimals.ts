@@ -122,7 +122,7 @@ export function useAnimals() {
       // After successful insert, fetch the newly created record
       const { data, error: fetchError } = await supabase
         .from('animals')
-        .select('id, name, type, breed, is_deceased, gender')
+        .select('id, name, type, breed, is_deceased, gender, image_url')
         .eq('name', animalData.name)
         .order('created_at', { ascending: false })
         .limit(1);
@@ -147,7 +147,8 @@ export function useAnimals() {
         type: data[0].type,
         breed: data[0].breed || '',
         isDeceased: data[0].is_deceased || false,
-        gender: data[0].gender
+        gender: data[0].gender,
+        imageUrl: data[0].image_url || undefined
       };
       
       // Update the local state with the new animal

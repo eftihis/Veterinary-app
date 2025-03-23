@@ -115,6 +115,26 @@ function getAnimalTypeIcon(type: string) {
   }
 }
 
+// Get centered animal type icon without right margin for the avatar
+function getCenteredAnimalTypeIcon(type: string) {
+  const iconProps = { className: "h-4 w-4" }
+  
+  switch(type.toLowerCase()) {
+    case 'dog':
+      return <Dog {...iconProps} />
+    case 'cat':
+      return <Cat {...iconProps} />
+    case 'bird':
+      return <Bird {...iconProps} />
+    case 'rabbit':
+      return <Rabbit {...iconProps} />
+    case 'rodent':
+      return <Rat {...iconProps} />
+    default:
+      return <HelpCircle {...iconProps} />
+  }
+}
+
 export function AnimalsDataTable({
   data,
   onViewAnimal,
@@ -296,7 +316,7 @@ export function AnimalsDataTable({
             </div>
           ) : (
             <div className="w-8 h-8 rounded-full bg-muted mr-2 flex items-center justify-center flex-shrink-0">
-              {getAnimalTypeIcon(row.original.type)}
+              {getCenteredAnimalTypeIcon(row.original.type)}
             </div>
           )}
           <span 
