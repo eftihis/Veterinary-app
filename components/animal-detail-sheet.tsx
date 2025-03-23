@@ -192,7 +192,7 @@ export function AnimalDetailSheet({
                 {animal.image_url && (
                   <Card className="overflow-hidden">
                     <CardContent className="p-0">
-                      <AspectRatio ratio={1 / 1}>
+                      <AspectRatio ratio={4 / 3}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
                           src={animal.image_url} 
