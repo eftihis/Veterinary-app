@@ -8,6 +8,7 @@ type Animal = {
   breed: string;
   is_deceased: boolean;
   gender?: string;
+  image_url?: string;
 };
 
 type AnimalOption = {
@@ -17,6 +18,7 @@ type AnimalOption = {
   breed: string;
   isDeceased: boolean;
   gender?: string;
+  imageUrl?: string;
 };
 
 // Define the type for the new animal data
@@ -29,6 +31,7 @@ export type NewAnimalData = {
   weight?: number;
   microchip_number?: string;
   notes?: string;
+  image_url?: string;
 };
 
 export function useAnimals() {
@@ -46,7 +49,7 @@ export function useAnimals() {
         
         const { data, error } = await supabase
           .from('animals')
-          .select('id, name, type, breed, is_deceased, gender');
+          .select('id, name, type, breed, is_deceased, gender, image_url');
         
         if (error) {
           throw error;
@@ -59,7 +62,8 @@ export function useAnimals() {
           type: animal.type,
           breed: animal.breed,
           isDeceased: animal.is_deceased,
-          gender: animal.gender
+          gender: animal.gender,
+          imageUrl: animal.image_url
         })).sort((a, b) => a.label.localeCompare(b.label));
         
         setAllAnimals(options);
@@ -101,7 +105,8 @@ export function useAnimals() {
         date_of_birth: animalData.date_of_birth ? animalData.date_of_birth.toISOString() : null,
         weight: animalData.weight || null,
         microchip_number: animalData.microchip_number || null,
-        notes: animalData.notes || null
+        notes: animalData.notes || null,
+        image_url: animalData.image_url || null
       };
       
       // Insert the new animal into the database

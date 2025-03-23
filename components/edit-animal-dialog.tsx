@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { CalendarIcon, Loader2 } from "lucide-react"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 // Form schema for editing an animal
 const animalFormSchema = z.object({
@@ -56,6 +57,7 @@ const animalFormSchema = z.object({
   microchip_number: z.string().optional(),
   notes: z.string().optional(),
   status: z.string().optional(),
+  image_url: z.string().optional(),
 })
 
 type AnimalFormValues = z.infer<typeof animalFormSchema>
@@ -74,6 +76,7 @@ export function EditAnimalDialog({
   onAnimalUpdated
 }: EditAnimalDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [tempImageUrl, setTempImageUrl] = useState<string | null>(null)
   
   // Define the form
   const form = useForm<AnimalFormValues>({
@@ -103,7 +106,9 @@ export function EditAnimalDialog({
         microchip_number: animal.microchip_number || "",
         notes: animal.notes || "",
         status: animal.status || "active",
+        image_url: animal.image_url || "",
       })
+      setTempImageUrl(animal.image_url)
     }
   }, [animal, form, open])
   
@@ -126,6 +131,7 @@ export function EditAnimalDialog({
           microchip_number: data.microchip_number || null,
           notes: data.notes || null,
           status: data.status || "active",
+          image_url: tempImageUrl,
         })
         .eq('id', animal.id)
       
@@ -354,6 +360,22 @@ export function EditAnimalDialog({
                 </FormItem>
               )}
             />
+            
+            <div className="border rounded-md p-4">
+              <ImageUpload 
+                bucket="animal-images"
+                path={animal?.id || 'animal'}
+                imageUrl={tempImageUrl}
+                onImageUploaded={(url) => {
+                  setTempImageUrl(url);
+                  form.setValue('image_url', url);
+                }}
+                onImageRemoved={() => {
+                  setTempImageUrl(null);
+                  form.setValue('image_url', '');
+                }}
+              />
+            </div>
             
             <FormField
               control={form.control}

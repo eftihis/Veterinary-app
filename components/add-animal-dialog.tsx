@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { CalendarIcon, Loader2 } from "lucide-react"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 // Form schema for adding an animal
 const animalFormSchema = z.object({
@@ -55,6 +56,7 @@ const animalFormSchema = z.object({
   weight: z.coerce.number().optional(),
   microchip_number: z.string().optional(),
   notes: z.string().optional(),
+  image_url: z.string().optional(),
 })
 
 export type AnimalFormValues = z.infer<typeof animalFormSchema>
@@ -84,6 +86,7 @@ export function AddAnimalDialog({
   // Internal state for uncontrolled mode
   const [internalOpen, setInternalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [tempImageUrl, setTempImageUrl] = useState<string | null>(null)
   
   // Determine if we're in controlled or uncontrolled mode
   const isControlled = controlledOpen !== undefined && setControlledOpen !== undefined
@@ -101,6 +104,7 @@ export function AddAnimalDialog({
       weight: undefined,
       microchip_number: "",
       notes: "",
+      image_url: "",
     },
   })
   
@@ -115,7 +119,9 @@ export function AddAnimalDialog({
         weight: undefined,
         microchip_number: "",
         notes: "",
+        image_url: "",
       });
+      setTempImageUrl(null);
     }
   }, [open, form, defaultAnimalName]);
   
@@ -151,6 +157,7 @@ export function AddAnimalDialog({
           microchip_number: data.microchip_number || null,
           notes: data.notes || null,
           status: "active",
+          image_url: tempImageUrl,
         });
         
         if (insertError) {
@@ -380,6 +387,22 @@ export function AddAnimalDialog({
                 </FormItem>
               )}
             />
+            
+            <div className="border rounded-md p-4">
+              <ImageUpload 
+                bucket="animal-images"
+                path={defaultAnimalName || 'animal'}
+                imageUrl={tempImageUrl}
+                onImageUploaded={(url) => {
+                  setTempImageUrl(url);
+                  form.setValue('image_url', url);
+                }}
+                onImageRemoved={() => {
+                  setTempImageUrl(null);
+                  form.setValue('image_url', '');
+                }}
+              />
+            </div>
             
             <FormField
               control={form.control}

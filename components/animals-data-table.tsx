@@ -32,6 +32,7 @@ import {
   Plus
 } from "lucide-react"
 import { format, formatDistanceToNow, parseISO, differenceInMonths, differenceInYears } from "date-fns"
+import Image from 'next/image'
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -92,6 +93,7 @@ export type Animal = {
   updated_at: string
   // Additional fields we'll add later
   status: string | null
+  image_url: string | null
 }
 
 // Get animal type icon
@@ -284,6 +286,21 @@ export function AnimalsDataTable({
       },
       cell: ({ row }) => (
         <div className="flex items-center">
+          {row.original.image_url ? (
+            <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0 relative">
+              <Image 
+                src={row.original.image_url} 
+                alt={`Photo of ${row.original.name}`}
+                fill
+                className="object-cover"
+                sizes="32px"
+              />
+            </div>
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-muted mr-2 flex items-center justify-center flex-shrink-0">
+              {getAnimalTypeIcon(row.original.type)}
+            </div>
+          )}
           <span 
             className="font-medium hover:underline cursor-pointer" 
             onClick={(e) => {

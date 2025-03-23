@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronDown, Loader2, Plus, Search, X } from "lucide-react"
+import { Check, ChevronDown, Loader2, Plus, Search, X, Dog, Cat, PawPrint } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Image from 'next/image'
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +16,7 @@ export type AnimalOption = {
   breed: string
   isDeceased: boolean
   gender?: string
+  imageUrl?: string
 }
 
 interface AnimalComboboxProps {
@@ -375,11 +377,30 @@ export function AnimalCombobox({
                           aria-selected={selectedId === animal.value}
                           tabIndex={-1}
                         >
-                          <div className="flex flex-col">
-                            <span>{animal.label}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {animal.type.charAt(0).toUpperCase() + animal.type.slice(1)} • {animal.breed} {animal.gender && `• ${animal.gender.charAt(0).toUpperCase() + animal.gender.slice(1)}`}
-                            </span>
+                          <div className="flex items-center gap-3">
+                            {animal.imageUrl ? (
+                              <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 relative">
+                                <Image 
+                                  src={animal.imageUrl} 
+                                  alt={`Photo of ${animal.label}`}
+                                  fill
+                                  className="object-cover"
+                                  sizes="32px"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                                {animal.type === 'dog' && <Dog className="h-4 w-4" />}
+                                {animal.type === 'cat' && <Cat className="h-4 w-4" />}
+                                {!['dog', 'cat'].includes(animal.type) && <PawPrint className="h-4 w-4" />}
+                              </div>
+                            )}
+                            <div className="flex flex-col">
+                              <span>{animal.label}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {animal.type.charAt(0).toUpperCase() + animal.type.slice(1)} • {animal.breed} {animal.gender && `• ${animal.gender.charAt(0).toUpperCase() + animal.gender.slice(1)}`}
+                              </span>
+                            </div>
                           </div>
                           <Check
                             className={cn(
