@@ -534,28 +534,26 @@ export function InvoiceDetailSheet({
           </div>
         )}
         
-        <SheetFooter className="flex justify-between mt-6 pt-4 border-t">
-          <div className="flex gap-2 w-full">
+        <SheetFooter className="flex flex-col gap-2 mt-6 pt-4 border-t">
+          {/* First row - Close button */}
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="w-full"
+          >
+            Close
+          </Button>
+          
+          {/* Second row - Edit button */}
+          {invoice && !loading && onEdit && (
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="flex-1"
+              onClick={handleEdit}
+              className="w-full"
             >
-              Close
+              <FileEdit className="h-4 w-4 mr-2" />
+              Edit Invoice
             </Button>
-            
-            {invoice && !loading && onEdit && (
-              <Button
-                size="sm"
-                onClick={handleEdit}
-                className="flex items-center flex-1"
-              >
-                <FileEdit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            )}
-          </div>
+          )}
         </SheetFooter>
       </SheetContent>
     </Sheet>
