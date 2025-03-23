@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     paddingBottom: 3,
     color: '#1D1D1F',
     borderBottomWidth: 0.5,
-    borderBottomColor: '#DDDDDD',
+    borderBottomColor: '#222222',
     borderBottomStyle: 'solid',
   },
   row: {
@@ -111,6 +111,9 @@ const styles = StyleSheet.create({
     fontSize: 7,
     color: '#86868B',
     paddingVertical: 6,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#000000', // Set border color to black
+    borderBottomStyle: 'solid',
   },
   totalRow: {
     flexDirection: 'row',
@@ -138,14 +141,15 @@ const styles = StyleSheet.create({
   },
   subtotalRow: {
     flexDirection: 'row',
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: 6,
+    paddingBottom: 6,
     paddingHorizontal: 0,
     alignItems: 'center',
     borderBottomWidth: 0,
   },
   status: {
-    padding: 3,
+    paddingVertical: 3,
+    paddingHorizontal: 4, // Increased horizontal padding
     borderRadius: 3,
     color: '#FFFFFF',
     fontWeight: 500,
@@ -241,7 +245,7 @@ export const InvoicePDF = ({ invoice }: InvoicePDFProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
       {/* Invoice Header */}
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, { borderBottomWidth: 0 }]}>
         <Text style={styles.header}>Invoice {invoice.document_number}</Text>
         <Text style={getStatusStyle(invoice.status)}>
           {invoice.status.toUpperCase()}
