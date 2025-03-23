@@ -306,7 +306,7 @@ export function InvoiceDetailSheet({
         ) : fullInvoiceData ? (
           <div className="space-y-4 sm:space-y-6 px-1">
             {/* Public Sharing Card - More discreet styling */}
-            <Card className="border-dashed py-2 border-muted shadow-none">
+            <Card className="border-dashed py-2 shadow-none">
               <CardHeader className="py-1 px-4 sm:py-4 sm:px-5">
                 <CardTitle className="text-sm sm:text-base font-medium flex items-center">
                   <Share2 className="sm:inline-block h-4 w-4 mr-2" />
