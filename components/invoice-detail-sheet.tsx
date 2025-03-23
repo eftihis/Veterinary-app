@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { User, User2, Hash, FileText, DollarSign, AlertCircle, FileEdit, Share2 } from "lucide-react"
+import { User, User2, Hash, FileText, DollarSign, AlertCircle, FileEdit, Share2, Printer } from "lucide-react"
 import { 
   Sheet, 
   SheetContent, 
@@ -36,7 +36,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { InvoicePDFActions } from "@/components/invoice-pdf"
+import { InvoicePDFDownloadButton } from "@/components/invoice-pdf"
 
 interface InvoiceDetailSheetProps {
   open: boolean
@@ -190,16 +190,54 @@ export function InvoiceDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-xl overflow-y-auto p-6">
         <SheetHeader className="pb-4">
-          <SheetTitle className="text-2xl font-bold flex items-center">
-            <FileText className="mr-2 h-5 w-5" />
-            Invoice {invoice?.document_number}
-          </SheetTitle>
-          
-          {!loading && fullInvoiceData && (
-            <div className="flex items-center gap-2 mt-1">
-              {getStatusBadge(fullInvoiceData.status)}
+          <div className="flex items-center justify-between">
+            <div>
+              <SheetTitle className="text-2xl font-bold flex items-center">
+                <FileText className="mr-2 h-5 w-5" />
+                Invoice {invoice?.document_number}
+              </SheetTitle>
+              {!loading && fullInvoiceData && (
+                <div className="mt-1">
+                  {getStatusBadge(fullInvoiceData.status)}
+                </div>
+              )}
             </div>
-          )}
+            
+            {!loading && fullInvoiceData && (
+              <div className="flex items-center gap-2">
+                {/* Download PDF button */}
+                <InvoicePDFDownloadButton invoice={fullInvoiceData} />
+                
+                {/* Print button */}
+                <Button
+                  onClick={() => {
+                    if (fullInvoiceData) {
+                      // Show loading toast
+                      toast.loading("Preparing invoice for printing...");
+                      
+                      // Import and use the printPDF function
+                      import('@/components/invoice-pdf').then(({ printPDF }) => {
+                        printPDF(fullInvoiceData).then(() => {
+                          toast.dismiss();
+                        }).catch((err) => {
+                          toast.dismiss();
+                          toast.error("Failed to print invoice");
+                          console.error(err);
+                        });
+                      });
+                    }
+                  }}
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Print Invoice"
+                  title="Print Invoice"
+                  className="h-8 w-8"
+                >
+                  <Printer className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </SheetHeader>
         
         {loading ? (
@@ -483,7 +521,7 @@ export function InvoiceDetailSheet({
         )}
         
         <SheetFooter className="flex justify-between mt-6 pt-4 border-t">
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full">
             <Button
               variant="outline"
               size="sm"
@@ -492,18 +530,12 @@ export function InvoiceDetailSheet({
             >
               Close
             </Button>
-          </div>
-          
-          <div className="flex gap-2">
-            {fullInvoiceData && (
-              <InvoicePDFActions invoice={fullInvoiceData} />
-            )}
             
             {invoice && !loading && onEdit && (
               <Button
                 size="sm"
                 onClick={handleEdit}
-                className="flex items-center"
+                className="flex items-center flex-1"
               >
                 <FileEdit className="h-4 w-4 mr-2" />
                 Edit

@@ -385,7 +385,7 @@ export const InvoicePDF = ({ invoice }: InvoicePDFProps) => (
 );
 
 // Function to generate and print a PDF
-const printPDF = async (invoice: InvoiceWithJoins) => {
+export const printPDF = async (invoice: InvoiceWithJoins) => {
   try {
     // Dynamically import @react-pdf/renderer at runtime
     const { pdf } = await import('@react-pdf/renderer');
@@ -506,10 +506,17 @@ export const InvoicePDFDownloadButton = ({ invoice }: InvoicePDFProps) => {
     <Button
       onClick={handleClick}
       disabled={isGenerating}
-      className="flex items-center gap-2"
+      size="icon"
+      variant="ghost"
+      aria-label="Download PDF"
+      title="Download PDF"
+      className="h-8 w-8"
     >
-      <Printer className="h-4 w-4" />
-      {isGenerating ? 'Generating PDF...' : 'Print / Download PDF'}
+      {isGenerating ? (
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      ) : (
+        <Download className="h-4 w-4" />
+      )}
     </Button>
   );
 }; 
