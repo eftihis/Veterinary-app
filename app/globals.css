@@ -162,3 +162,26 @@ input, textarea {
     min-height: 40px;
   }
 }
+
+/* Simplified pulsating glow effect with single color */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 2px 1px rgba(16, 205, 139, 0.4); /* Slightly brighter green */
+    opacity: 0.8;
+  }
+  50% {
+    box-shadow: 0 0 3px 2px rgba(10, 212, 143, 0.7); /* Slightly brighter green */
+    opacity: 1;
+  }
+}
+
+.public-invoice-dot {
+  animation: pulse-glow 2s ease-in-out infinite;
+  background-color: #12b983; /* Slightly brighter emerald green color */
+}
+
+/* Hover effect for invoice status indicator */
+.public-invoice-dot:hover {
+  transform: scale(1.2);
+  transition: transform 0.2s ease-in-out;
+}

@@ -762,7 +762,11 @@ export function InvoicesDataTable({
           >
             {row.getValue("document_number")}
             {invoice.is_public && (
-              <div className="w-2 h-2 rounded-full bg-green-500" title="Public invoice" />
+              <div 
+                className="ml-1 w-1 h-1 rounded-full public-invoice-dot transition-transform"
+                title="Public invoice"
+                aria-label="Public invoice indicator"
+              />
             )}
           </div>
         );
