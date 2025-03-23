@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { User, User2, Hash, FileText, DollarSign, AlertCircle, FileEdit, Share2, Printer } from "lucide-react"
+import { User, User2, Hash, DollarSign, AlertCircle, FileEdit, Share2, Printer } from "lucide-react"
 import { 
   Sheet, 
   SheetContent, 
@@ -218,7 +218,6 @@ export function InvoiceDetailSheet({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
               <SheetTitle className="text-xl sm:text-2xl font-bold flex items-center">
-                <FileText className="mr-2 h-5 w-5" />
                 Invoice {invoice?.document_number}
               </SheetTitle>
               {!loading && fullInvoiceData && (
