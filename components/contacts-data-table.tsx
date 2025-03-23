@@ -65,6 +65,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { RoleFilter } from "@/components/role-filter"
+import { formatColumnName } from "@/lib/utils"
 
 // Define Contact type based on Supabase structure
 export type Contact = {
@@ -566,7 +567,7 @@ export function ContactsDataTable({
                         column.toggleVisibility(!!value)
                       }
                     >
-                      {column.id}
+                      {formatColumnName(column.id)}
                     </DropdownMenuCheckboxItem>
                   );
                 })}

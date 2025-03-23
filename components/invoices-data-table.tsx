@@ -57,6 +57,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { formatColumnName } from "@/lib/utils"
 import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
 import { InvoiceDetailSheet } from "@/components/invoice-detail-sheet"
 import { StatusFilter } from "@/components/status-filter"
@@ -1218,7 +1219,7 @@ export function InvoicesDataTable({
                         column.toggleVisibility(!!value)
                       }
                     >
-                      {column.id}
+                      {formatColumnName(column.id)}
                     </DropdownMenuCheckboxItem>
                   )
                 })}

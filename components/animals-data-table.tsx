@@ -71,6 +71,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { TypeFilter } from "@/components/type-filter"
+import { formatColumnName } from "@/lib/utils"
 
 // Define Animal type based on Supabase structure
 export type Animal = {
@@ -624,7 +625,7 @@ export function AnimalsDataTable({
                         column.toggleVisibility(!!value)
                       }
                     >
-                      {column.id}
+                      {formatColumnName(column.id)}
                     </DropdownMenuCheckboxItem>
                   )
                 })}

@@ -48,6 +48,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { formatColumnName } from "@/lib/utils"
 import { StatusFilter } from "@/components/status-filter"
 import { ItemFilter } from "@/components/item-filter"
 import {
@@ -740,7 +741,7 @@ export function LineItemsDataTable({
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) => column.toggleVisibility(!!value)}
                     >
-                      {column.id}
+                      {formatColumnName(column.id)}
                     </DropdownMenuCheckboxItem>
                   )
                 })}

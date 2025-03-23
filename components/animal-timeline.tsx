@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { AddEventDialog } from "@/components/add-event-dialog"
 import { hasKey, getStructuredDetails } from "@/components/timeline-utils"
+import { formatEventType } from "@/lib/utils"
 
 // Type for timeline events
 type TimelineEvent = {
@@ -181,30 +182,6 @@ export function AnimalTimeline({
     
     // Default icon if no match or if eventType is null/undefined
     return <FileText {...iconProps} />
-  }
-  
-  // Add this helper function to format event types
-  function formatEventType(eventType: string): string {
-    switch (eventType) {
-      case "status_change":
-        return "Status Change";
-      case "weight":
-        return "Weight Measurement";
-      case "vaccination":
-        return "Vaccination";
-      case "medication":
-        return "Medication";
-      case "note":
-        return "Note";
-      case "visit":
-        return "Veterinary Visit";
-      default:
-        // Capitalize and replace underscores with spaces as a fallback
-        return eventType
-          .split('_')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-    }
   }
   
   // Render appropriate content based on event type
