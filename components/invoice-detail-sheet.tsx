@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { User, User2, Hash, FileText, DollarSign, AlertCircle, FileEdit } from "lucide-react"
+import { User, User2, Hash, FileText, DollarSign, AlertCircle, FileEdit, Share2 } from "lucide-react"
 import { 
   Sheet, 
   SheetContent, 
@@ -26,6 +26,16 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { supabase } from "@/lib/supabase"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface InvoiceDetailSheetProps {
   open: boolean
@@ -84,6 +94,9 @@ export function InvoiceDetailSheet({
   const [loading, setLoading] = useState(false)
   const [fullInvoiceData, setFullInvoiceData] = useState<InvoiceWithJoins | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isPublic, setIsPublic] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
+  const [isUpdatingPublicStatus, setIsUpdatingPublicStatus] = useState(false)
 
   // Fetch the complete invoice data when the sheet opens
   useEffect(() => {
@@ -103,6 +116,9 @@ export function InvoiceDetailSheet({
         
         console.log("Full invoice data loaded:", data)
         setFullInvoiceData(data)
+        
+        // Set the public status based on the fetched data
+        setIsPublic(data.is_public || false)
       } catch (err) {
         console.error("Error fetching invoice details:", err)
         setError("Failed to load invoice details")
@@ -120,6 +136,53 @@ export function InvoiceDetailSheet({
       onEdit(invoice)
       onOpenChange(false)
     }
+  }
+  
+  // Toggle public access
+  async function togglePublicAccess() {
+    if (!invoice?.id) return
+    
+    try {
+      setIsUpdatingPublicStatus(true)
+      
+      const { error } = await supabase
+        .from('invoices')
+        .update({ is_public: !isPublic })
+        .eq('id', invoice.id)
+      
+      if (error) {
+        throw error
+      }
+      
+      setIsPublic(!isPublic)
+      toast.success(isPublic ? "Invoice is now private" : "Invoice is now public")
+    } catch (err) {
+      console.error("Error updating invoice public status:", err)
+      toast.error("Failed to update invoice's public status")
+    } finally {
+      setIsUpdatingPublicStatus(false)
+    }
+  }
+  
+  // Copy public link to clipboard
+  function copyPublicLink() {
+    if (!invoice?.id) return
+    
+    const publicUrl = `${window.location.origin}/public/invoice/${invoice.id}`
+    navigator.clipboard.writeText(publicUrl)
+      .then(() => {
+        setIsCopied(true)
+        toast.success("Link copied to clipboard")
+        
+        // Reset the copied state after 2 seconds
+        setTimeout(() => {
+          setIsCopied(false)
+        }, 2000)
+      })
+      .catch(err => {
+        console.error("Error copying to clipboard:", err)
+        toast.error("Failed to copy link")
+      })
   }
 
   return (
@@ -160,6 +223,66 @@ export function InvoiceDetailSheet({
           </div>
         ) : fullInvoiceData ? (
           <div className="space-y-4 sm:space-y-6 px-1">
+            {/* Public Sharing Card */}
+            <Card>
+              <CardHeader className="py-4 px-5">
+                <CardTitle className="text-base font-medium flex items-center">
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Invoice
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-4 px-5 pt-0">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="public-toggle">Public Access</Label>
+                      <p className="text-xs text-muted-foreground">
+                        When enabled, this invoice can be viewed without login using a direct link.
+                      </p>
+                    </div>
+                    <Switch
+                      id="public-toggle"
+                      checked={isPublic}
+                      onCheckedChange={togglePublicAccess}
+                      disabled={isUpdatingPublicStatus}
+                    />
+                  </div>
+                  
+                  {isPublic && (
+                    <div className="pt-2">
+                      <Label htmlFor="public-link" className="mb-1.5 block">
+                        Shareable Link
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="public-link"
+                          value={`${window.location.origin}/public/invoice/${invoice?.id}`}
+                          readOnly
+                          className="flex-1"
+                        />
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                onClick={copyPublicLink} 
+                                size="sm"
+                                variant="secondary"
+                              >
+                                {isCopied ? "Copied!" : "Copy"}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Copy link to clipboard</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            
             {/* Invoice Header Information */}
             <Card>
               <CardHeader className="py-4 px-5">

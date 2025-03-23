@@ -16,6 +16,7 @@ export type InvoiceWithJoins = {
   comment: string | null;
   created_at: string;
   updated_at: string;
+  is_public?: boolean;
   // References
   animal_id: string | null;
   sender_id: string | null;
@@ -64,6 +65,7 @@ interface RawInvoice {
   comment: string | null;
   created_at: string;
   updated_at: string;
+  is_public?: boolean;
   animal_id: string | null;
   sender_id: string | null;
   created_by: string | null;
