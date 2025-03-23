@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { 
   Document, 
   Page, 
@@ -30,101 +30,115 @@ const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
     backgroundColor: '#FFFFFF',
-    padding: 30,
+    padding: 40,
     fontFamily: 'Roboto',
-    fontSize: 10,
+    fontSize: 9,
   },
   section: {
-    margin: 10,
-    padding: 10,
+    marginVertical: 4,
+    paddingVertical: 3,
   },
   header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontSize: 18,
+    fontWeight: 500,
+    marginBottom: 8,
+    color: '#1D1D1F',
   },
   subheader: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    marginTop: 20,
-    padding: 5,
-    backgroundColor: '#f9fafb',
+    fontSize: 10,
+    fontWeight: 500,
+    marginBottom: 6,
+    marginTop: 10,
+    paddingBottom: 3,
+    color: '#1D1D1F',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#DDDDDD',
+    borderBottomStyle: 'solid',
   },
   row: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: '#EEEEEE',
     borderBottomStyle: 'solid',
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: 6,
+    paddingBottom: 6
   },
   infoGroup: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   infoRow: {
     flexDirection: 'row',
-    marginBottom: 5,
+    marginBottom: 3,
   },
   infoLabel: {
-    width: 120,
-    fontWeight: 'bold',
+    width: 110,
+    fontWeight: 400,
+    color: '#86868B',
+    fontSize: 8,
   },
   infoValue: {
     flex: 1,
+    fontSize: 8,
+    color: '#1D1D1F',
   },
   col1: {
     flex: 3,
+    fontSize: 9,
   },
   col2: {
     flex: 1,
     textAlign: 'right',
+    fontSize: 9,
   },
   col3: {
     flex: 1,
     textAlign: 'right',
+    fontSize: 9,
   },
   col4: {
     flex: 1,
     textAlign: 'right',
+    fontSize: 9,
   },
   tableHeader: {
-    backgroundColor: '#f9fafb',
-    fontWeight: 'bold',
+    backgroundColor: '#F5F5F7',
+    fontWeight: 500,
+    fontSize: 8,
+    color: '#86868B',
   },
   totalRow: {
     flexDirection: 'row',
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#000000',
+    paddingTop: 10,
+    paddingBottom: 10,
+    borderTopWidth: 0.5,
+    borderTopColor: '#1D1D1F',
     borderTopStyle: 'solid',
   },
   totalLabel: {
     flex: 5,
     textAlign: 'right',
-    fontWeight: 'bold',
+    fontWeight: 500,
     paddingRight: 8,
+    fontSize: 9,
   },
   totalValue: {
     flex: 1,
     textAlign: 'right',
-    fontWeight: 'bold',
+    fontWeight: 500,
+    fontSize: 9,
   },
   status: {
-    padding: 4,
-    borderRadius: 4,
+    padding: 3,
+    borderRadius: 3,
     color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 10,
+    fontWeight: 500,
+    fontSize: 7,
     width: 'auto',
     textAlign: 'center',
-    marginTop: 5,
-    marginBottom: 5,
     alignSelf: 'flex-start',
   },
   draft: {
-    backgroundColor: '#6B7280',
+    backgroundColor: '#86868B',
   },
   submitted: {
     backgroundColor: '#EAB308',
@@ -133,20 +147,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
   },
   paid: {
-    backgroundColor: '#22C55E',
+    backgroundColor: '#34C759',
   },
   voided: {
-    backgroundColor: '#EF4444',
+    backgroundColor: '#FF3B30',
   },
   footer: {
     position: 'absolute',
     bottom: 30,
-    left: 30,
-    right: 30,
+    left: 40,
+    right: 40,
     textAlign: 'center',
-    fontSize: 10,
-    color: '#6B7280',
-  }
+    fontSize: 7,
+    color: '#86868B',
+  },
+  infoSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 20,
+    marginVertical: 5,
+  },
+  infoColumn: {
+    flex: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#EEEEEE',
+    borderBottomStyle: 'solid',
+    paddingBottom: 10,
+  },
 });
 
 // Format currency
@@ -171,6 +204,17 @@ const getStatusStyle = (status: string) => {
   return [baseStyle, statusStyle];
 };
 
+// Define LineItem interface for invoice line items
+interface LineItem {
+  id?: string;
+  item_name?: string;
+  description?: string;
+  quantity?: number;
+  price?: number;
+  unit_price?: number;
+  total?: number;
+}
+
 interface InvoicePDFProps {
   invoice: InvoiceWithJoins;
 }
@@ -180,13 +224,11 @@ export const InvoicePDF = ({ invoice }: InvoicePDFProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
       {/* Invoice Header */}
-      <View style={styles.section}>
+      <View style={styles.headerRow}>
         <Text style={styles.header}>Invoice {invoice.document_number}</Text>
-        <View>
-          <Text style={getStatusStyle(invoice.status)}>
-            {invoice.status.toUpperCase()}
-          </Text>
-        </View>
+        <Text style={getStatusStyle(invoice.status)}>
+          {invoice.status.toUpperCase()}
+        </Text>
       </View>
 
       {/* Invoice Information */}
@@ -222,45 +264,47 @@ export const InvoicePDF = ({ invoice }: InvoicePDFProps) => (
         </View>
       </View>
 
-      {/* Patient Information */}
-      <View style={styles.section}>
-        <Text style={styles.subheader}>Patient Information</Text>
-        {invoice.animal ? (
-          <View style={styles.infoGroup}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Name:</Text>
-              <Text style={styles.infoValue}>{invoice.animal.name}</Text>
+      {/* Patient and Veterinarian Information Side by Side */}
+      <View style={styles.infoSection}>
+        {/* Patient Information */}
+        <View style={[styles.infoColumn]}>
+          <Text style={styles.subheader}>Patient Information</Text>
+          {invoice.animal ? (
+            <View style={styles.infoGroup}>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Name:</Text>
+                <Text style={styles.infoValue}>{invoice.animal.name}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Type:</Text>
+                <Text style={styles.infoValue}>{invoice.animal.type}</Text>
+              </View>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Type:</Text>
-              <Text style={styles.infoValue}>{invoice.animal.type}</Text>
-            </View>
-          </View>
-        ) : (
-          <Text>No patient information available</Text>
-        )}
-      </View>
+          ) : (
+            <Text style={styles.infoValue}>No patient information available</Text>
+          )}
+        </View>
 
-      {/* Veterinarian Information */}
-      <View style={styles.section}>
-        <Text style={styles.subheader}>Veterinarian Information</Text>
-        {invoice.veterinarian ? (
-          <View style={styles.infoGroup}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Name:</Text>
-              <Text style={styles.infoValue}>
-                {invoice.veterinarian.first_name} {invoice.veterinarian.last_name}
-              </Text>
+        {/* Veterinarian Information */}
+        <View style={[styles.infoColumn]}>
+          <Text style={styles.subheader}>Veterinarian Information</Text>
+          {invoice.veterinarian ? (
+            <View style={styles.infoGroup}>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Name:</Text>
+                <Text style={styles.infoValue}>
+                  {invoice.veterinarian.first_name} {invoice.veterinarian.last_name}
+                </Text>
+              </View>
             </View>
-          </View>
-        ) : (
-          <Text>No veterinarian assigned</Text>
-        )}
+          ) : (
+            <Text style={styles.infoValue}>No veterinarian assigned</Text>
+          )}
+        </View>
       </View>
 
       {/* Line Items */}
-      <View style={styles.section}>
-        <Text style={styles.subheader}>Invoice Items</Text>
+      <View style={[styles.section, { marginTop: 20 }]}>
         
         {/* Table Header */}
         <View style={[styles.row, styles.tableHeader]}>
@@ -272,7 +316,7 @@ export const InvoicePDF = ({ invoice }: InvoicePDFProps) => (
         
         {/* Table Rows */}
         {invoice.line_items && invoice.line_items.length > 0 ? (
-          invoice.line_items.map((item: any, index: number) => (
+          invoice.line_items.map((item: LineItem, index: number) => (
             <View style={styles.row} key={index}>
               <Text style={styles.col1}>{item.item_name || item.description || 'Unknown Item'}</Text>
               <Text style={styles.col2}>{item.quantity || 1}</Text>
@@ -284,7 +328,7 @@ export const InvoicePDF = ({ invoice }: InvoicePDFProps) => (
           ))
         ) : (
           <View style={styles.row}>
-            <Text>No items found for this invoice</Text>
+            <Text style={styles.infoValue}>No items found for this invoice</Text>
           </View>
         )}
         
@@ -311,13 +355,13 @@ export const InvoicePDF = ({ invoice }: InvoicePDFProps) => (
       {invoice.comment && (
         <View style={styles.section}>
           <Text style={styles.subheader}>Additional Comments</Text>
-          <Text>{invoice.comment}</Text>
+          <Text style={styles.infoValue}>{invoice.comment}</Text>
         </View>
       )}
       
       {/* Footer */}
       <View style={styles.footer}>
-        <Text>Generated on {new Date().toLocaleDateString()} - Veterinary Invoice System</Text>
+        <Text>Generated on {new Date().toLocaleDateString()} • Veterinary Invoice System</Text>
       </View>
     </Page>
   </Document>
