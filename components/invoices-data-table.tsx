@@ -274,7 +274,7 @@ interface InvoicesDataTableProps {
   preloadedData?: Invoice[];
   onDeleteInvoice?: (invoice: Invoice | Invoice[]) => void;
   onUpdateInvoiceStatus?: (invoices: Invoice[], newStatus: string) => void;
-  onDataChanged?: () => void;
+  onDataChanged?: (forceRefresh?: boolean) => void;
 }
 
 export function InvoicesDataTable({ 
@@ -717,6 +717,22 @@ export function InvoicesDataTable({
       onUpdateInvoiceStatus(selectedInvoices, newStatus);
     }
   }
+
+  // Add this function inside the InvoicesDataTable component to update a single invoice
+  const updateInvoiceInTable = (updatedInvoice: Invoice) => {
+    if (!updatedInvoice) return;
+    
+    setInvoices(prevInvoices => 
+      prevInvoices.map(inv => 
+        inv.id === updatedInvoice.id ? { ...inv, ...updatedInvoice } : inv
+      )
+    );
+    
+    // If the invoice being updated is the selected one, update it too
+    if (selectedInvoice && selectedInvoice.id === updatedInvoice.id) {
+      setSelectedInvoice({ ...selectedInvoice, ...updatedInvoice });
+    }
+  };
 
   // Define columns with access to component state/functions
   const columns: ColumnDef<Invoice>[] = [
@@ -1495,6 +1511,7 @@ export function InvoicesDataTable({
           onOpenChange={setViewDialogOpen}
           onEdit={handleEditInvoice}
           onDataChanged={onDataChanged}
+          onUpdateInvoice={updateInvoiceInTable}
         />
       )}
 

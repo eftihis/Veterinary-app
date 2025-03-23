@@ -40,7 +40,7 @@ interface RawInvoice {
 interface InvoicesDataTableWrapperProps {
   onDeleteInvoice?: (invoice: Invoice | Invoice[]) => void;
   onUpdateInvoiceStatus?: (invoices: Invoice[], newStatus: string) => void;
-  onDataChanged?: () => void;
+  onDataChanged?: (forceRefresh?: boolean) => void;
 }
 
 export default function InvoicesDataTableWrapper({

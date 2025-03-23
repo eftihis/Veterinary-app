@@ -42,7 +42,8 @@ interface InvoiceDetailSheetProps {
   onOpenChange: (open: boolean) => void
   invoice: Invoice | null
   onEdit?: (invoice: Invoice) => void
-  onDataChanged?: () => void
+  onDataChanged?: (forceRefresh?: boolean) => void
+  onUpdateInvoice?: (updatedInvoice: Invoice) => void
 }
 
 interface LineItem {
@@ -91,7 +92,8 @@ export function InvoiceDetailSheet({
   onOpenChange,
   invoice,
   onEdit,
-  onDataChanged
+  onDataChanged,
+  onUpdateInvoice
 }: InvoiceDetailSheetProps) {
   const [loading, setLoading] = useState(false)
   const [fullInvoiceData, setFullInvoiceData] = useState<InvoiceWithJoins | null>(null)
@@ -161,12 +163,22 @@ export function InvoiceDetailSheet({
       
       // Update the invoice object to reflect the new is_public state
       if (invoice) {
+        const updatedInvoice = {
+          ...invoice,
+          is_public: !isPublic
+        };
+        
+        // If onUpdateInvoice is provided, use it for immediate update
+        if (onUpdateInvoice) {
+          onUpdateInvoice(updatedInvoice);
+        } 
+        // If no direct update method is available, use the refresh method
+        else if (onDataChanged) {
+          onDataChanged(); // Call without parameter since the original type doesn't accept one
+        }
+        
+        // For backward compatibility, still update the original object
         invoice.is_public = !isPublic;
-      }
-      
-      // Call onDataChanged to refresh the parent table
-      if (onDataChanged) {
-        onDataChanged();
       }
       
       toast.success(isPublic ? "Invoice is now private" : "Invoice is now public")

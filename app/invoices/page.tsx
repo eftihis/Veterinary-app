@@ -30,8 +30,11 @@ export default function InvoicesPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   
   // Refresh the data after changes
-  const handleDataChanged = () => {
-    setRefreshKey(prev => prev + 1)
+  const handleDataChanged = (forceRefresh: boolean = false) => {
+    // Only increment the refresh key if a full refresh is needed or explicitly requested
+    if (forceRefresh) {
+      setRefreshKey(prev => prev + 1);
+    }
   }
   
   // Handle delete button click - now supports both single and batch delete
@@ -97,7 +100,7 @@ export default function InvoicesPage() {
       }
       
       toast.success(successMessage);
-      handleDataChanged(); // Refresh the data to show updated statuses
+      handleDataChanged(true); // Refresh the data to show updated statuses
     } catch (error) {
       console.error(`Error in handleUpdateInvoiceStatus:`, error);
       toast.error(`An unexpected error occurred while updating invoice status.`);
@@ -206,7 +209,7 @@ export default function InvoicesPage() {
       }
       
       // Refresh the invoice list
-      handleDataChanged()
+      handleDataChanged(true)
     } catch (error) {
       console.error("Error deleting invoice(s):", error)
       toast.error(
