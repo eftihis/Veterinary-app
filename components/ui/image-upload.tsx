@@ -6,11 +6,9 @@ import { supabase } from '@/lib/supabase'
 import { Image as ImageIcon, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
-import Image from 'next/image'
 
 interface ImageUploadProps {
   bucket: string
-  path: string
   imageUrl: string | null
   onImageUploaded: (url: string) => void
   onImageRemoved: () => void
@@ -19,7 +17,6 @@ interface ImageUploadProps {
 
 export function ImageUpload({
   bucket,
-  path,
   imageUrl,
   onImageUploaded,
   onImageRemoved,
@@ -58,35 +55,28 @@ export function ImageUpload({
     try {
       setIsUploading(true)
 
-      // Remove previous image if exists
-      if (imageUrl) {
-        try {
-          const previousPath = imageUrl.split(`${bucket}/`)[1]
-          if (previousPath) {
-            await supabase.storage.from(bucket).remove([previousPath])
-          }
-        } catch (error) {
-          console.error('Error removing previous image:', error)
-          // Continue with upload even if deletion fails
-        }
-      }
-
-      // Upload new image with a unique filename
+      // Create a simple filename with a unique ID
       const fileExt = file.name.split('.').pop()
-      const fileName = `${path}-${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `${path}/${fileName}`
-
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      
+      console.log('Uploading file to bucket:', bucket, 'with filename:', fileName)
+      
+      // Upload directly to bucket root for simplicity
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file)
-
-      if (uploadError) throw uploadError
-
+        .upload(fileName, file)
+      
+      if (uploadError) {
+        throw uploadError
+      }
+      
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from(bucket)
-        .getPublicUrl(filePath)
-
+        .getPublicUrl(fileName)
+      
+      console.log('Upload successful, public URL:', publicUrl)
+      
       onImageUploaded(publicUrl)
       toast.success('Image uploaded successfully')
     } catch (error) {
@@ -107,17 +97,23 @@ export function ImageUpload({
     try {
       setIsRemoving(true)
       
-      // Extract the file path from the URL
-      const filePath = imageUrl.split(`${bucket}/`)[1]
+      // Extract just the filename from the URL
+      const urlParts = imageUrl.split('/')
+      const fileName = urlParts[urlParts.length - 1]
       
-      if (filePath) {
+      if (fileName) {
+        console.log('Removing image:', fileName)
+        
         const { error } = await supabase.storage
           .from(bucket)
-          .remove([filePath])
-
-        if (error) throw error
+          .remove([fileName])
+        
+        if (error) {
+          console.error('Error removing image:', error)
+          throw error
+        }
       }
-
+      
       onImageRemoved()
       toast.success('Image removed')
     } catch (error) {
@@ -153,18 +149,19 @@ export function ImageUpload({
       </div>
 
       {imageUrl ? (
-        <AspectRatio ratio={1}>
-          <Image
-            src={imageUrl}
-            alt="Animal photograph"
-            fill
-            className="rounded-md object-cover"
-            sizes="(max-width: 640px) 100vw, 400px"
-          />
-        </AspectRatio>
+        <div className="rounded-md overflow-hidden border">
+          <AspectRatio ratio={1}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt="Animal photograph"
+              className="object-cover w-full h-full" 
+            />
+          </AspectRatio>
+        </div>
       ) : (
         <div 
-          className="border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted/50 transition-colors"
+          className="border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted/50 transition-colors min-h-[200px]"
           onClick={handleUploadClick}
         >
           <div className="rounded-full bg-primary/10 p-2">

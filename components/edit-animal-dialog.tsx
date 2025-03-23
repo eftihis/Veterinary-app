@@ -364,7 +364,6 @@ export function EditAnimalDialog({
             <div className="border rounded-md p-4">
               <ImageUpload 
                 bucket="animal-images"
-                path={animal?.id || 'animal'}
                 imageUrl={tempImageUrl}
                 onImageUploaded={(url) => {
                   setTempImageUrl(url);

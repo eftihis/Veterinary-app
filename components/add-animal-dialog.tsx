@@ -391,7 +391,6 @@ export function AddAnimalDialog({
             <div className="border rounded-md p-4">
               <ImageUpload 
                 bucket="animal-images"
-                path={defaultAnimalName || 'animal'}
                 imageUrl={tempImageUrl}
                 onImageUploaded={(url) => {
                   setTempImageUrl(url);

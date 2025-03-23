@@ -30,7 +30,6 @@ import {
   AlertCircle
 } from "lucide-react"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
-import Image from 'next/image'
 
 // Define Contact interface for type safety
 interface Contact {
@@ -194,12 +193,11 @@ export function AnimalDetailSheet({
                   <Card className="overflow-hidden">
                     <CardContent className="p-0">
                       <AspectRatio ratio={1 / 1}>
-                        <Image 
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
                           src={animal.image_url} 
                           alt={`Photo of ${animal.name}`}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 500px"
+                          className="object-cover w-full h-full"
                         />
                       </AspectRatio>
                     </CardContent>

@@ -32,7 +32,6 @@ import {
   Plus
 } from "lucide-react"
 import { format, formatDistanceToNow, parseISO, differenceInMonths, differenceInYears } from "date-fns"
-import Image from 'next/image'
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -288,12 +287,11 @@ export function AnimalsDataTable({
         <div className="flex items-center">
           {row.original.image_url ? (
             <div className="w-8 h-8 rounded-full mr-2 overflow-hidden flex-shrink-0 relative">
-              <Image 
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
                 src={row.original.image_url} 
                 alt={`Photo of ${row.original.name}`}
-                fill
-                className="object-cover"
-                sizes="32px"
+                className="w-full h-full object-cover"
               />
             </div>
           ) : (
