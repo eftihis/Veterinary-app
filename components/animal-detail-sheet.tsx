@@ -190,7 +190,7 @@ export function AnimalDetailSheet({
               
               <TabsContent value="overview" className="space-y-5 mt-4">
                 {animal.image_url && (
-                  <Card className="overflow-hidden">
+                  <Card className="overflow-hidden p-0">
                     <CardContent className="p-0">
                       <AspectRatio ratio={4 / 3}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
