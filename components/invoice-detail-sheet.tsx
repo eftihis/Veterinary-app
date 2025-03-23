@@ -204,9 +204,9 @@ export function InvoiceDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-xl overflow-y-auto p-6">
         <SheetHeader className="pb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <SheetTitle className="text-2xl font-bold flex items-center">
+              <SheetTitle className="text-xl sm:text-2xl font-bold flex items-center">
                 <FileText className="mr-2 h-5 w-5" />
                 Invoice {invoice?.document_number}
               </SheetTitle>
@@ -218,7 +218,7 @@ export function InvoiceDetailSheet({
             </div>
             
             {!loading && fullInvoiceData && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
                 {/* Download PDF button with tooltip */}
                 <TooltipProvider>
                   <Tooltip delayDuration={300}>
@@ -295,21 +295,20 @@ export function InvoiceDetailSheet({
           </div>
         ) : fullInvoiceData ? (
           <div className="space-y-4 sm:space-y-6 px-1">
-            {/* Public Sharing Card */}
-            <Card>
-              <CardHeader className="py-4 px-5">
-                <CardTitle className="text-base font-medium flex items-center">
-                  <Share2 className="h-4 w-4 mr-2" />
+            {/* Public Sharing Card - More discreet styling */}
+            <Card className="border-dashed py-2 border-muted shadow-none">
+              <CardHeader className="py-1 px-4 sm:py-4 sm:px-5">
+                <CardTitle className="text-sm sm:text-base font-medium flex items-center">
+                  <Share2 className="sm:inline-block h-4 w-4 mr-2" />
                   Share Invoice
                 </CardTitle>
               </CardHeader>
-              <CardContent className="py-4 px-5 pt-0">
-                <div className="space-y-4">
+              <CardContent className="py-2 px-4 sm:py-4 sm:px-5 pt-0">
+                <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label htmlFor="public-toggle">Public Access</Label>
                       <p className="text-xs text-muted-foreground">
-                        When enabled, this invoice can be viewed without login using a direct link.
+                        When enabled, this invoice can be viewed without login.
                       </p>
                     </div>
                     <Switch
@@ -321,16 +320,13 @@ export function InvoiceDetailSheet({
                   </div>
                   
                   {isPublic && (
-                    <div className="pt-2">
-                      <Label htmlFor="public-link" className="mb-1.5 block">
-                        Shareable Link
-                      </Label>
+                    <div className="pt-1 sm:pt-2 mt-2">
                       <div className="flex gap-2">
                         <Input
                           id="public-link"
                           value={`${window.location.origin}/public/invoice/${invoice?.id}`}
                           readOnly
-                          className="flex-1"
+                          className="flex-1 text-xs sm:text-sm"
                         />
                         <TooltipProvider>
                           <Tooltip delayDuration={300}>
