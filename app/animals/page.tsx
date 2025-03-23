@@ -79,28 +79,77 @@ export default function AnimalsPage() {
         const animalIds = animalsToDelete.map(animal => animal.id)
         
         // First check which animals have invoices and can't be deleted
-        const { data: animalsWithInvoices, error: checkError } = await supabase
+        const { data: animalsWithInvoices, error: checkInvoicesError } = await supabase
           .from('invoices')
           .select('animal_id')
           .in('animal_id', animalIds)
           .order('animal_id')
         
-        if (checkError) throw checkError
+        if (checkInvoicesError) throw checkInvoicesError
         
-        // Get unique animal IDs with invoices
+        // Check which animals have events and can't be deleted
+        const { data: animalsWithEvents, error: checkEventsError } = await supabase
+          .from('animal_events')
+          .select('animal_id')
+          .in('animal_id', animalIds)
+          .order('animal_id')
+        
+        if (checkEventsError) throw checkEventsError
+        
+        // Get unique animal IDs with invoices or events
         const animalIdsWithInvoices = animalsWithInvoices 
           ? [...new Set(animalsWithInvoices.map(invoice => invoice.animal_id))]
           : []
+          
+        const animalIdsWithEvents = animalsWithEvents
+          ? [...new Set(animalsWithEvents.map(event => event.animal_id))]
+          : []
+          
+        // Combine both arrays to get all animal IDs that can't be deleted
+        const nonDeletableAnimalIds = [...new Set([...animalIdsWithInvoices, ...animalIdsWithEvents])]
         
-        // Filter animals that can be deleted (no invoices)
-        const deletableAnimalIds = animalIds.filter(id => !animalIdsWithInvoices.includes(id))
-        const nonDeletableAnimalIds = animalIds.filter(id => animalIdsWithInvoices.includes(id))
+        // Filter animals that can be deleted (no invoices or events)
+        const deletableAnimalIds = animalIds.filter(id => !nonDeletableAnimalIds.includes(id))
         
         if (deletableAnimalIds.length === 0) {
-          toast.error('None of the selected animals can be deleted because they have associated invoices.')
+          toast.error('None of the selected animals can be deleted because they have associated invoices or events.')
           setIsDeleting(false)
           setDeleteDialogOpen(false)
           return
+        }
+        
+        // Get image URLs for deletable animals
+        const { data: animalsWithImages, error: imageQueryError } = await supabase
+          .from('animals')
+          .select('id, image_url')
+          .in('id', deletableAnimalIds)
+          .not('image_url', 'is', null)
+        
+        if (imageQueryError) throw imageQueryError
+        
+        // Delete animal images from storage
+        if (animalsWithImages && animalsWithImages.length > 0) {
+          // Process each image URL
+          for (const animal of animalsWithImages) {
+            if (animal.image_url) {
+              try {
+                // Extract filename from URL
+                const urlParts = animal.image_url.split('/')
+                const filename = urlParts[urlParts.length - 1]
+                
+                if (filename) {
+                  await supabase.storage
+                    .from('animal-images')
+                    .remove([filename])
+                  
+                  console.log(`Deleted image for animal ${animal.id}: ${filename}`)
+                }
+              } catch (imageError) {
+                // Log but continue if image deletion fails
+                console.warn(`Failed to delete image for animal ${animal.id}:`, imageError)
+              }
+            }
+          }
         }
         
         // Delete events for deletable animals first
@@ -122,7 +171,7 @@ export default function AnimalsPage() {
         // Prepare the success message
         let successMessage = `${deletableAnimalIds.length} animal(s) deleted successfully`
         if (nonDeletableAnimalIds.length > 0) {
-          successMessage += `. ${nonDeletableAnimalIds.length} animal(s) could not be deleted because they have associated invoices.`
+          successMessage += `. ${nonDeletableAnimalIds.length} animal(s) could not be deleted because they have associated invoices or events.`
         }
         toast.success(successMessage)
       } else if (animalToDelete) {
@@ -152,14 +201,36 @@ export default function AnimalsPage() {
         
         if (eventsError) throw eventsError
         
-        // If animal has events, delete them first
+        // If animal has events, it can't be deleted
         if (events && events.length > 0) {
-          const { error: deleteEventsError } = await supabase
-            .from('animal_events')
-            .delete()
-            .eq('animal_id', animalToDelete.id)
-          
-          if (deleteEventsError) throw deleteEventsError
+          toast.error(`Cannot delete ${animalToDelete.name} because it has associated events.`)
+          setIsDeleting(false)
+          setDeleteDialogOpen(false)
+          return
+        }
+        
+        // Check if animal has an image to delete
+        if (animalToDelete.image_url) {
+          try {
+            // Extract filename from URL
+            const urlParts = animalToDelete.image_url.split('/')
+            const filename = urlParts[urlParts.length - 1]
+            
+            if (filename) {
+              const { error: storageError } = await supabase.storage
+                .from('animal-images')
+                .remove([filename])
+              
+              if (storageError) {
+                console.warn(`Failed to delete image for animal ${animalToDelete.id}:`, storageError)
+              } else {
+                console.log(`Deleted image for animal ${animalToDelete.id}: ${filename}`)
+              }
+            }
+          } catch (imageError) {
+            // Log but continue if image deletion fails
+            console.warn(`Failed to delete image for animal ${animalToDelete.id}:`, imageError)
+          }
         }
         
         // Delete the animal
