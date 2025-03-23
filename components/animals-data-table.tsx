@@ -333,7 +333,17 @@ export function AnimalsDataTable({
     },
     {
       accessorKey: "type",
-      header: "Type",
+      header: ({ column }) => {
+        return (
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Type
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </div>
+        )
+      },
       cell: ({ row }) => {
         const type = row.getValue("type") as string
         return (
@@ -349,7 +359,17 @@ export function AnimalsDataTable({
     },
     {
       accessorKey: "breed",
-      header: "Breed",
+      header: ({ column }) => {
+        return (
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Breed
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </div>
+        )
+      },
       cell: ({ row }) => {
         const breed = row.getValue("breed") as string | null
         return <span>{breed || "-"}</span>
@@ -357,7 +377,17 @@ export function AnimalsDataTable({
     },
     {
       accessorKey: "gender",
-      header: "Gender",
+      header: ({ column }) => {
+        return (
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Gender
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </div>
+        )
+      },
       cell: ({ row }) => {
         const gender = row.getValue("gender") as string | null
         return gender ? (
@@ -372,7 +402,17 @@ export function AnimalsDataTable({
     },
     {
       accessorKey: "date_of_birth",
-      header: "Age",
+      header: ({ column }) => {
+        return (
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Age
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </div>
+        )
+      },
       cell: ({ row }) => {
         const dob = row.getValue("date_of_birth") as string | null
         
@@ -391,10 +431,35 @@ export function AnimalsDataTable({
           return `${months} ${months === 1 ? 'month' : 'months'}`
         }
       },
+      sortingFn: (rowA, rowB, columnId) => {
+        const dobA = rowA.getValue(columnId) as string | null
+        const dobB = rowB.getValue(columnId) as string | null
+        
+        // Handle null values
+        if (!dobA && !dobB) return 0
+        if (!dobA) return 1
+        if (!dobB) return -1
+        
+        // Compare dates
+        const dateA = parseISO(dobA)
+        const dateB = parseISO(dobB)
+        
+        return dateA.getTime() - dateB.getTime()
+      }
     },
     {
       id: "status",
-      header: "Status",
+      header: ({ column }) => {
+        return (
+          <div
+            className="flex items-center cursor-pointer"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Status
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </div>
+        )
+      },
       cell: ({ row }) => {
         const animal = row.original
         
@@ -446,7 +511,13 @@ export function AnimalsDataTable({
         if (value.includes("active") && status !== "deceased") return true
         return false
       },
-      accessorFn: (row) => row.status,
+      accessorFn: (row) => row.status || "active",
+      sortingFn: (rowA, rowB, columnId) => {
+        const statusA = (rowA.getValue(columnId) as string || "active").toLowerCase()
+        const statusB = (rowB.getValue(columnId) as string || "active").toLowerCase()
+        
+        return statusA.localeCompare(statusB)
+      }
     },
     {
       accessorKey: "created_at",
