@@ -60,8 +60,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: '#EEEEEE',
     borderBottomStyle: 'solid',
-    paddingTop: 6,
-    paddingBottom: 6
+    paddingTop: 8,
+    paddingBottom: 8,
+    alignItems: 'center',
   },
   infoGroup: {
     marginBottom: 10,
@@ -84,41 +85,47 @@ const styles = StyleSheet.create({
   col1: {
     flex: 3,
     fontSize: 9,
+    paddingHorizontal: 5,
   },
   col2: {
     flex: 1,
     textAlign: 'right',
     fontSize: 9,
+    paddingHorizontal: 5,
   },
   col3: {
     flex: 1,
     textAlign: 'right',
     fontSize: 9,
+    paddingHorizontal: 5,
   },
   col4: {
     flex: 1,
     textAlign: 'right',
     fontSize: 9,
+    paddingHorizontal: 5,
   },
   tableHeader: {
     backgroundColor: '#F5F5F7',
     fontWeight: 500,
     fontSize: 8,
     color: '#86868B',
+    paddingVertical: 8,
   },
   totalRow: {
     flexDirection: 'row',
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 12,
+    paddingBottom: 12,
     borderTopWidth: 0.5,
     borderTopColor: '#1D1D1F',
     borderTopStyle: 'solid',
+    marginTop: 4,
   },
   totalLabel: {
     flex: 5,
     textAlign: 'right',
     fontWeight: 500,
-    paddingRight: 8,
+    paddingRight: 10,
     fontSize: 9,
   },
   totalValue: {
@@ -126,6 +133,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontWeight: 500,
     fontSize: 9,
+    paddingRight: 5,
   },
   status: {
     padding: 3,
