@@ -84,38 +84,39 @@ const styles = StyleSheet.create({
   },
   col1: {
     flex: 3,
-    fontSize: 9,
+    fontSize: 8,
     paddingHorizontal: 5,
   },
   col2: {
     flex: 1,
     textAlign: 'right',
-    fontSize: 9,
+    fontSize: 8,
     paddingHorizontal: 5,
   },
   col3: {
     flex: 1,
     textAlign: 'right',
-    fontSize: 9,
+    fontSize: 8,
     paddingHorizontal: 5,
   },
   col4: {
     flex: 1,
     textAlign: 'right',
-    fontSize: 9,
+    fontSize: 8,
     paddingHorizontal: 5,
   },
   tableHeader: {
     backgroundColor: '#F5F5F7',
     fontWeight: 500,
-    fontSize: 8,
+    fontSize: 7,
     color: '#86868B',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   totalRow: {
     flexDirection: 'row',
     paddingTop: 12,
     paddingBottom: 12,
+    paddingHorizontal: 0,
     borderTopWidth: 0.5,
     borderTopColor: '#1D1D1F',
     borderTopStyle: 'solid',
@@ -126,14 +127,22 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontWeight: 500,
     paddingRight: 10,
-    fontSize: 9,
+    fontSize: 8,
   },
   totalValue: {
     flex: 1,
     textAlign: 'right',
     fontWeight: 500,
-    fontSize: 9,
+    fontSize: 8,
     paddingRight: 5,
+  },
+  subtotalRow: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 0,
+    alignItems: 'center',
+    borderBottomWidth: 0,
   },
   status: {
     padding: 3,
@@ -341,13 +350,13 @@ export const InvoicePDF = ({ invoice }: InvoicePDFProps) => (
         )}
         
         {/* Totals */}
-        <View style={[styles.row]}>
+        <View style={styles.subtotalRow}>
           <Text style={styles.totalLabel}>Subtotal:</Text>
           <Text style={styles.totalValue}>{formatCurrency(invoice.subtotal || 0)}</Text>
         </View>
         
         {invoice.discount_total > 0 && (
-          <View style={[styles.row]}>
+          <View style={styles.subtotalRow}>
             <Text style={styles.totalLabel}>Discount:</Text>
             <Text style={styles.totalValue}>{formatCurrency(invoice.discount_total || 0)}</Text>
           </View>
