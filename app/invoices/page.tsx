@@ -264,6 +264,7 @@ export default function InvoicesPage() {
             key={refreshKey} 
             onDeleteInvoice={handleDeleteInvoice}
             onUpdateInvoiceStatus={handleUpdateInvoiceStatus}
+            onDataChanged={handleDataChanged}
           />
         </div>
         

@@ -268,12 +268,13 @@ function DateRangePicker({
 }
 
 // Define interface for the component props
-export interface InvoicesDataTableProps {
+interface InvoicesDataTableProps {
   skipLoadingState?: boolean;
   initialFetchComplete?: boolean;
   preloadedData?: Invoice[];
   onDeleteInvoice?: (invoice: Invoice | Invoice[]) => void;
   onUpdateInvoiceStatus?: (invoices: Invoice[], newStatus: string) => void;
+  onDataChanged?: () => void;
 }
 
 export function InvoicesDataTable({ 
@@ -281,7 +282,8 @@ export function InvoicesDataTable({
   initialFetchComplete = false,
   preloadedData = [],
   onDeleteInvoice,
-  onUpdateInvoiceStatus
+  onUpdateInvoiceStatus,
+  onDataChanged
 }: InvoicesDataTableProps) {
   const [invoices, setInvoices] = React.useState<Invoice[]>(preloadedData);
   const [loading, setLoading] = React.useState(!initialFetchComplete);
@@ -301,7 +303,6 @@ export function InvoicesDataTable({
     check_out_date: false,
     veterinarian: false,
     reference: false,
-    is_public: false,  // Hide the is_public column by default
     select: true, // Explicitly set select column to visible
   })
   const [rowSelection, setRowSelection] = React.useState({})
@@ -395,7 +396,6 @@ export function InvoicesDataTable({
         total, 
         status, 
         created_at,
-        is_public,
         animals!left(id, name, type)
       `;
       
@@ -503,9 +503,7 @@ export function InvoicesDataTable({
             subtotal: invoice.subtotal || 0,
             // Use the determined discount value
             discount_total: discountValue || 0,
-            total: invoice.total || 0,
-            // Ensure is_public has a default value
-            is_public: invoice.is_public || false,
+            total: invoice.total || 0
           } as Invoice;
         } catch (itemErr) {
           console.error("Error processing invoice item:", itemErr, "Invoice data:", JSON.stringify(invoice));
@@ -524,8 +522,7 @@ export function InvoicesDataTable({
             discount_total: 0,
             total: 0,
             status: invoice.status || "unknown",
-            created_at: invoice.created_at || new Date().toISOString(),
-            is_public: false,
+            created_at: invoice.created_at || new Date().toISOString()
           } as Invoice;
         }
       });
@@ -760,10 +757,13 @@ export function InvoicesDataTable({
         const invoice = row.original;
         return (
           <div 
-            className="font-medium text-primary underline cursor-pointer hover:text-primary/80"
+            className="font-medium text-primary underline cursor-pointer hover:text-primary/80 flex items-center gap-1.5"
             onClick={() => handleViewInvoice(invoice)}
           >
             {row.getValue("document_number")}
+            {invoice.is_public && (
+              <div className="w-2 h-2 rounded-full bg-green-500" title="Public invoice" />
+            )}
           </div>
         );
       },
@@ -920,22 +920,6 @@ export function InvoicesDataTable({
         </Button>
       ),
       cell: ({ row }) => getStatusBadge(row.getValue("status")),
-    },
-    {
-      accessorKey: "is_public",
-      header: "Shared",
-      cell: ({ row }) => {
-        const isPublic = row.getValue("is_public") as boolean;
-        return (
-          <div className="flex justify-center">
-            {isPublic ? (
-              <Check className="h-4 w-4 text-green-500" />
-            ) : (
-              <X className="h-4 w-4 text-gray-300" />
-            )}
-          </div>
-        );
-      },
     },
     {
       id: "actions",
@@ -1506,6 +1490,7 @@ export function InvoicesDataTable({
           open={viewDialogOpen}
           onOpenChange={setViewDialogOpen}
           onEdit={handleEditInvoice}
+          onDataChanged={onDataChanged}
         />
       )}
 

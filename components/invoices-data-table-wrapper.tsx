@@ -25,6 +25,7 @@ interface RawInvoice {
   total: number;
   status: string;
   created_at: string;
+  is_public?: boolean;
   animals?: {
     id: string;
     name: string;
@@ -39,11 +40,13 @@ interface RawInvoice {
 interface InvoicesDataTableWrapperProps {
   onDeleteInvoice?: (invoice: Invoice | Invoice[]) => void;
   onUpdateInvoiceStatus?: (invoices: Invoice[], newStatus: string) => void;
+  onDataChanged?: () => void;
 }
 
 export default function InvoicesDataTableWrapper({
   onDeleteInvoice,
   onUpdateInvoiceStatus,
+  onDataChanged
 }: InvoicesDataTableWrapperProps = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [preloadedInvoices, setPreloadedInvoices] = useState<Invoice[]>([]);
@@ -68,7 +71,8 @@ export default function InvoicesDataTableWrapper({
           subtotal, 
           discount_total, 
           total, 
-          status, 
+          status,
+          is_public,
           created_at,
           animals!left(id, name, type)
         `;
@@ -161,7 +165,8 @@ export default function InvoicesDataTableWrapper({
             veterinarian: veterinarianData,
             subtotal: invoice.subtotal || 0,
             discount_total: invoice.discount_total || 0,
-            total: invoice.total || 0
+            total: invoice.total || 0,
+            is_public: invoice.is_public || false
           };
         });
         
@@ -216,5 +221,6 @@ export default function InvoicesDataTableWrapper({
     preloadedData={preloadedInvoices}
     onDeleteInvoice={onDeleteInvoice}
     onUpdateInvoiceStatus={onUpdateInvoiceStatus}
+    onDataChanged={onDataChanged}
   />;
 } 

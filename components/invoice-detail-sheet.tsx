@@ -43,6 +43,7 @@ interface InvoiceDetailSheetProps {
   onOpenChange: (open: boolean) => void
   invoice: Invoice | null
   onEdit?: (invoice: Invoice) => void
+  onDataChanged?: () => void
 }
 
 interface LineItem {
@@ -90,7 +91,8 @@ export function InvoiceDetailSheet({
   open,
   onOpenChange,
   invoice,
-  onEdit
+  onEdit,
+  onDataChanged
 }: InvoiceDetailSheetProps) {
   const [loading, setLoading] = useState(false)
   const [fullInvoiceData, setFullInvoiceData] = useState<InvoiceWithJoins | null>(null)
@@ -155,7 +157,19 @@ export function InvoiceDetailSheet({
         throw error
       }
       
+      // Update local state
       setIsPublic(!isPublic)
+      
+      // Update the invoice object to reflect the new is_public state
+      if (invoice) {
+        invoice.is_public = !isPublic;
+      }
+      
+      // Call onDataChanged to refresh the parent table
+      if (onDataChanged) {
+        onDataChanged();
+      }
+      
       toast.success(isPublic ? "Invoice is now private" : "Invoice is now public")
     } catch (err) {
       console.error("Error updating invoice public status:", err)

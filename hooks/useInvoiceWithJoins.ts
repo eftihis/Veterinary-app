@@ -16,7 +16,7 @@ export type InvoiceWithJoins = {
   comment: string | null;
   created_at: string;
   updated_at: string;
-  is_public?: boolean;
+  is_public: boolean;
   // References
   animal_id: string | null;
   sender_id: string | null;
@@ -189,6 +189,7 @@ export function useInvoicesWithJoins() {
             comment: invoice.comment,
             created_at: invoice.created_at,
             updated_at: invoice.updated_at,
+            is_public: invoice.is_public || false,
             animal_id: invoice.animal_id,
             sender_id: invoice.sender_id,
             created_by: invoice.created_by,
@@ -300,6 +301,7 @@ export async function getInvoiceById(invoiceId: string): Promise<InvoiceWithJoin
       comment: data.comment,
       created_at: data.created_at,
       updated_at: data.updated_at,
+      is_public: data.is_public || false,
       animal_id: data.animal_id,
       sender_id: data.sender_id,
       created_by: data.created_by,
