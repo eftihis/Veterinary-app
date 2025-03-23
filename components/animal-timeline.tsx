@@ -183,6 +183,30 @@ export function AnimalTimeline({
     return <FileText {...iconProps} />
   }
   
+  // Add this helper function to format event types
+  function formatEventType(eventType: string): string {
+    switch (eventType) {
+      case "status_change":
+        return "Status Change";
+      case "weight":
+        return "Weight Measurement";
+      case "vaccination":
+        return "Vaccination";
+      case "medication":
+        return "Medication";
+      case "note":
+        return "Note";
+      case "visit":
+        return "Veterinary Visit";
+      default:
+        // Capitalize and replace underscores with spaces as a fallback
+        return eventType
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+    }
+  }
+  
   // Render appropriate content based on event type
   function renderEventContent(event: TimelineEvent) {
     const { event_type, details, is_invoice_item } = event
@@ -496,7 +520,9 @@ export function AnimalTimeline({
                 <div className="flex justify-between">
                   <CardTitle className="text-base font-medium flex items-center">
                     {getEventIcon(event.event_type)}
-                    {event.event_type}
+                    <div className="text-sm font-medium">
+                      {formatEventType(event.event_type)}
+                    </div>
                     {event.is_invoice_item && event.details.price && (
                       <Badge variant="outline" className="ml-2">
                         ${parseFloat(event.details.price).toFixed(2)}
