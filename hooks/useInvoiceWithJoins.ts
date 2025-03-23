@@ -240,36 +240,48 @@ export async function getInvoiceById(invoiceId: string): Promise<InvoiceWithJoin
     // Fetch user data if sender_id exists
     let sender = null;
     if (data.sender_id) {
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name')
-        .eq('id', data.sender_id)
-        .single();
+      try {
+        // Use a more direct approach with RPC or alternative query method
+        // to avoid the problematic URL construction
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .filter('id', 'eq', data.sender_id)
+          .maybeSingle();
         
-      if (!userError && userData) {
-        sender = {
-          id: userData.id,
-          email: userData.email,
-          name: userData.full_name || userData.email
-        };
+        if (!profileError && profiles) {
+          sender = {
+            id: profiles.id,
+            email: profiles.email,
+            name: profiles.full_name || profiles.email
+          };
+        }
+      } catch (profileError) {
+        console.warn(`Profile fetch error for ID ${data.sender_id}:`, profileError);
+        // Continue without the profile data
       }
     }
 
     // Fetch veterinarian data if veterinarian_id exists
     let veterinarian = null;
     if (data.veterinarian_id) {
-      const { data: vetData, error: vetError } = await supabase
-        .from('contacts')
-        .select('id, first_name, last_name')
-        .eq('id', data.veterinarian_id)
-        .single();
-        
-      if (!vetError && vetData) {
-        veterinarian = {
-          id: vetData.id,
-          first_name: vetData.first_name,
-          last_name: vetData.last_name
-        };
+      try {
+        const { data: vetData, error: vetError } = await supabase
+          .from('contacts')
+          .select('id, first_name, last_name')
+          .filter('id', 'eq', data.veterinarian_id)
+          .maybeSingle();
+          
+        if (!vetError && vetData) {
+          veterinarian = {
+            id: vetData.id,
+            first_name: vetData.first_name,
+            last_name: vetData.last_name
+          };
+        }
+      } catch (vetError) {
+        console.warn(`Veterinarian fetch error for ID ${data.veterinarian_id}:`, vetError);
+        // Continue without the veterinarian data
       }
     }
     
