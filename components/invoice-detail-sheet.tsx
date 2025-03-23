@@ -219,36 +219,55 @@ export function InvoiceDetailSheet({
             
             {!loading && fullInvoiceData && (
               <div className="flex items-center gap-2">
-                {/* Download PDF button */}
-                <InvoicePDFDownloadButton invoice={fullInvoiceData} />
+                {/* Download PDF button with tooltip */}
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <span> {/* Wrapper span for the trigger */}
+                        <InvoicePDFDownloadButton invoice={fullInvoiceData} />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Download invoice as PDF</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 
-                {/* Print button */}
-                <Button
-                  onClick={() => {
-                    if (fullInvoiceData) {
-                      // Show loading toast
-                      toast.loading("Preparing invoice for printing...");
-                      
-                      // Import and use the printPDF function
-                      import('@/components/invoice-pdf').then(({ printPDF }) => {
-                        printPDF(fullInvoiceData).then(() => {
-                          toast.dismiss();
-                        }).catch((err) => {
-                          toast.dismiss();
-                          toast.error("Failed to print invoice");
-                          console.error(err);
-                        });
-                      });
-                    }
-                  }}
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Print Invoice"
-                  title="Print Invoice"
-                  className="h-8 w-8"
-                >
-                  <Printer className="h-4 w-4" />
-                </Button>
+                {/* Print button with tooltip */}
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => {
+                          if (fullInvoiceData) {
+                            // Show loading toast
+                            toast.loading("Preparing invoice for printing...");
+                            
+                            // Import and use the printPDF function
+                            import('@/components/invoice-pdf').then(({ printPDF }) => {
+                              printPDF(fullInvoiceData).then(() => {
+                                toast.dismiss();
+                              }).catch((err) => {
+                                toast.dismiss();
+                                toast.error("Failed to print invoice");
+                                console.error(err);
+                              });
+                            });
+                          }
+                        }}
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Print Invoice"
+                        className="h-8 w-8"
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Print invoice</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             )}
           </div>
@@ -314,7 +333,7 @@ export function InvoiceDetailSheet({
                           className="flex-1"
                         />
                         <TooltipProvider>
-                          <Tooltip>
+                          <Tooltip delayDuration={300}>
                             <TooltipTrigger asChild>
                               <Button 
                                 onClick={copyPublicLink} 
@@ -370,12 +389,12 @@ export function InvoiceDetailSheet({
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Check-in Date:</span>
+                      <span className="font-medium mr-1">Check-in:</span>
                       <span>{formatDate(fullInvoiceData.check_in_date)}</span>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Check-out Date:</span>
+                      <span className="font-medium mr-1">Check-out:</span>
                       <span>{formatDate(fullInvoiceData.check_out_date)}</span>
                     </div>
                   </div>
