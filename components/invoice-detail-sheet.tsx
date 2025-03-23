@@ -375,11 +375,6 @@ export function InvoiceDetailSheet({
                       <span className="font-medium mr-1">Reference:</span>
                       <span>{fullInvoiceData.reference || "-"}</span>
                     </div>
-                    
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Status:</span>
-                      <span>{getStatusBadge(fullInvoiceData.status)}</span>
-                    </div>
                   </div>
                   
                   <div className="space-y-2">
