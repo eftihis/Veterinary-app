@@ -31,6 +31,9 @@ export function formatColumnName(columnId: string): string {
     "event_date": "Event Date",
     "contact_id": "Contact",
     "status_change": "Status Change",
+    
+    // Invoice columns
+    "is_public": "Shared",
   };
 
   // Return the mapped name if it exists
