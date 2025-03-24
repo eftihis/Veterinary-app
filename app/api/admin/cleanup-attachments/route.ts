@@ -3,7 +3,7 @@ import { cleanupOrphanedFiles } from '@/lib/cloudflare-r2';
 import { supabase } from '@/lib/supabase';
 
 // API endpoint to clean up orphaned attachment files
-export async function POST(request: Request) {
+export async function POST() {
   try {
     // Get the authenticated user and verify they have admin permissions
     const { data: { session }, error: authError } = await supabase.auth.getSession();

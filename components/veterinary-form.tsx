@@ -773,8 +773,11 @@ export default function VeterinaryForm({
       // Save attachments
       await saveAttachments(invoiceId);
       
-      // Show success toast
-      toast.success(editMode ? "Invoice updated successfully!" : "Form submitted successfully!");
+      // Show success toast only if no success callback provided
+      // This prevents duplicate notifications when used in dialogs
+      if (!onSuccess) {
+        toast.success(editMode ? "Invoice updated successfully!" : "Form submitted successfully!");
+      }
       
       // Reset the form if successful
       if (!editMode) {
