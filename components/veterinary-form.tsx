@@ -44,6 +44,7 @@ import { useAnimals } from '@/hooks/useAnimals';
 import { useContacts, NewContactData, ContactOption } from '@/hooks/useContacts';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
+import { FileUpload, FileAttachment } from '@/components/ui/file-upload';
 
 // Define the schema for line items
 const lineItemSchema = z.object({
@@ -202,6 +203,8 @@ export default function VeterinaryForm({
   
   // For document number field validation
   const [docNumberValidationError, setDocNumberValidationError] = useState<string | null>(null);
+  
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   
   useEffect(() => {
     const disableXero = process.env.NEXT_PUBLIC_DISABLE_XERO === 'true';
@@ -647,6 +650,26 @@ export default function VeterinaryForm({
     }
   }, [editMode, initialData, form]);
 
+  // Load existing attachments if in edit mode
+  useEffect(() => {
+    if (editMode && initialData?.id) {
+      const fetchAttachments = async () => {
+        const { data, error } = await supabase
+          .from('invoice_attachments')
+          .select('*')
+          .eq('invoice_id', initialData.id);
+          
+        if (!error && data) {
+          setAttachments(data);
+        } else if (error) {
+          console.error('Error fetching attachments:', error);
+        }
+      };
+      
+      fetchAttachments();
+    }
+  }, [editMode, initialData?.id]);
+
   const onSubmit = async (data: FormValues) => {
     try {
       setIsSubmitting(true);
@@ -693,9 +716,11 @@ export default function VeterinaryForm({
       
       console.log("Form submitted:", recordData);
       
+      let invoiceId: string;
+      
       if (editMode && initialData?.id) {
         // Update existing invoice
-        const { error: updateError } = await supabase
+        const { data: updateData, error: updateError } = await supabase
           .from('invoices')
           .update({
             document_number: data.documentNumber,
@@ -716,9 +741,10 @@ export default function VeterinaryForm({
           .select();
         
         if (updateError) throw updateError;
+        invoiceId = initialData.id;
       } else {
         // Create new invoice
-        const { error: insertError } = await supabase
+        const { data: insertData, error: insertError } = await supabase
           .from('invoices')
           .insert({
             document_number: data.documentNumber,
@@ -741,7 +767,11 @@ export default function VeterinaryForm({
           .select();
         
         if (insertError) throw insertError;
+        invoiceId = insertData[0].id;
       }
+      
+      // Save attachments
+      await saveAttachments(invoiceId);
       
       // Show success toast
       toast.success(editMode ? "Invoice updated successfully!" : "Form submitted successfully!");
@@ -773,6 +803,46 @@ export default function VeterinaryForm({
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAttachmentAdded = (attachment: FileAttachment) => {
+    setAttachments(prev => [...prev, attachment]);
+    if (onFormChange) {
+      onFormChange();
+    }
+  };
+
+  const handleAttachmentRemoved = (fileKey: string) => {
+    setAttachments(prev => prev.filter(a => a.file_key !== fileKey));
+    if (onFormChange) {
+      onFormChange();
+    }
+  };
+
+  // Save attachments after saving the invoice
+  const saveAttachments = async (invoiceId: string) => {
+    // Filter out attachments that already exist in the database (have an id)
+    const newAttachments = attachments.filter(a => !a.id);
+    
+    if (newAttachments.length > 0) {
+      const { error } = await supabase
+        .from('invoice_attachments')
+        .insert(
+          newAttachments.map(attachment => ({
+            invoice_id: invoiceId,
+            file_name: attachment.file_name,
+            file_key: attachment.file_key,
+            file_size: attachment.file_size,
+            content_type: attachment.content_type,
+            created_by: user?.id
+          }))
+        );
+        
+      if (error) {
+        console.error('Error saving attachments:', error);
+        throw error;
+      }
     }
   };
 
@@ -2236,6 +2306,15 @@ export default function VeterinaryForm({
               )}
             </CardContent>
           </Card>
+
+          {/* Add the FileUpload component before the submit button */}
+          <div className="border rounded-md p-4 my-6">
+            <FileUpload
+              attachments={attachments}
+              onAttachmentAdded={handleAttachmentAdded}
+              onAttachmentRemoved={handleAttachmentRemoved}
+            />
+          </div>
 
           {/* Button section - conditionally render based on edit mode with submission state */}
           <div className="flex justify-end gap-4">

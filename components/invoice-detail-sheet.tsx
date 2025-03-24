@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { User, User2, Hash, DollarSign, AlertCircle, FileEdit, Share2, Printer } from "lucide-react"
+import { User, User2, Hash, DollarSign, AlertCircle, FileEdit, Share2, Printer, Paperclip, Upload, File, Download } from "lucide-react"
 import { 
   Sheet, 
   SheetContent, 
@@ -36,6 +36,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { InvoicePDFDownloadButton } from "@/components/invoice-pdf"
+import { FileAttachment } from '@/components/ui/file-upload'
+import { Loader2 } from 'lucide-react'
 
 interface InvoiceDetailSheetProps {
   open: boolean
@@ -101,6 +103,8 @@ export function InvoiceDetailSheet({
   const [isPublic, setIsPublic] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [isUpdatingPublicStatus, setIsUpdatingPublicStatus] = useState(false)
+  const [attachments, setAttachments] = useState<FileAttachment[]>([])
+  const [loadingAttachments, setLoadingAttachments] = useState(false)
 
   // Fetch the complete invoice data when the sheet opens
   useEffect(() => {
@@ -132,8 +136,68 @@ export function InvoiceDetailSheet({
       }
     }
     
-    fetchInvoiceData()
+    if (invoice?.id) {
+      fetchInvoiceData()
+      fetchAttachments()
+    }
   }, [open, invoice?.id])
+
+  // Fetch invoice attachments
+  async function fetchAttachments() {
+    if (!invoice?.id) return;
+    
+    setLoadingAttachments(true);
+    try {
+      const { data, error } = await supabase
+        .from('invoice_attachments')
+        .select('*')
+        .eq('invoice_id', invoice.id);
+        
+      if (error) {
+        console.error('Error fetching attachments:', error);
+        throw error;
+      }
+      
+      setAttachments(data || []);
+    } catch (error) {
+      console.error('Error fetching attachments:', error);
+    } finally {
+      setLoadingAttachments(false);
+    }
+  }
+
+  // Function to handle file download
+  const handleDownload = async (fileKey: string, fileName: string) => {
+    try {
+      const response = await fetch(`/api/attachments/download-url?fileKey=${encodeURIComponent(fileKey)}`);
+      const data = await response.json();
+      
+      if (!data.downloadUrl) {
+        throw new Error('Failed to get download URL');
+      }
+      
+      // Create an invisible link and click it to start the download
+      const link = document.createElement('a');
+      link.href = data.downloadUrl;
+      link.download = fileName;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error('Failed to download file');
+    }
+  };
+
+  // Function to format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    const kilobytes = bytes / 1024;
+    if (kilobytes < 1024) return `${kilobytes.toFixed(1)} KB`;
+    const megabytes = kilobytes / 1024;
+    return `${megabytes.toFixed(1)} MB`;
+  };
 
   function handleEdit() {
     if (invoice && onEdit) {
@@ -554,7 +618,57 @@ export function InvoiceDetailSheet({
           </div>
         )}
         
-        <SheetFooter className="flex flex-col gap-2 mt-6 pt-4 border-t">
+        {/* Attachments Section */}
+        <Card>
+          <CardHeader className="py-4">
+            <CardTitle className="text-sm sm:text-base font-medium flex items-center">
+              <Paperclip className="sm:inline-block h-4 w-4 mr-2" />
+              Attachments
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-5 pt-0 pb-4">
+            {loadingAttachments ? (
+              <div className="flex justify-center items-center py-4">
+                <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+              </div>
+            ) : attachments.length > 0 ? (
+              <div className="space-y-2">
+                {attachments.map((attachment) => (
+                  <div 
+                    key={attachment.file_key} 
+                    className="flex items-center justify-between p-2 rounded-md border bg-background hover:bg-accent/10 transition-colors"
+                  >
+                    <div className="flex items-center overflow-hidden">
+                      <File className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="text-sm truncate" title={attachment.file_name}>
+                        {attachment.file_name}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {formatFileSize(attachment.file_size)}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDownload(attachment.file_key, attachment.file_name)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center border border-dashed rounded-md py-6 px-4 bg-muted/30">
+                <Upload className="h-6 w-6 mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">No attachments available</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <SheetFooter className="px-6 -mx-6 border-t pt-4 border-border bottom-0 left-0 rigth-0 sticky md:static bg-background rounded-b-lg">
           {/* First row - Close button */}
           <Button
             variant="outline"

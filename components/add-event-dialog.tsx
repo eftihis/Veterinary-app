@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils"
 import { CalendarIcon, Loader2 } from "lucide-react"
 import { AnimalCombobox, AnimalOption } from "@/components/ui/animal-combobox"
 import { ContactCombobox, ContactOption } from "@/components/ui/contact-combobox"
+import { FileUpload, FileAttachment } from '@/components/ui/file-upload';
 
 // Form schema for adding an event
 const eventFormSchema = z.object({
@@ -101,6 +102,7 @@ export function AddEventDialog({
   const [loadingAnimals, setLoadingAnimals] = useState(false)
   const [loadingContacts, setLoadingContacts] = useState(false)
   const [connectionError, setConnectionError] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   
   // Check Supabase connection on initialization
   useEffect(() => {
@@ -387,6 +389,40 @@ export function AddEventDialog({
     }
   }, [isOpen, form, animalId]);
   
+  const handleAttachmentAdded = (attachment: FileAttachment) => {
+    setAttachments(prev => [...prev, attachment]);
+  };
+
+  const handleAttachmentRemoved = (fileKey: string) => {
+    setAttachments(prev => prev.filter(a => a.file_key !== fileKey));
+  };
+
+  // Save attachments for an event
+  const saveAttachments = async (eventId: string) => {
+    // Filter out attachments that already exist in the database (have an id)
+    const newAttachments = attachments.filter(a => !a.id);
+    
+    if (newAttachments.length > 0) {
+      const { error } = await supabase
+        .from('animal_event_attachments')
+        .insert(
+          newAttachments.map(attachment => ({
+            event_id: eventId,
+            file_name: attachment.file_name,
+            file_key: attachment.file_key,
+            file_size: attachment.file_size,
+            content_type: attachment.content_type,
+            created_by: user?.id
+          }))
+        );
+        
+      if (error) {
+        console.error('Error saving attachments:', error);
+        throw error;
+      }
+    }
+  };
+
   // Handle form submission
   async function onSubmit(data: EventFormValues) {
     try {
@@ -646,7 +682,7 @@ export function AddEventDialog({
         
         console.log("Table access test successful, proceeding with insert");
         
-        const { error, data: insertedData } = await supabase.from("animal_events").insert({
+        const { data: eventData, error: insertError } = await supabase.from("animal_events").insert({
           animal_id: actualAnimalId,
           event_type: data.event_type,
           event_date: data.event_date.toISOString(),
@@ -655,12 +691,20 @@ export function AddEventDialog({
           contact_id: contactIdForColumn
         }).select();
         
-        if (error) {
-          console.error("Database insert error:", error)
-          throw error;
+        if (insertError) {
+          console.error("Database insert error:", insertError)
+          throw insertError;
         }
         
-        console.log("Event inserted successfully:", insertedData);
+        console.log("Event inserted successfully:", eventData);
+        
+        // Get the newly created event ID
+        const eventId = eventData?.[0]?.id;
+        
+        if (eventId) {
+          // Save attachments
+          await saveAttachments(eventId);
+        }
         
         toast.success("Event added successfully")
         form.reset()
@@ -1251,6 +1295,15 @@ export function AddEventDialog({
                   )}
                 />
               )}
+              
+              {/* Add FileUpload component before the dialog footer */}
+              <div className="space-y-4 mb-4">
+                <FileUpload
+                  attachments={attachments}
+                  onAttachmentAdded={handleAttachmentAdded}
+                  onAttachmentRemoved={handleAttachmentRemoved}
+                />
+              </div>
               
               <DialogFooter>
                 <Button
