@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { useAuth } from "@/lib/auth-context"
+import { deleteEventAttachments } from '@/lib/cloudflare-r2'
 
 import {
   Dialog,
@@ -341,31 +342,17 @@ export function EditEventDialog({
     try {
       setIsSubmitting(true)
       
-      // First delete any attachments
-      if (attachments.length > 0) {
-        // Delete attachments from storage
-        for (const attachment of attachments) {
-          const { error: storageError } = await supabase.storage
-            .from('animal-attachments')
-            .remove([attachment.file_key])
-          
-          if (storageError) {
-            console.error(`Error deleting file ${attachment.file_key}:`, storageError)
-          }
-        }
-        
-        // Delete attachment records from database
-        const { error: dbError } = await supabase
-          .from('animal_event_attachments')
-          .delete()
-          .eq('event_id', event.id)
-        
-        if (dbError) {
-          console.error('Error deleting attachment records:', dbError)
-        }
+      // First delete all attachments using the cloudflare helper function
+      try {
+        console.log(`Deleting attachments for event ${event.id}`)
+        const deleteResult = await deleteEventAttachments(event.id)
+        console.log('Attachment deletion result:', deleteResult)
+      } catch (attachmentError) {
+        console.error('Error deleting event attachments:', attachmentError)
+        // Continue with event deletion even if attachment deletion fails
       }
       
-      // Now delete the event
+      // Mark the event as deleted
       const { error } = await supabase
         .from("animal_events")
         .update({ is_deleted: true })
