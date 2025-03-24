@@ -4,8 +4,13 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Environment variables are automatically loaded from .env files
-  // No need to explicitly set them here
+  // Explicitly set environment variables
+  env: {
+    CLOUDFLARE_R2_ACCOUNT_ID: process.env.CLOUDFLARE_R2_ACCOUNT_ID,
+    CLOUDFLARE_R2_ACCESS_KEY_ID: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
+    CLOUDFLARE_R2_SECRET_ACCESS_KEY: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+    CLOUDFLARE_R2_BUCKET_NAME: process.env.CLOUDFLARE_R2_BUCKET_NAME,
+  },
   
   // Allow cross-origin requests from localtunnel
   allowedDevOrigins: [

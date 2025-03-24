@@ -20,6 +20,7 @@ import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialo
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { Invoice } from "@/components/invoices-data-table"
+import { deleteInvoiceAttachments, deleteBatchInvoiceAttachments } from '@/lib/cloudflare-r2'
 
 export default function InvoicesPage() {
   const [refreshKey, setRefreshKey] = useState(0)
@@ -132,7 +133,10 @@ export default function InvoicesPage() {
         const invoiceIds = deletableInvoices.map(invoice => invoice.id);
         
         try {
-          // Delete all invoices
+          // First, delete all attachments from Cloudflare R2
+          await deleteBatchInvoiceAttachments(invoiceIds);
+          
+          // Then delete all invoices
           const { error: invoicesError } = await supabase
             .from('invoices')
             .delete()
@@ -157,7 +161,10 @@ export default function InvoicesPage() {
           
           for (const invoice of deletableInvoices) {
             try {
-              // Delete the invoice
+              // First delete attachments for this invoice
+              await deleteInvoiceAttachments(invoice.id);
+              
+              // Then delete the invoice
               const { error } = await supabase
                 .from('invoices')
                 .delete()
@@ -194,18 +201,26 @@ export default function InvoicesPage() {
           return;
         }
         
-        // Delete single invoice
-        const { error } = await supabase
-          .from('invoices')
-          .delete()
-          .eq('id', invoiceToDelete.id)
-        
-        if (error) {
-          console.error("Error deleting invoice:", error);
+        try {
+          // First delete attachments for this invoice
+          await deleteInvoiceAttachments(invoiceToDelete.id);
+          
+          // Then delete the invoice
+          const { error } = await supabase
+            .from('invoices')
+            .delete()
+            .eq('id', invoiceToDelete.id)
+          
+          if (error) {
+            console.error("Error deleting invoice:", error);
+            throw error;
+          }
+          
+          toast.success("Invoice deleted successfully")
+        } catch (error) {
+          console.error("Error during invoice deletion process:", error);
           throw error;
         }
-        
-        toast.success("Invoice deleted successfully")
       }
       
       // Refresh the invoice list
