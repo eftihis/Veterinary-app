@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { File, Download, Paperclip, X } from 'lucide-react';
+import { File, Download, Paperclip, X, Eye, FileText, Image } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface Attachment {
@@ -75,6 +75,30 @@ export function AttachmentsViewer({
     }
   };
 
+  const handleView = async (fileKey: string, fileName: string, contentType: string) => {
+    try {
+      setIsLoading((prev) => ({ ...prev, [fileKey]: true }));
+      
+      // Get the download URL from our API
+      const response = await fetch(`/api/attachments/download-url?fileKey=${encodeURIComponent(fileKey)}`);
+      const data = await response.json();
+      
+      if (!data.downloadUrl) {
+        throw new Error('Failed to get download URL');
+      }
+      
+      // Open the file in a new tab
+      window.open(data.downloadUrl, '_blank');
+      
+      toast.success(`Viewing ${fileName}`);
+    } catch (error) {
+      console.error('Error viewing file:', error);
+      toast.error('Failed to view file');
+    } finally {
+      setIsLoading((prev) => ({ ...prev, [fileKey]: false }));
+    }
+  };
+
   // Function to format file size
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -82,6 +106,21 @@ export function AttachmentsViewer({
     if (kilobytes < 1024) return `${kilobytes.toFixed(1)} KB`;
     const megabytes = kilobytes / 1024;
     return `${megabytes.toFixed(1)} MB`;
+  };
+
+  // Function to check if a file is viewable (image or PDF)
+  const isViewable = (contentType: string): boolean => {
+    return contentType.startsWith('image/') || contentType === 'application/pdf';
+  };
+
+  // Function to get the appropriate file icon based on content type
+  const getFileIcon = (contentType: string) => {
+    if (contentType.startsWith('image/')) {
+      return <Image className={cn("flex-shrink-0 mr-2", compact ? "h-3 w-3" : "h-4 w-4")} />;
+    } else if (contentType === 'application/pdf') {
+      return <FileText className={cn("flex-shrink-0 mr-2", compact ? "h-3 w-3" : "h-4 w-4")} />;
+    }
+    return <File className={cn("flex-shrink-0 mr-2", compact ? "h-3 w-3" : "h-4 w-4")} />;
   };
 
   if (attachments.length === 0) {
@@ -112,7 +151,7 @@ export function AttachmentsViewer({
             )}
           >
             <div className="flex items-center overflow-hidden">
-              <File className={cn("flex-shrink-0 mr-2", compact ? "h-3 w-3" : "h-4 w-4")} />
+              {getFileIcon(attachment.content_type)}
               <span 
                 className={cn("truncate", compact ? "text-xs" : "text-sm")}
                 title={attachment.file_name}
@@ -126,6 +165,22 @@ export function AttachmentsViewer({
               )}
             </div>
             <div className="flex items-center">
+              {isViewable(attachment.content_type) && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleView(attachment.file_key, attachment.file_name, attachment.content_type)}
+                  disabled={isLoading[attachment.file_key]}
+                  className={cn(
+                    "p-0",
+                    compact ? "h-6 w-6" : "h-7 w-7"
+                  )}
+                  title="View file"
+                >
+                  <Eye className={cn(compact ? "h-3 w-3" : "h-4 w-4")} />
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="ghost"
@@ -136,6 +191,7 @@ export function AttachmentsViewer({
                   "p-0",
                   compact ? "h-6 w-6" : "h-7 w-7"
                 )}
+                title="Download file"
               >
                 <Download className={cn(compact ? "h-3 w-3" : "h-4 w-4")} />
               </Button>
@@ -150,6 +206,7 @@ export function AttachmentsViewer({
                     "p-0 text-destructive",
                     compact ? "h-6 w-6" : "h-7 w-7"
                   )}
+                  title="Remove attachment"
                 >
                   <X className={cn(compact ? "h-3 w-3" : "h-4 w-4")} />
                 </Button>

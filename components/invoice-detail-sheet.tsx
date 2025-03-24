@@ -38,6 +38,7 @@ import {
 import { InvoicePDFDownloadButton } from "@/components/invoice-pdf"
 import { FileAttachment } from '@/components/ui/file-upload'
 import { Loader2 } from 'lucide-react'
+import { AttachmentsViewer, Attachment } from '@/components/ui/attachments-viewer'
 
 interface InvoiceDetailSheetProps {
   open: boolean
@@ -97,163 +98,128 @@ export function InvoiceDetailSheet({
   onDataChanged,
   onUpdateInvoice
 }: InvoiceDetailSheetProps) {
-  const [loading, setLoading] = useState(false)
   const [fullInvoiceData, setFullInvoiceData] = useState<InvoiceWithJoins | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [isUpdatingPublicStatus, setIsUpdatingPublicStatus] = useState(false)
-  const [attachments, setAttachments] = useState<FileAttachment[]>([])
+  const [attachments, setAttachments] = useState<Attachment[]>([])
   const [loadingAttachments, setLoadingAttachments] = useState(false)
+  const [publicLink, setPublicLink] = useState("")
 
   // Fetch invoice attachments
   const fetchAttachments = useCallback(async () => {
     if (!invoice?.id) return;
     
     setLoadingAttachments(true);
+    
     try {
       const { data, error } = await supabase
         .from('invoice_attachments')
         .select('*')
         .eq('invoice_id', invoice.id);
-        
+      
       if (error) {
         console.error('Error fetching attachments:', error);
-        throw error;
+        setAttachments([]);
+      } else {
+        setAttachments(data || []);
       }
-      
-      setAttachments(data || []);
     } catch (error) {
       console.error('Error fetching attachments:', error);
+      setAttachments([]);
     } finally {
       setLoadingAttachments(false);
     }
   }, [invoice?.id]);
 
-  // Fetch the complete invoice data when the sheet opens
+  // Define useEffect to load invoice data when open changes
   useEffect(() => {
-    async function fetchInvoiceData() {
-      if (!open || !invoice?.id) return
-
-      try {
-        setLoading(true)
-        setError(null)
-        
-        // Use the utility function from the hook
-        const data = await getInvoiceById(invoice.id)
-        
-        if (!data) {
-          throw new Error("Failed to fetch invoice data")
+    if (open && invoice?.id) {
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          
+          // Fetch full invoice data
+          const data = await getInvoiceById(invoice.id);
+          if (!data) {
+            throw new Error("Invoice not found");
+          }
+          
+          setFullInvoiceData(data);
+          
+          // Check if public access is enabled
+          if (data.is_public) {
+            setIsPublic(true);
+            setPublicLink(`${window.location.origin}/public/invoice/${invoice.id}`);
+          } else {
+            setIsPublic(false);
+            setPublicLink("");
+          }
+        } catch (err) {
+          console.error("Error fetching invoice details:", err);
+          setError("Failed to load invoice details");
+        } finally {
+          setLoading(false);
         }
-        
-        console.log("Full invoice data loaded:", data)
-        setFullInvoiceData(data)
-        
-        // Set the public status based on the fetched data
-        setIsPublic(data.is_public || false)
-      } catch (err) {
-        console.error("Error fetching invoice details:", err)
-        setError("Failed to load invoice details")
-        toast.error("Failed to load invoice details")
-      } finally {
-        setLoading(false)
-      }
+      };
+      
+      fetchData();
+      fetchAttachments();
     }
+  }, [open, invoice, fetchAttachments]);
+
+  // Function to toggle public access
+  const togglePublicAccess = async () => {
+    if (!fullInvoiceData || !invoice?.id) return;
     
-    if (invoice?.id) {
-      fetchInvoiceData()
-      fetchAttachments()
-    }
-  }, [open, invoice, fetchAttachments])
-
-  // Function to handle file download
-  const handleDownload = async (fileKey: string, fileName: string) => {
-    try {
-      const response = await fetch(`/api/attachments/download-url?fileKey=${encodeURIComponent(fileKey)}`);
-      const data = await response.json();
-      
-      if (!data.downloadUrl) {
-        throw new Error('Failed to get download URL');
-      }
-      
-      // Create an invisible link and click it to start the download
-      const link = document.createElement('a');
-      link.href = data.downloadUrl;
-      link.download = fileName;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      toast.error('Failed to download file');
-    }
-  };
-
-  // Function to format file size
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    const kilobytes = bytes / 1024;
-    if (kilobytes < 1024) return `${kilobytes.toFixed(1)} KB`;
-    const megabytes = kilobytes / 1024;
-    return `${megabytes.toFixed(1)} MB`;
-  };
-
-  function handleEdit() {
-    if (invoice && onEdit) {
-      onEdit(invoice)
-      onOpenChange(false)
-    }
-  }
-  
-  // Toggle public access
-  async function togglePublicAccess() {
-    if (!invoice?.id) return
+    setIsUpdatingPublicStatus(true);
     
     try {
-      setIsUpdatingPublicStatus(true)
+      const isCurrentlyPublic = isPublic;
       
+      // Update public access status
       const { error } = await supabase
         .from('invoices')
-        .update({ is_public: !isPublic })
-        .eq('id', invoice.id)
+        .update({ is_public: !isCurrentlyPublic })
+        .eq('id', invoice.id);
       
-      if (error) {
-        throw error
-      }
+      if (error) throw error;
       
       // Update local state
-      setIsPublic(!isPublic)
+      setIsPublic(!isCurrentlyPublic);
       
-      // Update the invoice object to reflect the new is_public state
+      if (!isCurrentlyPublic) {
+        setPublicLink(`${window.location.origin}/public/invoice/${invoice.id}`);
+        toast.success("Public access enabled");
+      } else {
+        setPublicLink("");
+        toast.success("Public access disabled");
+      }
+      
+      // Update invoice object if handlers are provided
       if (invoice) {
         const updatedInvoice = {
           ...invoice,
-          is_public: !isPublic
+          is_public: !isCurrentlyPublic
         };
         
-        // If onUpdateInvoice is provided, use it for immediate update
         if (onUpdateInvoice) {
           onUpdateInvoice(updatedInvoice);
-        } 
-        // If no direct update method is available, use the refresh method
-        else if (onDataChanged) {
-          onDataChanged(); // Call without parameter since the original type doesn't accept one
+        } else if (onDataChanged) {
+          onDataChanged();
         }
-        
-        // For backward compatibility, still update the original object
-        invoice.is_public = !isPublic;
       }
-      
-      toast.success(isPublic ? "Invoice is now private" : "Invoice is now public")
     } catch (err) {
-      console.error("Error updating invoice public status:", err)
-      toast.error("Failed to update invoice's public status")
+      console.error("Error toggling public access:", err);
+      toast.error("Failed to update public access");
     } finally {
-      setIsUpdatingPublicStatus(false)
+      setIsUpdatingPublicStatus(false);
     }
-  }
-  
+  };
+
   // Copy public link to clipboard
   function copyPublicLink() {
     if (!invoice?.id) return
@@ -398,7 +364,7 @@ export function InvoiceDetailSheet({
                       <div className="flex gap-2">
                         <Input
                           id="public-link"
-                          value={`${window.location.origin}/public/invoice/${invoice?.id}`}
+                          value={publicLink}
                           readOnly
                           className="flex-1 text-xs sm:text-sm"
                         />
@@ -632,33 +598,10 @@ export function InvoiceDetailSheet({
                 <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
               </div>
             ) : attachments.length > 0 ? (
-              <div className="space-y-2">
-                {attachments.map((attachment) => (
-                  <div 
-                    key={attachment.file_key} 
-                    className="flex items-center justify-between p-2 rounded-md border bg-background hover:bg-accent/10 transition-colors"
-                  >
-                    <div className="flex items-center overflow-hidden">
-                      <File className="h-4 w-4 mr-2 flex-shrink-0" />
-                      <span className="text-sm truncate" title={attachment.file_name}>
-                        {attachment.file_name}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {formatFileSize(attachment.file_size)}
-                      </span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDownload(attachment.file_key, attachment.file_name)}
-                      className="h-7 w-7 p-0"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+              <AttachmentsViewer
+                attachments={attachments}
+                showTitle={false}
+              />
             ) : (
               <div className="flex flex-col items-center justify-center border border-dashed rounded-md py-6 px-4 bg-muted/30">
                 <Upload className="h-6 w-6 mb-2 text-muted-foreground" />
@@ -681,7 +624,12 @@ export function InvoiceDetailSheet({
           {/* Second row - Edit button */}
           {invoice && !loading && onEdit && (
             <Button
-              onClick={handleEdit}
+              onClick={() => {
+                if (invoice && onEdit) {
+                  onEdit(invoice);
+                  onOpenChange(false);
+                }
+              }}
               className="w-full"
             >
               <FileEdit className="h-4 w-4 mr-2" />
