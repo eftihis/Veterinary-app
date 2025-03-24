@@ -215,7 +215,7 @@ export function AddEventDialog({
         // Optionally filter on status if needed
         const { data, error } = await supabase
           .from("animals")
-          .select("id, name, type, breed, gender, is_deceased, status")
+          .select("id, name, type, breed, gender, is_deceased, status, image_url")
           .order("name");
         
         if (error) {
@@ -233,6 +233,7 @@ export function AddEventDialog({
           breed: animal.breed || "",
           isDeceased: animal.is_deceased || false,
           gender: animal.gender,
+          imageUrl: animal.image_url,
           // Optionally include status in display or filtering if needed
         }));
         
