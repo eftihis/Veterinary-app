@@ -54,9 +54,16 @@ async function getPublicInvoiceById(invoiceId: string): Promise<InvoiceWithJoins
   }
 }
 
+// Define the params type as a Promise in Next.js 15
+type Params = Promise<{ id: string }>;
+
 // Server component to fetch and display a public invoice
-export default async function PublicInvoicePage({ params }: { params: { id: string } }) {
-  const invoice = await getPublicInvoiceById(params.id);
+export default async function PublicInvoicePage({ params }: { params: Params }) {
+  // Await the params Promise to get the id value
+  const { id } = await params;
+  
+  // Use the extracted id to fetch the invoice
+  const invoice = await getPublicInvoiceById(id);
   
   // If there's no invoice found, return a 404
   if (!invoice) {

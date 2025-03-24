@@ -52,6 +52,7 @@ const sampleInvoice: TestInvoice = {
   sender_id: null,
   sender: null,
   created_by: null,
+  is_public: true,
   line_items: [
     {
       id: 'item-1',
