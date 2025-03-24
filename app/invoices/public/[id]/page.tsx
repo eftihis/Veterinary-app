@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { User, User2, Hash, FileText, DollarSign, AlertCircle, Printer, Link } from "lucide-react"
+import { User, User2, Hash, FileText, DollarSign, Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getInvoiceById, InvoiceWithJoins } from "@/hooks/useInvoiceWithJoins"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
