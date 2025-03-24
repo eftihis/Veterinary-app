@@ -394,7 +394,7 @@ export function EditAnimalDialog({
               )}
             />
             
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-4 gap-2">
               <Button 
                 type="button" 
                 variant="outline" 

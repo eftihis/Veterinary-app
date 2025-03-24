@@ -111,9 +111,6 @@ const styles = StyleSheet.create({
     fontSize: 7,
     color: '#86868B',
     paddingVertical: 6,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#000000', // Set border color to black
-    borderBottomStyle: 'solid',
   },
   totalRow: {
     flexDirection: 'row',
