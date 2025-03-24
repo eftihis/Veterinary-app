@@ -195,8 +195,100 @@ export function AnimalDetailSheet({
         
         {loading ? (
           <div className="space-y-6 px-1">
-            <Skeleton className="h-28 w-full" />
-            <Skeleton className="h-40 w-full" />
+            <Tabs defaultValue="overview">
+              <TabsList className="grid grid-cols-2">
+                <TabsTrigger value="overview" disabled>
+                  <Skeleton className="h-4 w-16" />
+                </TabsTrigger>
+                <TabsTrigger value="timeline" disabled>
+                  <Skeleton className="h-4 w-16" />
+                </TabsTrigger>
+              </TabsList>
+              
+              <div className="space-y-5 mt-4">
+                {/* Image Placeholder (optional) */}
+                <Card className="overflow-hidden p-0">
+                  <CardContent className="p-0">
+                    <AspectRatio ratio={4 / 3}>
+                      <Skeleton className="h-full w-full" />
+                    </AspectRatio>
+                  </CardContent>
+                </Card>
+                
+                {/* Basic Information Skeleton */}
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-5 w-32" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="py-4 px-5 pt-0">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i}>
+                          <Skeleton className="h-3 w-16 mb-1" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Attachments Skeleton */}
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-5 w-28" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="py-4 px-5 pt-0">
+                    <Skeleton className="h-20 w-full rounded-md" />
+                  </CardContent>
+                </Card>
+                
+                {/* Notes Skeleton */}
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
+                    <Skeleton className="h-5 w-16" />
+                  </CardHeader>
+                  <CardContent className="py-4 px-5 pt-0">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Owner Information Skeleton */}
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-5 w-36" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="py-4 px-5 pt-0">
+                    <div className="space-y-2">
+                      <div>
+                        <Skeleton className="h-3 w-12 mb-1" />
+                        <Skeleton className="h-4 w-40" />
+                      </div>
+                      <div>
+                        <Skeleton className="h-3 w-12 mb-1" />
+                        <Skeleton className="h-4 w-48" />
+                      </div>
+                      <div>
+                        <Skeleton className="h-3 w-12 mb-1" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </Tabs>
           </div>
         ) : error ? (
           <div className="rounded-md bg-destructive/10 p-5 mx-1">
