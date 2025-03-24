@@ -23,7 +23,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
-import { deleteAnimalEventAttachments, deleteBatchAnimalEventAttachments } from '@/lib/cloudflare-r2'
+import { deleteBatchAnimalEventAttachments } from '@/lib/cloudflare-r2'
 
 export default function AnimalsPage() {
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null)
