@@ -37,6 +37,7 @@ export function AttachmentsViewer({
     try {
       setIsLoading((prev) => ({ ...prev, [fileKey]: true }));
       
+      // Get the download URL from our API
       const response = await fetch(`/api/attachments/download-url?fileKey=${encodeURIComponent(fileKey)}`);
       const data = await response.json();
       
@@ -44,14 +45,26 @@ export function AttachmentsViewer({
         throw new Error('Failed to get download URL');
       }
       
-      // Create an invisible link and click it to start the download
+      // Create a fetch request to get the file as a blob
+      const fileResponse = await fetch(data.downloadUrl);
+      const blob = await fileResponse.blob();
+      
+      // Create a blob URL and use it for downloading
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Create an invisible link and click it
       const link = document.createElement('a');
-      link.href = data.downloadUrl;
-      link.download = fileName;
+      link.href = blobUrl;
+      link.download = fileName; // This attribute is key - forces download instead of navigation
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      
+      // Clean up
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(link);
+      }, 100);
       
       toast.success(`Downloading ${fileName}`);
     } catch (error) {
