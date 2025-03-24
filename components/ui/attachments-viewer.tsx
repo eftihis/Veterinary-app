@@ -75,7 +75,7 @@ export function AttachmentsViewer({
     }
   };
 
-  const handleView = async (fileKey: string, fileName: string, contentType: string) => {
+  const handleView = async (fileKey: string, fileName: string) => {
     try {
       setIsLoading((prev) => ({ ...prev, [fileKey]: true }));
       
@@ -116,11 +116,11 @@ export function AttachmentsViewer({
   // Function to get the appropriate file icon based on content type
   const getFileIcon = (contentType: string) => {
     if (contentType.startsWith('image/')) {
-      return <Image className={cn("flex-shrink-0 mr-2", compact ? "h-3 w-3" : "h-4 w-4")} />;
+      return <Image className={cn("flex-shrink-0 mr-3", compact ? "h-3 w-3" : "h-4 w-4")} aria-label="Image file" />;
     } else if (contentType === 'application/pdf') {
-      return <FileText className={cn("flex-shrink-0 mr-2", compact ? "h-3 w-3" : "h-4 w-4")} />;
+      return <FileText className={cn("flex-shrink-0 mr-3", compact ? "h-3 w-3" : "h-4 w-4")} aria-label="PDF file" />;
     }
-    return <File className={cn("flex-shrink-0 mr-2", compact ? "h-3 w-3" : "h-4 w-4")} />;
+    return <File className={cn("flex-shrink-0 mr-3", compact ? "h-3 w-3" : "h-4 w-4")} aria-label="File" />;
   };
 
   if (attachments.length === 0) {
@@ -131,7 +131,7 @@ export function AttachmentsViewer({
     <div className={cn("space-y-2", className)}>
       {showTitle && (
         <div className="flex items-center gap-1 text-sm font-medium">
-          <Paperclip className="h-4 w-4" />
+          <Paperclip className="h-4 w-4 mr-3" />
           <span>Attachments ({attachments.length})</span>
         </div>
       )}
@@ -170,7 +170,7 @@ export function AttachmentsViewer({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleView(attachment.file_key, attachment.file_name, attachment.content_type)}
+                  onClick={() => handleView(attachment.file_key, attachment.file_name)}
                   disabled={isLoading[attachment.file_key]}
                   className={cn(
                     "p-0",

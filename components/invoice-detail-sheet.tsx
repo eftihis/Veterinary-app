@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { format } from "date-fns"
-import { User, User2, Hash, DollarSign, AlertCircle, FileEdit, Share2, Printer, Paperclip, Upload, File, Download } from "lucide-react"
+import { User, User2, Hash, DollarSign, AlertCircle, FileEdit, Share2, Printer, Paperclip, Upload } from "lucide-react"
 import { 
   Sheet, 
   SheetContent, 
@@ -36,7 +36,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { InvoicePDFDownloadButton } from "@/components/invoice-pdf"
-import { FileAttachment } from '@/components/ui/file-upload'
 import { Loader2 } from 'lucide-react'
 import { AttachmentsViewer, Attachment } from '@/components/ui/attachments-viewer'
 
