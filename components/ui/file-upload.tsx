@@ -69,14 +69,21 @@ export function FileUpload({
   const handleRemoveAttachment = async (fileKey: string) => {
     try {
       // First call the API to delete the file from R2
-      await fetch('/api/attachments/delete', {
+      const response = await fetch('/api/attachments/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileKey }),
       });
       
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete file from storage');
+      }
+      
       // Then call the parent component callback to update the local state/database
       onAttachmentRemoved(fileKey);
+      
+      toast.success('Attachment removed successfully');
     } catch (error) {
       console.error('Error removing attachment:', error);
       toast.error('Failed to remove attachment');

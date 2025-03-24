@@ -393,7 +393,31 @@ export function AddEventDialog({
     setAttachments(prev => [...prev, attachment]);
   };
 
-  const handleAttachmentRemoved = (fileKey: string) => {
+  const handleAttachmentRemoved = async (fileKey: string) => {
+    // Find the attachment in our current state
+    const attachmentToRemove = attachments.find(a => a.file_key === fileKey);
+    
+    // If the attachment already exists in the database (has an ID), delete it from Supabase
+    if (attachmentToRemove?.id) {
+      try {
+        const { error } = await supabase
+          .from('animal_event_attachments')
+          .delete()
+          .eq('id', attachmentToRemove.id);
+          
+        if (error) {
+          console.error('Error deleting attachment from database:', error);
+          toast.error('Failed to delete attachment from database');
+          return;
+        }
+      } catch (error) {
+        console.error('Error deleting attachment from database:', error);
+        toast.error('Failed to delete attachment from database');
+        return;
+      }
+    }
+    
+    // Remove attachment from local state
     setAttachments(prev => prev.filter(a => a.file_key !== fileKey));
   };
 
