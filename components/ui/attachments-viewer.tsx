@@ -116,11 +116,11 @@ export function AttachmentsViewer({
   // Function to get the appropriate file icon based on content type
   const getFileIcon = (contentType: string) => {
     if (contentType.startsWith('image/')) {
-      return <Image className={cn("flex-shrink-0 mr-3", compact ? "h-3 w-3" : "h-4 w-4")} aria-label="Image file" />;
+      return <Image className={cn("flex-shrink-0 mr-2", compact ? "h-3 w-3" : "h-4 w-4")} aria-label="Image file" />;
     } else if (contentType === 'application/pdf') {
-      return <FileText className={cn("flex-shrink-0 mr-3", compact ? "h-3 w-3" : "h-4 w-4")} aria-label="PDF file" />;
+      return <FileText className={cn("flex-shrink-0 mr-2", compact ? "h-3 w-3" : "h-4 w-4")} aria-label="PDF file" />;
     }
-    return <File className={cn("flex-shrink-0 mr-3", compact ? "h-3 w-3" : "h-4 w-4")} aria-label="File" />;
+    return <File className={cn("flex-shrink-0 mr-2", compact ? "h-3 w-3" : "h-4 w-4")} aria-label="File" />;
   };
 
   if (attachments.length === 0) {
@@ -150,7 +150,7 @@ export function AttachmentsViewer({
                 : "p-2"
             )}
           >
-            <div className="flex items-center overflow-hidden">
+            <div className="flex items-center overflow-hidden mr-2">
               {getFileIcon(attachment.content_type)}
               <span 
                 className={cn("truncate", compact ? "text-xs" : "text-sm")}
@@ -164,7 +164,7 @@ export function AttachmentsViewer({
                 </span>
               )}
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-1">
               {isViewable(attachment.content_type) && (
                 <Button
                   type="button"
