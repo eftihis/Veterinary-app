@@ -24,9 +24,11 @@ import {
   Stethoscope,
   PawPrint,
   MapPin,
-  Plus
+  Plus,
+  FileEdit
 } from "lucide-react"
 import { AddEventDialog } from "@/components/add-event-dialog"
+import { EditEventDialog } from "@/components/edit-event-dialog"
 import { hasKey, getStructuredDetails } from "@/components/timeline-utils"
 import { formatEventType } from "@/lib/utils"
 import { AttachmentsViewer, Attachment } from "@/components/ui/attachments-viewer"
@@ -81,6 +83,8 @@ export function AnimalTimeline({
   const [events, setEvents] = useState<TimelineEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editingEventId, setEditingEventId] = useState<string | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   
   const fetchEvents = useCallback(async () => {
     try {
@@ -526,6 +530,28 @@ export function AnimalTimeline({
     )
   }
   
+  // Handle edit dialog open/close with proper focus management
+  const handleEditDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      // When dialog is closing, ensure focus returns to the document body
+      setTimeout(() => {
+        document.body.focus();
+      }, 0);
+    }
+    setEditDialogOpen(open);
+  }
+  
+  // Add handleEditEvent function
+  const handleEditEvent = (eventId: string) => {
+    setEditingEventId(eventId)
+    handleEditDialogOpenChange(true)
+  }
+  
+  // Add onEventUpdated function
+  const handleEventUpdated = () => {
+    fetchEvents()
+  }
+  
   if (loading) {
     return (
       <div className={`space-y-4 ${className}`}>
@@ -601,6 +627,15 @@ export function AnimalTimeline({
         )}
       </div>
       
+      {/* Add Edit Event Dialog */}
+      <EditEventDialog
+        eventId={editingEventId}
+        animalId={animalId}
+        open={editDialogOpen}
+        onOpenChange={handleEditDialogOpenChange}
+        onSuccess={handleEventUpdated}
+      />
+      
       {events.length === 0 ? (
         <div className="text-center p-6 border rounded-md">
           <PawPrint className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
@@ -623,9 +658,22 @@ export function AnimalTimeline({
                       </Badge>
                     )}
                   </CardTitle>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(parseISO(event.event_date), { addSuffix: true })}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(parseISO(event.event_date), { addSuffix: true })}
+                    </span>
+                    {/* Add Edit button */}
+                    {!event.is_invoice_item && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleEditEvent(event.id)}
+                      >
+                        <FileEdit className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="py-3">
