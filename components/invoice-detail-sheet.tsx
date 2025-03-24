@@ -128,7 +128,7 @@ export function InvoiceDetailSheet({
     } finally {
       setLoadingAttachments(false);
     }
-  }, [invoice?.id, supabase]);
+  }, [invoice?.id]);
 
   // Fetch the complete invoice data when the sheet opens
   useEffect(() => {
