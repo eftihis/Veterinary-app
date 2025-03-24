@@ -29,6 +29,7 @@ import {
 import { AddEventDialog } from "@/components/add-event-dialog"
 import { hasKey, getStructuredDetails } from "@/components/timeline-utils"
 import { formatEventType } from "@/lib/utils"
+import { AttachmentsViewer, Attachment } from "@/components/ui/attachments-viewer"
 
 // Type for timeline events
 type TimelineEvent = {
@@ -57,6 +58,7 @@ type TimelineEvent = {
   contact_last_name: string | null
   contact_email: string | null
   contact_roles: string[] | null
+  attachments?: Attachment[]
 }
 
 interface AnimalTimelineProps {
@@ -113,30 +115,121 @@ export function AnimalTimeline({
   }, [animalId, eventType, limit])
   
   useEffect(() => {
+    let isMounted = true
+    
+    const fetchEvents = async () => {
+      if (!animalId) return
+      
+      setLoading(true)
+      
+      try {
+        // Fetch animal events
+        let query = supabase
+          .from('animal_events')
+          .select(`
+            *,
+            contacts (
+              id,
+              first_name,
+              last_name,
+              email,
+              roles
+            )
+          `)
+          .eq('animal_id', animalId)
+          .eq('is_deleted', false)
+        
+        // Apply event type filter if provided
+        if (eventType) {
+          query = query.eq('event_type', eventType)
+        }
+        
+        // Apply limit if provided
+        if (limit) {
+          query = query.limit(limit)
+        }
+        
+        // Order by most recent first
+        query = query.order('event_date', { ascending: false })
+        
+        const { data, error } = await query
+        
+        if (error) throw error
+        
+        // Map the data to include contact information directly in the event object
+        const mappedEvents = data.map(event => {
+          const contact = event.contacts
+          delete event.contacts // Remove the nested contact object
+          
+          return {
+            ...event,
+            contact_first_name: contact?.first_name || null,
+            contact_last_name: contact?.last_name || null,
+            contact_email: contact?.email || null,
+            contact_roles: contact?.roles || null,
+          }
+        })
+        
+        // Fetch attachments for these events
+        if (mappedEvents.length > 0) {
+          const eventIds = mappedEvents.map(event => event.id)
+          const { data: attachmentsData, error: attachmentsError } = await supabase
+            .from('animal_event_attachments')
+            .select('*')
+            .in('event_id', eventIds)
+          
+          if (attachmentsError) {
+            console.error('Error fetching attachments:', attachmentsError)
+          } else if (attachmentsData) {
+            // Group attachments by event_id
+            const attachmentsByEvent: Record<string, Attachment[]> = {}
+            
+            for (const attachment of attachmentsData) {
+              if (!attachmentsByEvent[attachment.event_id]) {
+                attachmentsByEvent[attachment.event_id] = []
+              }
+              attachmentsByEvent[attachment.event_id].push(attachment)
+            }
+            
+            // Add attachments to their corresponding events
+            for (const event of mappedEvents) {
+              event.attachments = attachmentsByEvent[event.id] || []
+            }
+          }
+        }
+        
+        if (isMounted) {
+          setEvents(mappedEvents)
+          setError(null)
+        }
+      } catch (err) {
+        console.error('Error fetching animal events:', err)
+        if (isMounted) {
+          setError('Failed to load animal events')
+          setEvents([])
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+    
     fetchEvents()
     
-    // Add event listener for refreshing the timeline
-    const handleRefreshTimeline = (event: Event) => {
-      try {
-        const customEvent = event as CustomEvent;
-        // Only refresh if event is for this animal or no specific animal
-        if (!customEvent.detail?.animalId || customEvent.detail.animalId === animalId) {
-          console.log("Refreshing animal timeline for:", animalId);
-          fetchEvents();
-        }
-      } catch (error) {
-        console.error("Error handling timeline refresh event:", error);
-      }
-    };
+    // Set up event listener for refresh events
+    const wrapper = document.getElementById('animal-timeline-wrapper')
+    if (wrapper) {
+      wrapper.addEventListener('refresh', fetchEvents)
+    }
     
-    // Listen for the custom refresh event
-    window.addEventListener('refreshAnimalTimeline', handleRefreshTimeline);
-    
-    // Clean up event listener
     return () => {
-      window.removeEventListener('refreshAnimalTimeline', handleRefreshTimeline);
-    };
-  }, [fetchEvents, animalId])
+      isMounted = false
+      if (wrapper) {
+        wrapper.removeEventListener('refresh', fetchEvents)
+      }
+    }
+  }, [animalId, eventType, limit])
   
   // Helper function to get contact name
   const getContactName = (event: TimelineEvent): string => {
@@ -184,6 +277,22 @@ export function AnimalTimeline({
     return <FileText {...iconProps} />
   }
   
+  // Add a helper function to render attachments for an event
+  const renderAttachments = (event: TimelineEvent) => {
+    if (event.attachments && event.attachments.length > 0) {
+      return (
+        <div className="mt-3">
+          <AttachmentsViewer
+            attachments={event.attachments}
+            showTitle={false}
+            compact={true}
+          />
+        </div>
+      );
+    }
+    return null;
+  };
+  
   // Render appropriate content based on event type
   function renderEventContent(event: TimelineEvent) {
     const { event_type, details, is_invoice_item } = event
@@ -206,6 +315,7 @@ export function AnimalTimeline({
               Invoice: {structuredDetails.document_number}
             </div>
           )}
+          {renderAttachments(event)}
         </div>
       )
     }
@@ -232,6 +342,7 @@ export function AnimalTimeline({
           {structuredDetails.notes && (
             <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
           )}
+          {renderAttachments(event)}
         </div>
       )
     }
@@ -262,6 +373,7 @@ export function AnimalTimeline({
           {structuredDetails.notes && (
             <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
           )}
+          {renderAttachments(event)}
         </div>
       )
     }
@@ -293,6 +405,7 @@ export function AnimalTimeline({
           {structuredDetails.notes && (
             <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
           )}
+          {renderAttachments(event)}
         </div>
       )
     }
@@ -324,6 +437,7 @@ export function AnimalTimeline({
           {structuredDetails.notes && (
             <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
           )}
+          {renderAttachments(event)}
         </div>
       )
     }
@@ -350,6 +464,7 @@ export function AnimalTimeline({
           {structuredDetails.notes && (
             <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
           )}
+          {renderAttachments(event)}
         </div>
       )
     }
@@ -364,6 +479,7 @@ export function AnimalTimeline({
           {structuredDetails.notes && structuredDetails.content !== structuredDetails.notes && (
             <p className="text-sm text-muted-foreground mt-1">{structuredDetails.notes}</p>
           )}
+          {renderAttachments(event)}
         </div>
       )
     }
@@ -405,6 +521,7 @@ export function AnimalTimeline({
               );
             }).filter(Boolean)}
         </div>
+        {renderAttachments(event)}
       </div>
     )
   }

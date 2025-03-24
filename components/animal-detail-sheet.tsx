@@ -27,9 +27,11 @@ import {
   User,
   Clipboard,
   FileEdit,
-  AlertCircle
+  AlertCircle,
+  Paperclip
 } from "lucide-react"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
+import { AttachmentsViewer, Attachment } from "@/components/ui/attachments-viewer"
 
 // Define Contact interface for type safety
 interface Contact {
@@ -61,14 +63,16 @@ export function AnimalDetailSheet({
   const [activeTab, setActiveTab] = useState("overview")
   const [ownerDetails, setOwnerDetails] = useState<Contact | null>(null)
   const [loadingOwner, setLoadingOwner] = useState(false)
+  const [attachments, setAttachments] = useState<Attachment[]>([])
   
   const fetchAnimalDetails = useCallback(async () => {
-    if (!animalId || !open) return
+    if (!animalId) return
     
     setLoading(true)
     setError(null)
     
     try {
+      // Fetch animal details
       const { data, error } = await supabase
         .from('animals')
         .select('*')
@@ -79,9 +83,10 @@ export function AnimalDetailSheet({
       
       setAnimal(data)
       
-      // Fetch owner information if owner_id exists
+      // If animal has an owner, fetch owner details
       if (data.owner_id) {
         setLoadingOwner(true)
+        
         const { data: ownerData, error: ownerError } = await supabase
           .from('contacts')
           .select('*')
@@ -90,12 +95,40 @@ export function AnimalDetailSheet({
         
         if (ownerError) {
           console.error("Error fetching owner details:", ownerError)
+          setOwnerDetails(null)
         } else {
           setOwnerDetails(ownerData)
         }
+        
         setLoadingOwner(false)
       } else {
         setOwnerDetails(null)
+      }
+
+      // Fetch event attachments for this animal
+      const { data: events, error: eventsError } = await supabase
+        .from('animal_events')
+        .select('id')
+        .eq('animal_id', animalId)
+      
+      if (eventsError) {
+        console.error("Error fetching animal events:", eventsError)
+      } else if (events && events.length > 0) {
+        const eventIds = events.map(event => event.id)
+        
+        const { data: attachmentData, error: attachmentError } = await supabase
+          .from('animal_event_attachments')
+          .select('*')
+          .in('event_id', eventIds)
+        
+        if (attachmentError) {
+          console.error("Error fetching attachments:", attachmentError)
+          setAttachments([])
+        } else {
+          setAttachments(attachmentData || [])
+        }
+      } else {
+        setAttachments([])
       }
     } catch (error) {
       console.error("Error fetching animal details:", error)
@@ -103,7 +136,7 @@ export function AnimalDetailSheet({
     } finally {
       setLoading(false)
     }
-  }, [animalId, open])
+  }, [animalId])
   
   useEffect(() => {
     fetchAnimalDetails()
@@ -269,6 +302,25 @@ export function AnimalDetailSheet({
                         <dd className="font-medium truncate">{animal.microchip_number || '-'}</dd>
                       </div>
                     </dl>
+                  </CardContent>
+                </Card>
+                
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
+                    <CardTitle className="text-base font-medium flex items-center">
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Attachments
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-4 px-5 pt-0">
+                    {attachments.length > 0 ? (
+                      <AttachmentsViewer 
+                        attachments={attachments}
+                        showTitle={false}
+                      />
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">No attachments available</p>
+                    )}
                   </CardContent>
                 </Card>
                 
