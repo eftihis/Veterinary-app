@@ -289,13 +289,33 @@ export function EditEventDialog({
       }));
       
       try {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('animal_event_attachments')
-          .insert(dbAttachments);
+          .insert(dbAttachments)
+          .select(); // Add select() to return the inserted records
         
         if (error) {
           console.error('Error saving new attachments:', error);
           throw error;
+        }
+        
+        // If successful and we have data returned, dispatch a custom event to refresh the timeline
+        if (data) {
+          console.log("Successfully saved attachments:", data);
+          
+          // Create and dispatch a custom event to update the timeline
+          const refreshEvent = new CustomEvent('refresh', {
+            bubbles: true
+          });
+          
+          // Find and dispatch on the animal-timeline-wrapper element
+          const timelineWrapper = document.getElementById('animal-timeline-wrapper');
+          if (timelineWrapper) {
+            console.log("Dispatching refresh event to timeline");
+            timelineWrapper.dispatchEvent(refreshEvent);
+          } else {
+            console.log("Timeline wrapper element not found, event refresh not dispatched");
+          }
         }
       } catch (err) {
         console.error('Exception saving new attachments:', err);
@@ -467,6 +487,14 @@ export function EditEventDialog({
       
       // Process attachments after successfully updating the event
       await processAttachments(event.id)
+      
+      // Manually trigger a refresh of the timeline
+      const timelineWrapper = document.getElementById('animal-timeline-wrapper');
+      if (timelineWrapper) {
+        console.log("Dispatching refresh event to timeline after event update");
+        const refreshEvent = new CustomEvent('refresh', { bubbles: true });
+        timelineWrapper.dispatchEvent(refreshEvent);
+      }
       
       toast.success("Event updated successfully")
       onOpenChange(false)

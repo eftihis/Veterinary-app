@@ -185,6 +185,8 @@ export function AnimalTimeline({
           if (attachmentsError) {
             console.error('Error fetching attachments:', attachmentsError)
           } else if (attachmentsData) {
+            console.log("Fetched attachments:", attachmentsData)
+            
             // Group attachments by event_id
             const attachmentsByEvent: Record<string, Attachment[]> = {}
             
@@ -219,18 +221,26 @@ export function AnimalTimeline({
       }
     }
     
+    // Execute the initial fetch
     fetchEvents()
     
-    // Set up event listener for refresh events
-    const wrapper = document.getElementById('animal-timeline-wrapper')
-    if (wrapper) {
-      wrapper.addEventListener('refresh', fetchEvents)
+    // Set up event listener for refresh events with a named handler for proper cleanup
+    const handleRefreshEvent = () => {
+      console.log("Timeline refresh event received, fetching events...")
+      fetchEvents()
+    }
+    
+    const timelineWrapper = document.getElementById('animal-timeline-wrapper')
+    if (timelineWrapper) {
+      console.log("Adding refresh event listener to timeline wrapper")
+      timelineWrapper.addEventListener('refresh', handleRefreshEvent)
     }
     
     return () => {
       isMounted = false
-      if (wrapper) {
-        wrapper.removeEventListener('refresh', fetchEvents)
+      if (timelineWrapper) {
+        console.log("Removing refresh event listener from timeline wrapper")
+        timelineWrapper.removeEventListener('refresh', handleRefreshEvent)
       }
     }
   }, [animalId, eventType, limit])
@@ -554,7 +564,7 @@ export function AnimalTimeline({
   
   if (loading) {
     return (
-      <div className={`space-y-4 ${className}`}>
+      <div id="animal-timeline-wrapper" className={`space-y-4 ${className}`}>
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Timeline</h3>
           {showAddButton && (
@@ -589,7 +599,7 @@ export function AnimalTimeline({
   
   if (error) {
     return (
-      <div className={`rounded-md bg-destructive/10 p-4 ${className}`}>
+      <div id="animal-timeline-wrapper" className={`rounded-md bg-destructive/10 p-4 ${className}`}>
         <div className="flex items-center">
           <AlertCircle className="h-4 w-4 text-destructive mr-2" />
           <p className="text-sm text-destructive">Failed to load timeline</p>
@@ -607,7 +617,7 @@ export function AnimalTimeline({
   }
   
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div id="animal-timeline-wrapper" className={`space-y-4 ${className}`}>
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Timeline</h3>
         {showAddButton && (
