@@ -720,7 +720,7 @@ export default function VeterinaryForm({
       
       if (editMode && initialData?.id) {
         // Update existing invoice
-        const { data: updateData, error: updateError } = await supabase
+        const { error: updateError } = await supabase
           .from('invoices')
           .update({
             document_number: data.documentNumber,
@@ -2313,6 +2313,7 @@ export default function VeterinaryForm({
               attachments={attachments}
               onAttachmentAdded={handleAttachmentAdded}
               onAttachmentRemoved={handleAttachmentRemoved}
+              maxSize={1} // Set max size to 1MB explicitly
             />
           </div>
 

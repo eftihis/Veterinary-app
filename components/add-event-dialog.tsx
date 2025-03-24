@@ -1302,6 +1302,7 @@ export function AddEventDialog({
                   attachments={attachments}
                   onAttachmentAdded={handleAttachmentAdded}
                   onAttachmentRemoved={handleAttachmentRemoved}
+                  maxSize={1} // Set max size to 1MB explicitly
                 />
               </div>
               

@@ -28,12 +28,14 @@ export function FileUpload({
   attachments,
   onAttachmentAdded,
   onAttachmentRemoved,
-  maxSize = 10, // Default max file size: 10MB
+  maxSize = 1, // Default max file size: 1MB
   maxFiles = 5, // Default max files: 5
   className,
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropAreaRef = useRef<HTMLDivElement>(null);
 
   const handleUploadClick = () => {
     if (fileInputRef.current) {
@@ -81,8 +83,7 @@ export function FileUpload({
     }
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
+  const processFiles = async (files: FileList) => {
     if (!files || files.length === 0) return;
     
     // Check if we would exceed the maximum number of files
@@ -149,6 +150,34 @@ export function FileUpload({
       fileInputRef.current.value = '';
     }
   };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      await processFiles(event.target.files);
+    }
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+  
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    if (e.dataTransfer.files) {
+      await processFiles(e.dataTransfer.files);
+    }
+  };
   
   // Function to format file size
   const formatFileSize = (bytes: number): string => {
@@ -185,55 +214,70 @@ export function FileUpload({
         </Button>
       </div>
       
-      {/* Display existing attachments */}
-      {attachments.length > 0 ? (
-        <div className="space-y-2">
-          {attachments.map((attachment) => (
-            <div 
-              key={attachment.file_key} 
-              className="flex items-center justify-between p-2 rounded-md border bg-background hover:bg-accent/10 transition-colors"
-            >
-              <div className="flex items-center overflow-hidden">
-                <File className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="text-sm truncate" title={attachment.file_name}>
-                  {attachment.file_name}
-                </span>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {formatFileSize(attachment.file_size)}
-                </span>
+      {/* Display existing attachments or drop area */}
+      <div
+        ref={dropAreaRef}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {attachments.length > 0 ? (
+          <div className="space-y-2">
+            {attachments.map((attachment) => (
+              <div 
+                key={attachment.file_key} 
+                className="flex items-center justify-between p-2 rounded-md border bg-background hover:bg-accent/10 transition-colors"
+              >
+                <div className="flex items-center overflow-hidden">
+                  <File className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="text-sm truncate" title={attachment.file_name}>
+                    {attachment.file_name}
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {formatFileSize(attachment.file_size)}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDownload(attachment.file_key, attachment.file_name)}
+                    className="h-7 w-7 p-0"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveAttachment(attachment.file_key)}
+                    className="h-7 w-7 p-0 text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDownload(attachment.file_key, attachment.file_name)}
-                  className="h-7 w-7 p-0"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveAttachment(attachment.file_key)}
-                  className="h-7 w-7 p-0 text-destructive"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center border border-dashed rounded-md py-6 px-4 bg-muted/30">
-          <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No attachments yet</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Drag files here or click the Add File button
-          </p>
-        </div>
-      )}
+            ))}
+          </div>
+        ) : (
+          <div 
+            className={cn(
+              "flex flex-col items-center justify-center border border-dashed rounded-md py-6 px-4 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors",
+              isDragOver && "bg-primary/10 border-primary"
+            )}
+            onClick={handleUploadClick}
+          >
+            <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              {isDragOver ? "Drop files here" : "No attachments yet"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Click here or drag files here
+            </p>
+          </div>
+        )}
+      </div>
       
       {/* Hidden file input */}
       <input

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { format } from "date-fns"
 import { User, User2, Hash, DollarSign, AlertCircle, FileEdit, Share2, Printer, Paperclip, Upload, File, Download } from "lucide-react"
 import { 
@@ -106,6 +106,30 @@ export function InvoiceDetailSheet({
   const [attachments, setAttachments] = useState<FileAttachment[]>([])
   const [loadingAttachments, setLoadingAttachments] = useState(false)
 
+  // Fetch invoice attachments
+  const fetchAttachments = useCallback(async () => {
+    if (!invoice?.id) return;
+    
+    setLoadingAttachments(true);
+    try {
+      const { data, error } = await supabase
+        .from('invoice_attachments')
+        .select('*')
+        .eq('invoice_id', invoice.id);
+        
+      if (error) {
+        console.error('Error fetching attachments:', error);
+        throw error;
+      }
+      
+      setAttachments(data || []);
+    } catch (error) {
+      console.error('Error fetching attachments:', error);
+    } finally {
+      setLoadingAttachments(false);
+    }
+  }, [invoice?.id, supabase]);
+
   // Fetch the complete invoice data when the sheet opens
   useEffect(() => {
     async function fetchInvoiceData() {
@@ -140,31 +164,7 @@ export function InvoiceDetailSheet({
       fetchInvoiceData()
       fetchAttachments()
     }
-  }, [open, invoice?.id])
-
-  // Fetch invoice attachments
-  async function fetchAttachments() {
-    if (!invoice?.id) return;
-    
-    setLoadingAttachments(true);
-    try {
-      const { data, error } = await supabase
-        .from('invoice_attachments')
-        .select('*')
-        .eq('invoice_id', invoice.id);
-        
-      if (error) {
-        console.error('Error fetching attachments:', error);
-        throw error;
-      }
-      
-      setAttachments(data || []);
-    } catch (error) {
-      console.error('Error fetching attachments:', error);
-    } finally {
-      setLoadingAttachments(false);
-    }
-  }
+  }, [open, invoice, fetchAttachments])
 
   // Function to handle file download
   const handleDownload = async (fileKey: string, fileName: string) => {
