@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -21,7 +21,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -44,16 +43,26 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, FileEdit, Loader2 } from "lucide-react"
+import { CalendarIcon, Trash2, Loader2 } from "lucide-react"
 import { ContactCombobox, ContactOption } from "@/components/ui/contact-combobox"
 import { FileUpload, FileAttachment } from '@/components/ui/file-upload'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 // Form schema for editing an event
 const eventFormSchema = z.object({
   animal_id: z.string().min(1, "Animal is required"),
   event_type: z.string().min(1, "Event type is required"),
   event_date: z.date(),
-  details: z.record(z.string(), z.any()).default({}),
+  details: z.record(z.string(), z.unknown()).default({}),
   notes: z.string().optional().default(""),
   contact_id: z.string().optional().default(""),
 })
@@ -66,7 +75,7 @@ interface AnimalEvent {
   animal_id: string
   event_type: string
   event_date: string
-  details: Record<string, any>
+  details: Record<string, unknown>
   created_by: string | null
   created_at: string
   updated_at: string
@@ -102,6 +111,7 @@ export function EditEventDialog({
   const [attachments, setAttachments] = useState<FileAttachment[]>([])
   const [initialAttachments, setInitialAttachments] = useState<FileAttachment[]>([])
   const [deletedAttachments, setDeletedAttachments] = useState<string[]>([])
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   
   // Define the form
   const form = useForm<EventFormValues>({
@@ -324,6 +334,67 @@ export function EditEventDialog({
     }
   };
   
+  // Add function to handle event deletion
+  const handleDeleteEvent = async () => {
+    if (!event) return
+    
+    try {
+      setIsSubmitting(true)
+      
+      // First delete any attachments
+      if (attachments.length > 0) {
+        // Delete attachments from storage
+        for (const attachment of attachments) {
+          const { error: storageError } = await supabase.storage
+            .from('animal-attachments')
+            .remove([attachment.file_key])
+          
+          if (storageError) {
+            console.error(`Error deleting file ${attachment.file_key}:`, storageError)
+          }
+        }
+        
+        // Delete attachment records from database
+        const { error: dbError } = await supabase
+          .from('animal_event_attachments')
+          .delete()
+          .eq('event_id', event.id)
+        
+        if (dbError) {
+          console.error('Error deleting attachment records:', dbError)
+        }
+      }
+      
+      // Now delete the event
+      const { error } = await supabase
+        .from("animal_events")
+        .update({ is_deleted: true })
+        .eq("id", event.id)
+      
+      if (error) throw error
+      
+      // Refresh the timeline
+      const timelineWrapper = document.getElementById('animal-timeline-wrapper')
+      if (timelineWrapper) {
+        console.log("Dispatching refresh event to timeline after event deletion")
+        const refreshEvent = new CustomEvent('refresh', { bubbles: true })
+        timelineWrapper.dispatchEvent(refreshEvent)
+      }
+      
+      toast.success("Event deleted successfully")
+      onOpenChange(false)
+      
+      if (onSuccess) {
+        onSuccess()
+      }
+    } catch (err) {
+      console.error("Error deleting event:", err)
+      toast.error("Failed to delete event")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+  
   // Handle form submission
   async function onSubmit(data: EventFormValues) {
     if (!event) return
@@ -510,11 +581,17 @@ export function EditEventDialog({
     }
   }
   
-  // Helper function to get the selected contact option based on contact_id
-  const getSelectedContactOption = useCallback(() => {
-    const contactId = form.watch("contact_id")
-    return contactOptions.find(option => option.value === contactId) || null
-  }, [contactOptions, form])
+  // Add this part to shift focus when dialog closes
+  const handleDialogOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      // When dialog is closing, ensure focus returns to the document body
+      // This prevents a focused element remaining inside an aria-hidden container
+      setTimeout(() => {
+        document.body.focus();
+      }, 0);
+    }
+    onOpenChange(newOpen);
+  };
   
   // Render form fields based on event type
   const renderEventTypeFields = () => {
@@ -536,7 +613,7 @@ export function EditEventDialog({
                       step="0.01" 
                       placeholder="Enter weight" 
                       {...field}
-                      value={field.value || ""}
+                      value={field.value ? String(field.value) : ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -559,7 +636,7 @@ export function EditEventDialog({
                     <Input 
                       placeholder="Enter vaccine name" 
                       {...field} 
-                      value={field.value || ""}
+                      value={field.value ? String(field.value) : ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -578,7 +655,7 @@ export function EditEventDialog({
                       <Input 
                         placeholder="Enter brand (optional)" 
                         {...field} 
-                        value={field.value || ""}
+                        value={field.value ? String(field.value) : ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -596,7 +673,7 @@ export function EditEventDialog({
                       <Input 
                         placeholder="Enter lot number (optional)" 
                         {...field}
-                        value={field.value || ""} 
+                        value={field.value ? String(field.value) : ""} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -620,7 +697,7 @@ export function EditEventDialog({
                     <Input 
                       placeholder="Enter medication name" 
                       {...field}
-                      value={field.value || ""} 
+                      value={field.value ? String(field.value) : ""} 
                     />
                   </FormControl>
                   <FormMessage />
@@ -639,7 +716,7 @@ export function EditEventDialog({
                       <Input 
                         placeholder="e.g., 10mg" 
                         {...field}
-                        value={field.value || ""} 
+                        value={field.value ? String(field.value) : ""} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -657,7 +734,7 @@ export function EditEventDialog({
                       <Input 
                         placeholder="e.g., twice daily" 
                         {...field}
-                        value={field.value || ""} 
+                        value={field.value ? String(field.value) : ""} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -675,7 +752,7 @@ export function EditEventDialog({
                       <Input 
                         placeholder="e.g., 7 days" 
                         {...field}
-                        value={field.value || ""} 
+                        value={field.value ? String(field.value) : ""} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -697,7 +774,7 @@ export function EditEventDialog({
                   <FormLabel>New Status</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
-                    defaultValue={field.value || ""}
+                    defaultValue={field.value ? String(field.value) : ""}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -752,7 +829,7 @@ export function EditEventDialog({
                     <Input 
                       placeholder="Enter reason (optional)" 
                       {...field}
-                      value={field.value || ""} 
+                      value={field.value ? String(field.value) : ""} 
                     />
                   </FormControl>
                   <FormMessage />
@@ -775,7 +852,7 @@ export function EditEventDialog({
                     placeholder="Enter note content" 
                     className="min-h-[100px]" 
                     {...field}
-                    value={field.value || ""} 
+                    value={field.value ? String(field.value) : ""} 
                   />
                 </FormControl>
                 <FormMessage />
@@ -797,7 +874,7 @@ export function EditEventDialog({
                     <Input 
                       placeholder="Enter reason for visit" 
                       {...field}
-                      value={field.value || ""} 
+                      value={field.value ? String(field.value) : ""} 
                     />
                   </FormControl>
                   <FormMessage />
@@ -836,7 +913,7 @@ export function EditEventDialog({
                       placeholder="Enter examination findings (optional)" 
                       className="min-h-[100px]" 
                       {...field}
-                      value={field.value || ""} 
+                      value={field.value ? String(field.value) : ""} 
                     />
                   </FormControl>
                   <FormMessage />
@@ -851,166 +928,192 @@ export function EditEventDialog({
     }
   }
   
-  // Add this part to shift focus when dialog closes
-  const handleDialogOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      // When dialog is closing, ensure focus returns to the document body
-      // This prevents a focused element remaining inside an aria-hidden container
-      setTimeout(() => {
-        document.body.focus();
-      }, 0);
-    }
-    onOpenChange(newOpen);
-  };
-  
   return (
-    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Event</DialogTitle>
-          <DialogDescription>
-            Update the event details and click save when you&apos;re done.
-          </DialogDescription>
-        </DialogHeader>
-        
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
+    <>
+      <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+            <DialogDescription>
+              Update the event details and click save when you&apos;re done.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="event_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Event Type</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value || ""}
+                          disabled={true} // Don't allow changing event type when editing
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select event type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="weight">Weight Measurement</SelectItem>
+                            <SelectItem value="vaccination">Vaccination</SelectItem>
+                            <SelectItem value="medication">Medication</SelectItem>
+                            <SelectItem value="status_change">Status Change</SelectItem>
+                            <SelectItem value="note">Note</SelectItem>
+                            <SelectItem value="visit">Veterinary Visit</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="event_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                {/* Render fields based on event type */}
+                {renderEventTypeFields()}
+                
+                {/* Notes field for all event types */}
                 <FormField
                   control={form.control}
-                  name="event_type"
+                  name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Event Type</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value || ""}
-                        disabled={true} // Don't allow changing event type when editing
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select event type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="weight">Weight Measurement</SelectItem>
-                          <SelectItem value="vaccination">Vaccination</SelectItem>
-                          <SelectItem value="medication">Medication</SelectItem>
-                          <SelectItem value="status_change">Status Change</SelectItem>
-                          <SelectItem value="note">Note</SelectItem>
-                          <SelectItem value="visit">Veterinary Visit</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Additional notes (optional)" 
+                          className="min-h-[80px]" 
+                          {...field}
+                          value={field.value ? String(field.value) : ""} 
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="event_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              {/* Render fields based on event type */}
-              {renderEventTypeFields()}
-              
-              {/* Notes field for all event types */}
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notes</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Additional notes (optional)" 
-                        className="min-h-[80px]" 
-                        {...field}
-                        value={field.value || ""} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* File uploads */}
-              <div className="space-y-3">
-                <FormLabel>Attachments</FormLabel>
-                <FileUpload
-                  attachments={attachments}
-                  onAttachmentAdded={handleAttachmentAdded}
-                  onAttachmentRemoved={handleAttachmentRemoved}
-                />
-              </div>
-              
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        )}
-      </DialogContent>
-    </Dialog>
+                {/* File uploads */}
+                <div className="space-y-3">
+                  <FormLabel>Attachments</FormLabel>
+                  <FileUpload
+                    attachments={attachments}
+                    onAttachmentAdded={handleAttachmentAdded}
+                    onAttachmentRemoved={handleAttachmentRemoved}
+                  />
+                </div>
+                
+                <DialogFooter>
+                  <div className="flex w-full justify-between">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => setDeleteDialogOpen(true)}
+                      disabled={isSubmitting}
+                      className="flex items-center"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={isSubmitting}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Changes"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogFooter>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this event and all its attachments. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteEvent}
+              className="bg-destructive hover:bg-destructive/90 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 } 
