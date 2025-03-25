@@ -13,14 +13,14 @@ export function InvoiceDetailSheetSkeleton() {
   return (
     <div className="space-y-4 sm:space-y-6 px-1">
       {/* Public Sharing Card Skeleton */}
-      <Card className="border-dashed py-2 shadow-none">
-        <CardHeader className="py-1 px-4 sm:py-4 sm:px-5">
+      <Card className="border-dashed py-4 shadow-none gap-0">
+        <CardHeader className="py-1 px-4 sm:py-1 sm:px-5">
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-4" />
             <Skeleton className="h-5 w-24" />
           </div>
         </CardHeader>
-        <CardContent className="py-2 px-4 sm:py-4 sm:px-5 pt-0">
+        <CardContent className="py-1 px-4 sm:py-1 sm:px-5 pt-0">
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between">
               <Skeleton className="h-4 w-3/4" />
