@@ -442,39 +442,6 @@ export function AnimalDetailSheet({
                     </dl>
                   </CardContent>
                 </Card>
-                
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <CardTitle className="text-base font-medium flex items-center">
-                      <Paperclip className="h-4 w-4 mr-2" />
-                      Attachments
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    {attachments.length > 0 ? (
-                      <AttachmentsViewer 
-                        attachments={attachments}
-                        showTitle={false}
-                      />
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic">No attachments available</p>
-                    )}
-                  </CardContent>
-                </Card>
-                
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <CardTitle className="text-base font-medium">Notes</CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    {animal.notes ? (
-                      <p className="text-sm whitespace-pre-wrap">{animal.notes}</p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic">No notes available</p>
-                    )}
-                  </CardContent>
-                </Card>
-                
                 <Card className="overflow-hidden">
                   <CardHeader className="py-4 px-5">
                     <CardTitle className="text-base font-medium flex items-center">
@@ -525,6 +492,38 @@ export function AnimalDetailSheet({
                       )
                     ) : (
                       <p className="text-sm text-muted-foreground italic">No owner information available</p>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
+                    <CardTitle className="text-base font-medium flex items-center">
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Attachments
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-4 px-5 pt-0">
+                    {attachments.length > 0 ? (
+                      <AttachmentsViewer 
+                        attachments={attachments}
+                        showTitle={false}
+                      />
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">No attachments available</p>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <Card className="overflow-hidden">
+                  <CardHeader className="py-4 px-5">
+                    <CardTitle className="text-base font-medium">Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-4 px-5 pt-0">
+                    {animal.notes ? (
+                      <p className="text-sm whitespace-pre-wrap">{animal.notes}</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">No notes available</p>
                     )}
                   </CardContent>
                 </Card>
