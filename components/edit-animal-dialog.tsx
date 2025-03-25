@@ -386,6 +386,14 @@ export function EditAnimalDialog({
               />
             </div>
             
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                {animal && animal.id && (
+                  <CurrentWeightSection animalId={animal.id} />
+                )}
+              </div>
+            </div>
+            
             <div className="border rounded-md p-4">
               <ImageUpload 
                 bucket="animal-images"
@@ -418,14 +426,6 @@ export function EditAnimalDialog({
                 </FormItem>
               )}
             />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                {animal && animal.id && (
-                  <CurrentWeightSection animalId={animal.id} />
-                )}
-              </div>
-            </div>
             
             <DialogFooter className="pt-4 gap-2">
               <Button 

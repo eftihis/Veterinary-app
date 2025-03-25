@@ -51,7 +51,7 @@ const animalFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   type: z.string().min(1, "Type is required"),
   breed: z.string().optional(),
-  gender: z.string().optional(),
+  gender: z.string().min(1, "Gender is required"),
   date_of_birth: z.date().optional(),
   microchip_number: z.string().optional(),
   notes: z.string().optional(),
@@ -345,21 +345,21 @@ export function AddAnimalDialog({
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="microchip_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Microchip Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Microchip number (optional)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            
-            <FormField
-              control={form.control}
-              name="microchip_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Microchip Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Microchip number (optional)" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             
             <div className="border rounded-md p-4">
               <ImageUpload 
