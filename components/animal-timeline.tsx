@@ -25,7 +25,7 @@ import {
   PawPrint,
   MapPin,
   Plus,
-  FileEdit
+  Pencil
 } from "lucide-react"
 import { AddEventDialog } from "@/components/add-event-dialog"
 import { EditEventDialog } from "@/components/edit-event-dialog"
@@ -680,7 +680,7 @@ export function AnimalTimeline({
                         className="h-6 w-6"
                         onClick={() => handleEditEvent(event.id)}
                       >
-                        <FileEdit className="h-3.5 w-3.5" />
+                        <Pencil className="h-2 w-2" />
                       </Button>
                     )}
                   </div>
