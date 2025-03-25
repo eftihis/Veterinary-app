@@ -69,6 +69,7 @@ interface AddEventDialogProps {
   open?: boolean // Add open prop to control dialog from parent
   onOpenChange?: (open: boolean) => void // Add callback for open state changes
   defaultEventType?: string // Add option to set default event type
+  lockEventType?: boolean // Add prop to control whether event type can be changed
 }
 
 export function AddEventDialog({ 
@@ -78,7 +79,8 @@ export function AddEventDialog({
   showAnimalSelector = false, // By default, don't show the selector
   open: controlledOpen,
   onOpenChange,
-  defaultEventType
+  defaultEventType,
+  lockEventType = !!defaultEventType // Lock event type by default if defaultEventType is provided
 }: AddEventDialogProps) {
   // Get the authenticated user
   const { user } = useAuth();
@@ -754,7 +756,7 @@ export function AddEventDialog({
                     step="0.01"
                     min="0"
                     max="999.99"
-                    placeholder="Enter weight in kg (max 999.99)" 
+                    placeholder="Enter weight in kg" 
                     value={field.value}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -776,9 +778,6 @@ export function AddEventDialog({
                     onBlur={field.onBlur}
                   />
                 </FormControl>
-                <FormDescription>
-                  Maximum weight: 999.99 kg
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -1180,6 +1179,7 @@ export function AddEventDialog({
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
+                        disabled={lockEventType}
                       >
                         <FormControl>
                           <SelectTrigger>

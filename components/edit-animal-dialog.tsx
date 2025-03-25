@@ -130,6 +130,85 @@ function CurrentWeightSection({ animalId }: { animalId: string }) {
   )
 }
 
+// Current status display component
+function CurrentStatusSection({ animalId, status }: { animalId: string; status: string | null }) {
+  const [loading, setLoading] = useState(false)
+  const [lastStatusChange, setLastStatusChange] = useState<string | null>(null)
+
+  const fetchLastStatusChange = useCallback(async () => {
+    if (!animalId) return;
+    
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from("animal_events")
+        .select("event_date")
+        .eq("animal_id", animalId)
+        .eq("event_type", "status_change")
+        .eq("is_deleted", false)
+        .order("event_date", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error("Error fetching status change:", error);
+      } else {
+        setLastStatusChange(data?.[0]?.event_date ?? null);
+      }
+    } catch (err) {
+      console.error("Error in status change fetch:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [animalId]);
+
+  useEffect(() => {
+    fetchLastStatusChange();
+  }, [fetchLastStatusChange]);
+
+  return (
+    <div className="space-y-2">
+      <FormLabel>Status Information</FormLabel>
+      <div className="flex items-center justify-between rounded-md border p-3">
+        <div>
+          {loading ? (
+            <div className="h-5 w-20 animate-pulse rounded bg-muted"></div>
+          ) : (
+            <div>
+              <div className="font-medium capitalize">{status || "Active"}</div>
+              {lastStatusChange && (
+                <div className="text-xs text-muted-foreground">
+                  Last changed: {format(new Date(lastStatusChange), "PPP")}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <AddEventDialog
+          animalId={animalId || ""}
+          onSuccess={() => {
+            // Refresh status after adding new status change
+            fetchLastStatusChange();
+          }}
+          defaultEventType="status_change"
+        >
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8"
+          >
+            Change Status
+          </Button>
+        </AddEventDialog>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Status changes are tracked through the animal&apos;s timeline as events
+      </p>
+    </div>
+  )
+}
+
 // Form schema for editing an animal
 const animalFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -386,11 +465,21 @@ export function EditAnimalDialog({
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                {animal && animal.id && (
-                  <CurrentWeightSection animalId={animal.id} />
-                )}
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  {animal && animal.id && (
+                    <CurrentWeightSection animalId={animal.id} />
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  {animal && animal.id && (
+                    <CurrentStatusSection animalId={animal.id} status={animal.status} />
+                  )}
+                </div>
               </div>
             </div>
             
