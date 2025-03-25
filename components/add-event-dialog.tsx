@@ -476,10 +476,6 @@ export function AddEventDialog({
           details.weight = data.details.weight === "" ? null : parseFloat(String(data.details.weight))
           details.unit = "kg"
           
-          // Ensure event_date is properly formatted ISO string
-          // This ensures that the lt/gt queries for previous weight work correctly
-          const weightDate = data.event_date.toISOString()
-          
           // No longer storing previous_weight in the event details
           // We'll calculate it at display time by looking up the previous weight event
           break

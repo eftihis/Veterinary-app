@@ -32,7 +32,6 @@ import {
 } from "lucide-react"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { AttachmentsViewer, Attachment } from "@/components/ui/attachments-viewer"
-import { getCurrentWeight } from "@/lib/utils"
 
 // Define Contact interface for type safety
 interface Contact {

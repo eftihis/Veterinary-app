@@ -43,7 +43,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, Loader2, InfoIcon } from "lucide-react"
+import { CalendarIcon, Loader2 } from "lucide-react"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { AddEventDialog } from "@/components/add-event-dialog"
 
@@ -124,7 +124,7 @@ function CurrentWeightSection({ animalId }: { animalId: string }) {
         </AddEventDialog>
       </div>
       <p className="text-xs text-muted-foreground">
-        Weight is tracked through the animal's timeline as measurement events
+        Weight is tracked through the animal&apos;s timeline as measurement events
       </p>
     </div>
   )

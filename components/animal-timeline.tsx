@@ -619,7 +619,7 @@ export function AnimalTimeline({
   }
   
   // Add refreshPreviousWeights function for direct calling
-  const refreshPreviousWeights = useCallback(async () => {
+  const refreshPreviousWeights = useCallback(async () => { // eslint-disable-line @typescript-eslint/no-unused-vars
     if (!events || events.length === 0) return
     
     // Find all weight events
