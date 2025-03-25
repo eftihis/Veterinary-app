@@ -427,17 +427,6 @@ export function EditAnimalDialog({
               </div>
             </div>
             
-            <div className="col-span-2 bg-muted p-3 rounded-md">
-              <p className="text-sm flex items-center font-medium">
-                <InfoIcon className="h-4 w-4 mr-2" />
-                Animal Status Information
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Status changes (like adoption, treatment, etc.) are tracked through status events in the animal's timeline.
-                To change an animal's status, add a status change event from the animal's timeline view.
-              </p>
-            </div>
-            
             <DialogFooter className="pt-4 gap-2">
               <Button 
                 type="button" 

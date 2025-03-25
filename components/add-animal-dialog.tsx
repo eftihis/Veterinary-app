@@ -53,7 +53,6 @@ const animalFormSchema = z.object({
   breed: z.string().optional(),
   gender: z.string().optional(),
   date_of_birth: z.date().optional(),
-  weight: z.coerce.number().optional(),
   microchip_number: z.string().optional(),
   notes: z.string().optional(),
   image_url: z.string().optional(),
@@ -101,7 +100,6 @@ export function AddAnimalDialog({
       type: "",
       breed: "",
       gender: "",
-      weight: undefined,
       microchip_number: "",
       notes: "",
       image_url: "",
@@ -116,7 +114,6 @@ export function AddAnimalDialog({
         type: "",
         breed: "",
         gender: "",
-        weight: undefined,
         microchip_number: "",
         notes: "",
         image_url: "",
@@ -144,98 +141,41 @@ export function AddAnimalDialog({
       
       // If onAnimalAdded is provided, use that instead of direct DB insert
       if (onAnimalAdded) {
-        const result = await onAnimalAdded(data);
-        
-        // If weight is provided, create a weight event for the newly added animal
-        if (data.weight && data.weight > 0) {
-          // Extract animal ID from result
-          let animalId = null;
-          if (result && typeof result === 'object') {
-            if ('value' in result) {
-              animalId = result.value;
-            } else if ('id' in result) {
-              animalId = result.id;
-            }
-          }
-          
-          if (animalId) {
-            console.log("Creating weight event for animal ID:", animalId);
-            try {
-              const { error: weightError } = await supabase
-                .from("animal_events")
-                .insert({
-                  animal_id: animalId,
-                  event_type: "weight",
-                  event_date: new Date().toISOString(),
-                  details: {
-                    weight: data.weight,
-                    unit: "kg"
-                  },
-                  created_by: null, // We don't have user info in this context
-                  is_deleted: false
-                });
-              
-              if (weightError) {
-                console.error("Error creating weight event:", weightError);
-              }
-            } catch (err) {
-              console.error("Failed to create weight event:", err);
-            }
-          }
-        }
+        await onAnimalAdded(data);
       } else {
         // Default behavior - insert directly to DB
-        const { data: insertedAnimal, error: insertError } = await supabase
-          .from("animals")
-          .insert({
-            name: data.name,
-            type: data.type,
-            breed: data.breed || null,
-            gender: data.gender || null,
-            date_of_birth: data.date_of_birth ? data.date_of_birth.toISOString() : null,
-            weight: data.weight || null, // Still store in animals table for now
-            microchip_number: data.microchip_number || null,
-            notes: data.notes || null,
-            status: "active",
-            image_url: tempImageUrl,
-          })
-          .select('id')
-          .single();
+        const { error: insertError } = await supabase.from("animals").insert({
+          name: data.name,
+          type: data.type,
+          breed: data.breed || null,
+          gender: data.gender || null,
+          date_of_birth: data.date_of_birth ? data.date_of_birth.toISOString() : null,
+          weight: null,
+          microchip_number: data.microchip_number || null,
+          notes: data.notes || null,
+          status: "active",
+          image_url: tempImageUrl,
+        });
         
         if (insertError) {
           console.error("Supabase error adding animal:", insertError);
           throw insertError;
         }
         
-        const animalId = insertedAnimal?.id;
-        
-        // If weight is provided, also create a weight event for historical tracking
-        if (animalId && data.weight && data.weight > 0) {
-          console.log("Creating weight event for animal ID:", animalId);
-          try {
-            const { error: weightError } = await supabase
-              .from("animal_events")
-              .insert({
-                animal_id: animalId,
-                event_type: "weight",
-                event_date: new Date().toISOString(),
-                details: {
-                  weight: data.weight,
-                  unit: "kg"
-                },
-                created_by: null, // Use current user ID if available
-                is_deleted: false
-              });
-            
-            if (weightError) {
-              console.error("Error creating weight event:", weightError);
-            }
-          } catch (err) {
-            console.error("Failed to create weight event:", err);
-          }
+        // After successful insert, fetch the newly created record
+        const { data: insertedData, error: fetchError } = await supabase
+          .from("animals")
+          .select("*")
+          .eq("name", data.name)
+          .order("created_at", { ascending: false })
+          .limit(1);
+          
+        if (fetchError) {
+          console.error("Supabase error fetching added animal:", fetchError);
+          throw fetchError;
         }
         
-        console.log("Animal added successfully with ID:", animalId);
+        console.log("Animal added successfully:", insertedData);
         
         // Dispatch a custom event to notify the animals table to refresh
         const refreshEvent = new CustomEvent('refreshAnimalsTable');
@@ -401,30 +341,6 @@ export function AddAnimalDialog({
                         />
                       </PopoverContent>
                     </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Weight (kg)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.1"
-                        placeholder="Weight in kg" 
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value === "" ? undefined : parseFloat(e.target.value);
-                          field.onChange(value);
-                        }}
-                        value={field.value ?? ""}
-                      />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
