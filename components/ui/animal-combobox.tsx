@@ -89,7 +89,7 @@ export function AnimalCombobox({
       }
       
       // Store weight value before creating animal
-      const weightValue = animalData.weight;
+      const weightValue = (animalData as any).weight;
       
       // Call the parent's onAddAnimal handler
       const newAnimal = await onAddAnimal(animalData);

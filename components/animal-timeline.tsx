@@ -85,7 +85,6 @@ export function AnimalTimeline({
   const [error, setError] = useState<string | null>(null)
   const [previousWeights, setPreviousWeights] = useState<Record<string, number | null>>({})
   const [previousStatuses, setPreviousStatuses] = useState<Record<string, string | null>>({})
-  const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   
