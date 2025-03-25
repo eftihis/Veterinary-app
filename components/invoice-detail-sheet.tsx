@@ -25,8 +25,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { supabase } from "@/lib/supabase"
 import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import {
@@ -39,6 +37,7 @@ import { InvoicePDFDownloadButton } from "@/components/invoice-pdf"
 import { Loader2 } from 'lucide-react'
 import { AttachmentsViewer, Attachment } from '@/components/ui/attachments-viewer'
 import { InvoiceDetailSheetSkeleton } from "@/components/invoice-detail-sheet-skeleton"
+import { supabase } from "@/lib/supabase"
 
 interface InvoiceDetailSheetProps {
   open: boolean
@@ -286,6 +285,8 @@ const InvoiceInformationSection = memo(({ data }: { data: InvoiceWithJoins }) =>
   </Card>
 ));
 
+InvoiceInformationSection.displayName = "InvoiceInformationSection";
+
 const PatientInformationSection = memo(({ data }: { data: InvoiceWithJoins }) => (
   <Card>
     <CardHeader className="py-4 px-5">
@@ -314,6 +315,8 @@ const PatientInformationSection = memo(({ data }: { data: InvoiceWithJoins }) =>
   </Card>
 ));
 
+PatientInformationSection.displayName = "PatientInformationSection";
+
 const VeterinarianInformationSection = memo(({ data }: { data: InvoiceWithJoins }) => (
   <Card>
     <CardHeader className="py-4 px-5">
@@ -338,6 +341,8 @@ const VeterinarianInformationSection = memo(({ data }: { data: InvoiceWithJoins 
     </CardContent>
   </Card>
 ));
+
+VeterinarianInformationSection.displayName = "VeterinarianInformationSection";
 
 const LineItemsSection = memo(({ data }: { data: InvoiceWithJoins }) => (
   <Card>
@@ -417,6 +422,8 @@ const LineItemsSection = memo(({ data }: { data: InvoiceWithJoins }) => (
   </Card>
 ));
 
+LineItemsSection.displayName = "LineItemsSection";
+
 const CommentSection = memo(({ comment }: { comment: string }) => (
   <Card>
     <CardHeader className="py-4 px-5">
@@ -427,6 +434,8 @@ const CommentSection = memo(({ comment }: { comment: string }) => (
     </CardContent>
   </Card>
 ));
+
+CommentSection.displayName = "CommentSection";
 
 export function InvoiceDetailSheet({
   open,
