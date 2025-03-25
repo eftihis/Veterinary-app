@@ -434,6 +434,15 @@ export function EditEventDialog({
           }
           
           console.log(`Successfully reverted animal status to: ${statusToRevertTo}`)
+          
+          // Dispatch custom event to refresh components that show animal status
+          console.log(`Dispatching animal-status-changed event for animal ${event.animal_id}`)
+          window.dispatchEvent(new CustomEvent('animal-status-changed', {
+            detail: { animalId: event.animal_id }
+          }))
+          
+          // Also refresh the animals table
+          window.dispatchEvent(new CustomEvent('refreshAnimalsTable'))
         } catch (statusError) {
           console.error("Error handling status reversion:", statusError)
           // Continue with event deletion even if status reversion fails
@@ -558,6 +567,15 @@ export function EditEventDialog({
               if (updateError) {
                 console.error("Error updating animal status:", updateError)
                 toast.error("Event updated but failed to update animal's status")
+              } else {
+                // Dispatch custom event to refresh components that show animal status
+                console.log(`Dispatching animal-status-changed event for animal ${data.animal_id}`)
+                window.dispatchEvent(new CustomEvent('animal-status-changed', {
+                  detail: { animalId: data.animal_id }
+                }))
+                
+                // Also refresh the animals table
+                window.dispatchEvent(new CustomEvent('refreshAnimalsTable'))
               }
             } catch (err) {
               console.error("Exception updating animal status:", err)

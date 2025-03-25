@@ -170,6 +170,20 @@ export function AnimalDetailSheet({
   
   useEffect(() => {
     fetchAnimalDetails()
+    
+    // Add event listener for refreshing animal details when status changes
+    const handleStatusChange = () => {
+      console.log("Animal status change detected, refreshing animal details")
+      fetchAnimalDetails()
+    }
+    
+    // Listen for status change events
+    window.addEventListener('animal-status-changed', handleStatusChange)
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('animal-status-changed', handleStatusChange)
+    }
   }, [fetchAnimalDetails])
   
   // Get animal type icon

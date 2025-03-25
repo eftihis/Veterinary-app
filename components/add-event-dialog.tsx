@@ -573,6 +573,15 @@ export function AddEventDialog({
               if (updateError) {
                 console.error("Error updating animal status:", updateError);
                 toast.error("Event added but failed to update animal's status");
+              } else {
+                // Dispatch custom event to refresh components that show animal status
+                console.log(`Dispatching animal-status-changed event for animal ${actualAnimalId}`);
+                window.dispatchEvent(new CustomEvent('animal-status-changed', {
+                  detail: { animalId: actualAnimalId }
+                }));
+                
+                // Also refresh the animals table
+                window.dispatchEvent(new CustomEvent('refreshAnimalsTable'));
               }
             }
           } catch (updateErr) {
@@ -694,6 +703,17 @@ export function AddEventDialog({
           detail: { animalId: actualAnimalId } 
         });
         window.dispatchEvent(refreshEvent);
+        
+        // If this was a status change event, also dispatch the status change event
+        if (data.event_type === 'status_change') {
+          console.log(`Dispatching animal-status-changed event after event creation for animal ${actualAnimalId}`);
+          window.dispatchEvent(new CustomEvent('animal-status-changed', {
+            detail: { animalId: actualAnimalId }
+          }));
+          
+          // Refresh the animals table as well
+          window.dispatchEvent(new CustomEvent('refreshAnimalsTable'));
+        }
       } catch (insertError) {
         console.error("Error inserting event:", insertError)
         toast.error(`Failed to add event: ${insertError instanceof Error ? insertError.message : 'Unknown error'}`)
