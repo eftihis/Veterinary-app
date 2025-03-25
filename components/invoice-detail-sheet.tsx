@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, memo } from "react"
 import { format } from "date-fns"
 import { User, User2, Hash, DollarSign, AlertCircle, FileEdit, Share2, Printer, Paperclip, Upload } from "lucide-react"
 import { 
@@ -89,90 +89,31 @@ const getStatusBadge = (status: string) => {
   )
 }
 
-export function InvoiceDetailSheet({
-  open,
-  onOpenChange,
-  invoice,
-  onEdit,
+// Create a memoized component for the public sharing section
+interface PublicSharingSectionProps {
+  invoiceId: string;
+  initialPublicState: boolean;
+  onUpdateInvoice?: (updatedInvoice: Invoice) => void;
+  onDataChanged?: (forceRefresh?: boolean) => void;
+  invoice?: Invoice;
+}
+
+const PublicSharingSection = memo(({ 
+  invoiceId, 
+  initialPublicState,
+  onUpdateInvoice,
   onDataChanged,
-  onUpdateInvoice
-}: InvoiceDetailSheetProps) {
-  const [fullInvoiceData, setFullInvoiceData] = useState<InvoiceWithJoins | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isPublic, setIsPublic] = useState(false)
-  const [isCopied, setIsCopied] = useState(false)
-  const [isUpdatingPublicStatus, setIsUpdatingPublicStatus] = useState(false)
-  const [attachments, setAttachments] = useState<Attachment[]>([])
-  const [loadingAttachments, setLoadingAttachments] = useState(false)
-  const [publicLink, setPublicLink] = useState("")
-
-  // Fetch invoice attachments
-  const fetchAttachments = useCallback(async () => {
-    if (!invoice?.id) return;
-    
-    setLoadingAttachments(true);
-    
-    try {
-      const { data, error } = await supabase
-        .from('invoice_attachments')
-        .select('*')
-        .eq('invoice_id', invoice.id);
-      
-      if (error) {
-        console.error('Error fetching attachments:', error);
-        setAttachments([]);
-      } else {
-        setAttachments(data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching attachments:', error);
-      setAttachments([]);
-    } finally {
-      setLoadingAttachments(false);
-    }
-  }, [invoice?.id]);
-
-  // Define useEffect to load invoice data when open changes
-  useEffect(() => {
-    if (open && invoice?.id) {
-      const fetchData = async () => {
-        try {
-          setLoading(true);
-          setError(null);
-          
-          // Fetch full invoice data
-          const data = await getInvoiceById(invoice.id);
-          if (!data) {
-            throw new Error("Invoice not found");
-          }
-          
-          setFullInvoiceData(data);
-          
-          // Check if public access is enabled
-          if (data.is_public) {
-            setIsPublic(true);
-            setPublicLink(`${window.location.origin}/public/invoice/${invoice.id}`);
-          } else {
-            setIsPublic(false);
-            setPublicLink("");
-          }
-        } catch (err) {
-          console.error("Error fetching invoice details:", err);
-          setError("Failed to load invoice details");
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      fetchData();
-      fetchAttachments();
-    }
-  }, [open, invoice, fetchAttachments]);
+  invoice
+}: PublicSharingSectionProps) => {
+  const [isPublic, setIsPublic] = useState(initialPublicState);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isUpdatingPublicStatus, setIsUpdatingPublicStatus] = useState(false);
+  const [publicLink, setPublicLink] = useState(initialPublicState ? 
+    `${window.location.origin}/public/invoice/${invoiceId}` : "");
 
   // Function to toggle public access
   const togglePublicAccess = async () => {
-    if (!fullInvoiceData || !invoice?.id) return;
+    if (!invoiceId) return;
     
     setIsUpdatingPublicStatus(true);
     
@@ -183,7 +124,7 @@ export function InvoiceDetailSheet({
       const { error } = await supabase
         .from('invoices')
         .update({ is_public: !isCurrentlyPublic })
-        .eq('id', invoice.id);
+        .eq('id', invoiceId);
       
       if (error) throw error;
       
@@ -191,7 +132,7 @@ export function InvoiceDetailSheet({
       setIsPublic(!isCurrentlyPublic);
       
       if (!isCurrentlyPublic) {
-        setPublicLink(`${window.location.origin}/public/invoice/${invoice.id}`);
+        setPublicLink(`${window.location.origin}/public/invoice/${invoiceId}`);
         toast.success("Public access enabled");
       } else {
         setPublicLink("");
@@ -221,24 +162,365 @@ export function InvoiceDetailSheet({
 
   // Copy public link to clipboard
   function copyPublicLink() {
-    if (!invoice?.id) return
+    if (!invoiceId) return;
     
-    const publicUrl = `${window.location.origin}/public/invoice/${invoice.id}`
+    const publicUrl = `${window.location.origin}/public/invoice/${invoiceId}`;
     navigator.clipboard.writeText(publicUrl)
       .then(() => {
-        setIsCopied(true)
-        toast.success("Link copied to clipboard")
+        setIsCopied(true);
+        toast.success("Link copied to clipboard");
         
         // Reset the copied state after 2 seconds
         setTimeout(() => {
-          setIsCopied(false)
-        }, 2000)
+          setIsCopied(false);
+        }, 2000);
       })
       .catch(err => {
-        console.error("Error copying to clipboard:", err)
-        toast.error("Failed to copy link")
-      })
+        console.error("Error copying to clipboard:", err);
+        toast.error("Failed to copy link");
+      });
   }
+
+  return (
+    <Card className="border-dashed py-2 shadow-none">
+      <CardHeader className="py-1 px-4 sm:py-4 sm:px-5">
+        <CardTitle className="text-sm sm:text-base font-medium flex items-center">
+          <Share2 className="sm:inline-block h-4 w-4 mr-2" />
+          Share Invoice
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="py-2 px-4 sm:py-4 sm:px-5 pt-0">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-xs text-muted-foreground">
+                When enabled, this invoice can be viewed without login.
+              </p>
+            </div>
+            <Switch
+              id="public-toggle"
+              checked={isPublic}
+              onCheckedChange={togglePublicAccess}
+              disabled={isUpdatingPublicStatus}
+            />
+          </div>
+          
+          {isPublic && (
+            <div className="pt-1 sm:pt-2 mt-2">
+              <div className="flex gap-2">
+                <Input
+                  id="public-link"
+                  value={publicLink}
+                  readOnly
+                  className="flex-1 text-xs sm:text-sm"
+                />
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        onClick={copyPublicLink} 
+                        size="sm"
+                        variant="secondary"
+                      >
+                        {isCopied ? "Copied!" : "Copy"}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy link to clipboard</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
+
+PublicSharingSection.displayName = "PublicSharingSection";
+
+// Create memoized components for each section
+const InvoiceInformationSection = memo(({ data }: { data: InvoiceWithJoins }) => (
+  <Card>
+    <CardHeader className="py-4 px-5">
+      <CardTitle className="text-base font-medium flex items-center">
+        <Hash className="h-4 w-4 mr-2" />
+        Invoice Information
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="py-4 px-5 pt-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="font-medium mr-1">Document Number:</span>
+            <span>{data.document_number}</span>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="font-medium mr-1">Reference:</span>
+            <span>{data.reference || "-"}</span>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="font-medium mr-1">Created:</span>
+            <span>{formatDate(data.created_at)}</span>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="font-medium mr-1">Check-in:</span>
+            <span>{formatDate(data.check_in_date)}</span>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="font-medium mr-1">Check-out:</span>
+            <span>{formatDate(data.check_out_date)}</span>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+));
+
+const PatientInformationSection = memo(({ data }: { data: InvoiceWithJoins }) => (
+  <Card>
+    <CardHeader className="py-4 px-5">
+      <CardTitle className="text-base font-medium flex items-center">
+        <User className="h-4 w-4 mr-2" />
+        Patient Information
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="py-4 px-5 pt-0">
+      {data.animal ? (
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="font-medium mr-1">Name:</span>
+            <span>{data.animal.name}</span>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="font-medium mr-1">Type:</span>
+            <span className="capitalize">{data.animal.type}</span>
+          </div>
+        </div>
+      ) : (
+        <p className="text-muted-foreground">No patient information available</p>
+      )}
+    </CardContent>
+  </Card>
+));
+
+const VeterinarianInformationSection = memo(({ data }: { data: InvoiceWithJoins }) => (
+  <Card>
+    <CardHeader className="py-4 px-5">
+      <CardTitle className="text-base font-medium flex items-center">
+        <User2 className="h-4 w-4 mr-2" />
+        Veterinarian Information
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="py-4 px-5 pt-0">
+      {data.veterinarian ? (
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="font-medium mr-1">Name:</span>
+            <span>
+              {`${data.veterinarian.first_name} ${data.veterinarian.last_name}`}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <p className="text-muted-foreground">No veterinarian information available</p>
+      )}
+    </CardContent>
+  </Card>
+));
+
+const LineItemsSection = memo(({ data }: { data: InvoiceWithJoins }) => (
+  <Card>
+    <CardHeader className="py-4 px-5">
+      <CardTitle className="text-base font-medium flex items-center">
+        <DollarSign className="h-4 w-4 mr-2" />
+        Line Items
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="py-4 px-5 pt-0">
+      <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[30%]">Item</TableHead>
+              <TableHead className="hidden sm:table-cell">Description</TableHead>
+              <TableHead className="text-right">Qty</TableHead>
+              <TableHead className="text-right">Price</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.line_items?.length > 0 ? (
+              data.line_items.map((item: LineItem, index: number) => {
+                const quantity = Number(item.quantity) || 1;
+                const price = Number(item.price) || 0;
+                const lineTotal = quantity * price;
+                
+                return (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">
+                      {item.item_name || item.description || "Item"}
+                      <div className="block sm:hidden text-xs text-muted-foreground mt-1">
+                        {item.description || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">{item.description || '-'}</TableCell>
+                    <TableCell className="text-right">{quantity}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(price)}</TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(lineTotal)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center">No items found</TableCell>
+              </TableRow>
+            )}
+            
+            <TableRow className="border-t-2">
+              <TableCell colSpan={3} className="sm:hidden text-right font-medium">Subtotal:</TableCell>
+              <TableCell colSpan={4} className="hidden sm:table-cell text-right font-medium">Subtotal:</TableCell>
+              <TableCell className="text-right">{formatCurrency(data.subtotal)}</TableCell>
+            </TableRow>
+            
+            {data.discount_total > 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="sm:hidden text-right font-medium">Discount:</TableCell>
+                <TableCell colSpan={4} className="hidden sm:table-cell text-right font-medium">Discount:</TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(data.discount_total)}
+                </TableCell>
+              </TableRow>
+            )}
+            
+            <TableRow className="font-bold">
+              <TableCell colSpan={3} className="sm:hidden text-right">Total:</TableCell>
+              <TableCell colSpan={4} className="hidden sm:table-cell text-right">Total:</TableCell>
+              <TableCell className="text-right">{formatCurrency(data.total)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    </CardContent>
+  </Card>
+));
+
+const CommentSection = memo(({ comment }: { comment: string }) => (
+  <Card>
+    <CardHeader className="py-4 px-5">
+      <CardTitle className="text-base font-medium">Additional Comments</CardTitle>
+    </CardHeader>
+    <CardContent className="py-4 px-5 pt-0">
+      <p className="whitespace-pre-wrap">{comment}</p>
+    </CardContent>
+  </Card>
+));
+
+export function InvoiceDetailSheet({
+  open,
+  onOpenChange,
+  invoice,
+  onEdit,
+  onDataChanged,
+  onUpdateInvoice
+}: InvoiceDetailSheetProps) {
+  const [fullInvoiceData, setFullInvoiceData] = useState<InvoiceWithJoins | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [loadingAttachments, setLoadingAttachments] = useState(false)
+
+  // Memoize the fetch data function
+  const fetchData = useCallback(async () => {
+    if (!invoice?.id) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await getInvoiceById(invoice.id);
+      if (!data) {
+        throw new Error("Invoice not found");
+      }
+      
+      setFullInvoiceData(data);
+    } catch (err) {
+      console.error("Error fetching invoice details:", err);
+      setError("Failed to load invoice details");
+    } finally {
+      setLoading(false);
+    }
+  }, [invoice?.id]);
+
+  // Memoize the fetch attachments function
+  const fetchAttachments = useCallback(async () => {
+    if (!invoice?.id) return;
+    
+    setLoadingAttachments(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('invoice_attachments')
+        .select('*')
+        .eq('invoice_id', invoice.id);
+      
+      if (error) {
+        console.error('Error fetching attachments:', error);
+        setAttachments([]);
+      } else {
+        setAttachments(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching attachments:', error);
+      setAttachments([]);
+    } finally {
+      setLoadingAttachments(false);
+    }
+  }, [invoice?.id]);
+
+  // Memoize the handleEdit function
+  const handleEdit = useCallback(() => {
+    if (invoice && onEdit) {
+      onEdit(invoice);
+      onOpenChange(false);
+    }
+  }, [invoice, onEdit, onOpenChange]);
+
+  // Memoize the handlePrint function
+  const handlePrint = useCallback(() => {
+    if (!fullInvoiceData) return;
+    
+    toast.loading("Preparing invoice for printing...");
+    
+    import('@/components/invoice-pdf').then(({ printPDF }) => {
+      printPDF(fullInvoiceData).then(() => {
+        toast.dismiss();
+      }).catch((err) => {
+        toast.dismiss();
+        toast.error("Failed to print invoice");
+        console.error(err);
+      });
+    });
+  }, [fullInvoiceData]);
+
+  // Use effect for data fetching
+  useEffect(() => {
+    if (open && invoice?.id) {
+      fetchData();
+      fetchAttachments();
+    }
+  }, [open, invoice?.id, fetchData, fetchAttachments]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -277,23 +559,7 @@ export function InvoiceDetailSheet({
                   <Tooltip delayDuration={300}>
                     <TooltipTrigger asChild>
                       <Button
-                        onClick={() => {
-                          if (fullInvoiceData) {
-                            // Show loading toast
-                            toast.loading("Preparing invoice for printing...");
-                            
-                            // Import and use the printPDF function
-                            import('@/components/invoice-pdf').then(({ printPDF }) => {
-                              printPDF(fullInvoiceData).then(() => {
-                                toast.dismiss();
-                              }).catch((err) => {
-                                toast.dismiss();
-                                toast.error("Failed to print invoice");
-                                console.error(err);
-                              });
-                            });
-                          }
-                        }}
+                        onClick={handlePrint}
                         size="icon"
                         variant="ghost"
                         aria-label="Print Invoice"
@@ -480,247 +746,26 @@ export function InvoiceDetailSheet({
           </div>
         ) : fullInvoiceData ? (
           <div className="space-y-4 sm:space-y-6 px-1">
-            {/* Public Sharing Card - More discreet styling */}
-            <Card className="border-dashed py-2 shadow-none">
-              <CardHeader className="py-1 px-4 sm:py-4 sm:px-5">
-                <CardTitle className="text-sm sm:text-base font-medium flex items-center">
-                  <Share2 className="sm:inline-block h-4 w-4 mr-2" />
-                  Share Invoice
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-2 px-4 sm:py-4 sm:px-5 pt-0">
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">
-                        When enabled, this invoice can be viewed without login.
-                      </p>
-                    </div>
-                    <Switch
-                      id="public-toggle"
-                      checked={isPublic}
-                      onCheckedChange={togglePublicAccess}
-                      disabled={isUpdatingPublicStatus}
-                    />
-                  </div>
-                  
-                  {isPublic && (
-                    <div className="pt-1 sm:pt-2 mt-2">
-                      <div className="flex gap-2">
-                        <Input
-                          id="public-link"
-                          value={publicLink}
-                          readOnly
-                          className="flex-1 text-xs sm:text-sm"
-                        />
-                        <TooltipProvider>
-                          <Tooltip delayDuration={300}>
-                            <TooltipTrigger asChild>
-                              <Button 
-                                onClick={copyPublicLink} 
-                                size="sm"
-                                variant="secondary"
-                              >
-                                {isCopied ? "Copied!" : "Copy"}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Copy link to clipboard</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            {/* Public Sharing Section */}
+            {invoice && fullInvoiceData && (
+              <PublicSharingSection 
+                invoiceId={invoice.id}
+                initialPublicState={fullInvoiceData.is_public}
+                onUpdateInvoice={onUpdateInvoice}
+                onDataChanged={onDataChanged}
+                invoice={invoice}
+              />
+            )}
             
-            {/* Invoice Header Information */}
-            <Card>
-              <CardHeader className="py-4 px-5">
-                <CardTitle className="text-base font-medium flex items-center">
-                  <Hash className="h-4 w-4 mr-2" />
-                  Invoice Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-4 px-5 pt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Document Number:</span>
-                      <span>{fullInvoiceData.document_number}</span>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Reference:</span>
-                      <span>{fullInvoiceData.reference || "-"}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Created:</span>
-                      <span>{formatDate(fullInvoiceData.created_at)}</span>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Check-in:</span>
-                      <span>{formatDate(fullInvoiceData.check_in_date)}</span>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Check-out:</span>
-                      <span>{formatDate(fullInvoiceData.check_out_date)}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Patient Information */}
-            <Card>
-              <CardHeader className="py-4 px-5">
-                <CardTitle className="text-base font-medium flex items-center">
-                  <User className="h-4 w-4 mr-2" />
-                  Patient Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-4 px-5 pt-0">
-                {fullInvoiceData.animal ? (
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Name:</span>
-                      <span>{fullInvoiceData.animal.name}</span>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Type:</span>
-                      <span className="capitalize">{fullInvoiceData.animal.type}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No patient information available</p>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Veterinarian Information */}
-            <Card>
-              <CardHeader className="py-4 px-5">
-                <CardTitle className="text-base font-medium flex items-center">
-                  <User2 className="h-4 w-4 mr-2" />
-                  Veterinarian Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-4 px-5 pt-0">
-                {fullInvoiceData.veterinarian ? (
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span className="font-medium mr-1">Name:</span>
-                      <span>
-                        {`${fullInvoiceData.veterinarian.first_name} ${fullInvoiceData.veterinarian.last_name}`}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No veterinarian information available</p>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Line Items */}
-            <Card>
-              <CardHeader className="py-4 px-5">
-                <CardTitle className="text-base font-medium flex items-center">
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Line Items
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-4 px-5 pt-0">
-                <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[30%]">Item</TableHead>
-                        <TableHead className="hidden sm:table-cell">Description</TableHead>
-                        <TableHead className="text-right">Qty</TableHead>
-                        <TableHead className="text-right">Price</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {fullInvoiceData.line_items?.length > 0 ? (
-                        fullInvoiceData.line_items.map((item: LineItem, index: number) => {
-                          // Calculate line total
-                          const quantity = Number(item.quantity) || 1; // Default to 1 if not specified
-                          const price = Number(item.price) || 0;
-                          const lineTotal = quantity * price;
-                          
-                          return (
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">
-                                {item.item_name || item.description || "Item"}
-                                {/* Show description on mobile as part of the item cell */}
-                                <div className="block sm:hidden text-xs text-muted-foreground mt-1">
-                                  {item.description || '-'}
-                                </div>
-                              </TableCell>
-                              <TableCell className="hidden sm:table-cell">{item.description || '-'}</TableCell>
-                              <TableCell className="text-right">{quantity}</TableCell>
-                              <TableCell className="text-right">{formatCurrency(price)}</TableCell>
-                              <TableCell className="text-right">
-                                {formatCurrency(lineTotal)}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center">No items found</TableCell>
-                        </TableRow>
-                      )}
-                      
-                      {/* Subtotal, Discount and Total */}
-                      <TableRow className="border-t-2">
-                        {/* On mobile: 3 columns (Item, Qty, Price) before Total */}
-                        <TableCell colSpan={3} className="sm:hidden text-right font-medium">Subtotal:</TableCell>
-                        {/* On desktop: 4 columns (Item, Description, Qty, Price) before Total */}
-                        <TableCell colSpan={4} className="hidden sm:table-cell text-right font-medium">Subtotal:</TableCell>
-                        <TableCell className="text-right">{formatCurrency(fullInvoiceData.subtotal)}</TableCell>
-                      </TableRow>
-                      
-                      {fullInvoiceData.discount_total > 0 && (
-                        <TableRow>
-                          <TableCell colSpan={3} className="sm:hidden text-right font-medium">Discount:</TableCell>
-                          <TableCell colSpan={4} className="hidden sm:table-cell text-right font-medium">Discount:</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(fullInvoiceData.discount_total)}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                      
-                      <TableRow className="font-bold">
-                        <TableCell colSpan={3} className="sm:hidden text-right">Total:</TableCell>
-                        <TableCell colSpan={4} className="hidden sm:table-cell text-right">Total:</TableCell>
-                        <TableCell className="text-right">{formatCurrency(fullInvoiceData.total)}</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Memoized sections */}
+            <InvoiceInformationSection data={fullInvoiceData} />
+            <PatientInformationSection data={fullInvoiceData} />
+            <VeterinarianInformationSection data={fullInvoiceData} />
+            <LineItemsSection data={fullInvoiceData} />
             
             {/* Comment section if available */}
             {fullInvoiceData.comment && (
-              <Card>
-                <CardHeader className="py-4 px-5">
-                  <CardTitle className="text-base font-medium">Additional Comments</CardTitle>
-                </CardHeader>
-                <CardContent className="py-4 px-5 pt-0">
-                  <p className="whitespace-pre-wrap">{fullInvoiceData.comment}</p>
-                </CardContent>
-              </Card>
+              <CommentSection comment={fullInvoiceData.comment} />
             )}
           </div>
         ) : (
@@ -757,7 +802,6 @@ export function InvoiceDetailSheet({
         </Card>
         
         <SheetFooter className="px-6 -mx-6 border-t pt-4 border-border bottom-0 left-0 rigth-0 sticky md:static bg-background rounded-b-lg">
-          {/* First row - Close button */}
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -766,15 +810,9 @@ export function InvoiceDetailSheet({
             Close
           </Button>
           
-          {/* Second row - Edit button */}
           {invoice && !loading && onEdit && (
             <Button
-              onClick={() => {
-                if (invoice && onEdit) {
-                  onEdit(invoice);
-                  onOpenChange(false);
-                }
-              }}
+              onClick={handleEdit}
               className="w-full"
             >
               <FileEdit className="h-4 w-4 mr-2" />
