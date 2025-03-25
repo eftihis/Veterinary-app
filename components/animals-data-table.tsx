@@ -465,35 +465,8 @@ export function AnimalsDataTable({
         
         // If animal has a specific status, show that
         if (animal.status) {
-          let variant: "default" | "secondary" | "outline" | "destructive" | "status" = "outline"
-          
-          // Determine badge variant based on status
-          switch(animal.status.toLowerCase()) {
-            case 'deceased':
-              variant = "destructive"
-              break
-            case 'critical':
-            case 'emergency':
-              variant = "destructive"
-              break
-            case 'stable':
-            case 'healthy':
-              variant = "default"
-              break
-            case 'recovering':
-            case 'treatment':
-              variant = "secondary"
-              break
-            case 'monitoring':
-            case 'observation':
-              variant = "status"
-              break
-            default:
-              variant = "outline"
-          }
-          
           return (
-            <Badge variant={variant} className="capitalize">
+            <Badge variant="outline" className="capitalize">
               {animal.status}
             </Badge>
           )
