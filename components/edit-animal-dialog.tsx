@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -43,7 +43,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, Loader2 } from "lucide-react"
+import { CalendarIcon, Loader2, InfoIcon } from "lucide-react"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { AddEventDialog } from "@/components/add-event-dialog"
 
@@ -53,35 +53,37 @@ function CurrentWeightSection({ animalId }: { animalId: string }) {
   const [loading, setLoading] = useState(true)
   const [lastWeightDate, setLastWeightDate] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchCurrentWeight() {
-      if (!animalId) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from("animal_events")
-          .select("details, event_date")
-          .eq("animal_id", animalId)
-          .eq("event_type", "weight")
-          .eq("is_deleted", false)
-          .order("event_date", { ascending: false })
-          .limit(1)
+  const fetchCurrentWeight = useCallback(async () => {
+    if (!animalId) return;
+    
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from("animal_events")
+        .select("details, event_date")
+        .eq("animal_id", animalId)
+        .eq("event_type", "weight")
+        .eq("is_deleted", false)
+        .order("event_date", { ascending: false })
+        .limit(1);
 
-        if (error) {
-          console.error("Error fetching weight:", error)
-        } else {
-          setCurrentWeight(data?.[0]?.details?.weight ?? null)
-          setLastWeightDate(data?.[0]?.event_date ?? null)
-        }
-      } catch (err) {
-        console.error("Error in weight fetch:", err)
-      } finally {
-        setLoading(false)
+      if (error) {
+        console.error("Error fetching weight:", error);
+      } else {
+        setCurrentWeight(data?.[0]?.details?.weight ?? null);
+        setLastWeightDate(data?.[0]?.event_date ?? null);
       }
+    } catch (err) {
+      console.error("Error in weight fetch:", err);
+    } finally {
+      setLoading(false);
     }
+  }, [animalId]);
 
-    fetchCurrentWeight()
-  }, [animalId])
+  useEffect(() => {
+    fetchCurrentWeight();
+  }, [fetchCurrentWeight]);
 
   return (
     <div className="space-y-2">
@@ -107,8 +109,7 @@ function CurrentWeightSection({ animalId }: { animalId: string }) {
           animalId={animalId || ""}
           onSuccess={() => {
             // Refresh weight after adding new measurement
-            setLoading(true)
-            fetchCurrentWeight()
+            fetchCurrentWeight();
           }}
           defaultEventType="weight"
         >
@@ -127,33 +128,6 @@ function CurrentWeightSection({ animalId }: { animalId: string }) {
       </p>
     </div>
   )
-
-  // Function to refresh weight data
-  function fetchCurrentWeight(): Promise<void> {
-    if (!animalId) return Promise.resolve();
-    
-    return supabase
-      .from("animal_events")
-      .select("details, event_date")
-      .eq("animal_id", animalId)
-      .eq("event_type", "weight")
-      .eq("is_deleted", false)
-      .order("event_date", { ascending: false })
-      .limit(1)
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Error fetching weight:", error)
-        } else {
-          setCurrentWeight(data?.[0]?.details?.weight ?? null)
-          setLastWeightDate(data?.[0]?.event_date ?? null)
-        }
-        setLoading(false)
-      })
-      .catch((err: Error) => {
-        console.error("Error in weight fetch:", err)
-        setLoading(false)
-      });
-  }
 }
 
 // Form schema for editing an animal
@@ -165,7 +139,6 @@ const animalFormSchema = z.object({
   date_of_birth: z.date().optional(),
   microchip_number: z.string().optional(),
   notes: z.string().optional(),
-  status: z.string().optional(),
   image_url: z.string().optional(),
 })
 
@@ -197,7 +170,6 @@ export function EditAnimalDialog({
       gender: "",
       microchip_number: "",
       notes: "",
-      status: "active",
     },
   })
   
@@ -212,7 +184,6 @@ export function EditAnimalDialog({
         date_of_birth: animal.date_of_birth ? new Date(animal.date_of_birth) : undefined,
         microchip_number: animal.microchip_number || "",
         notes: animal.notes || "",
-        status: animal.status || "active",
         image_url: animal.image_url || "",
       })
       setTempImageUrl(animal.image_url)
@@ -236,7 +207,6 @@ export function EditAnimalDialog({
           date_of_birth: data.date_of_birth ? data.date_of_birth.toISOString() : null,
           microchip_number: data.microchip_number || null,
           notes: data.notes || null,
-          status: data.status || "active",
           image_url: tempImageUrl,
         })
         .eq('id', animal.id)
@@ -361,96 +331,60 @@ export function EditAnimalDialog({
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="status"
+                name="date_of_birth"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                      value={field.value || "active"}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="adopted">Adopted</SelectItem>
-                        <SelectItem value="foster">Foster</SelectItem>
-                        <SelectItem value="treatment">Treatment</SelectItem>
-                        <SelectItem value="quarantine">Quarantine</SelectItem>
-                        <SelectItem value="deceased">Deceased</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date of Birth</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               
-              <div className="col-span-1">
-                {animal && animal.id && (
-                  <CurrentWeightSection animalId={animal.id} />
+              <FormField
+                control={form.control}
+                name="microchip_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Microchip Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Microchip number (optional)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
+              />
             </div>
-            
-            <FormField
-              control={form.control}
-              name="date_of_birth"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Date of Birth</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="microchip_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Microchip Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Microchip number (optional)" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             
             <div className="border rounded-md p-4">
               <ImageUpload 
@@ -484,6 +418,25 @@ export function EditAnimalDialog({
                 </FormItem>
               )}
             />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                {animal && animal.id && (
+                  <CurrentWeightSection animalId={animal.id} />
+                )}
+              </div>
+            </div>
+            
+            <div className="col-span-2 bg-muted p-3 rounded-md">
+              <p className="text-sm flex items-center font-medium">
+                <InfoIcon className="h-4 w-4 mr-2" />
+                Animal Status Information
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Status changes (like adoption, treatment, etc.) are tracked through status events in the animal's timeline.
+                To change an animal's status, add a status change event from the animal's timeline view.
+              </p>
+            </div>
             
             <DialogFooter className="pt-4 gap-2">
               <Button 

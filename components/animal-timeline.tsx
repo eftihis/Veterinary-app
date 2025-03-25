@@ -435,7 +435,7 @@ export function AnimalTimeline({
                 </span>
               </span>
             ) : (
-              <span className="font-medium">
+              <span className="text-sm font-medium">
                 Weight: {weightVal.toFixed(2)} {unit}
               </span>
             )}

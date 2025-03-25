@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { supabase } from "@/lib/supabase"
 
 export type AnimalOption = {
   value: string // ID
@@ -87,7 +88,38 @@ export function AnimalCombobox({
         animalData.type = "dog"; // Default to dog if invalid or no type
       }
       
+      // Store weight value before creating animal
+      const weightValue = animalData.weight;
+      
+      // Call the parent's onAddAnimal handler
       const newAnimal = await onAddAnimal(animalData);
+      
+      // If weight was provided, create a weight event
+      if (newAnimal && weightValue && weightValue > 0) {
+        console.log("Creating weight event for animal ID:", newAnimal.value);
+        try {
+          const { error: weightError } = await supabase
+            .from("animal_events")
+            .insert({
+              animal_id: newAnimal.value,
+              event_type: "weight",
+              event_date: new Date().toISOString(),
+              details: {
+                weight: weightValue,
+                unit: "kg"
+              },
+              created_by: null, // We don't have user info in this context
+              is_deleted: false
+            });
+          
+          if (weightError) {
+            console.error("Error creating weight event from combobox:", weightError);
+          }
+        } catch (err) {
+          console.error("Failed to create weight event from combobox:", err);
+        }
+      }
+      
       onSelect(newAnimal);
       return newAnimal;
     }
