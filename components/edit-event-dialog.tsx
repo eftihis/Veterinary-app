@@ -352,6 +352,106 @@ export function EditEventDialog({
         // Continue with event deletion even if attachment deletion fails
       }
       
+      // Handle status reversion if this is a status change event
+      if (event.event_type === "status_change") {
+        try {
+          console.log("This is a status change event, handling status reversion...")
+          
+          // Find the most recent non-deleted status change event for this animal
+          // (excluding the current event being deleted)
+          const { data: previousStatusEvents, error: fetchError } = await supabase
+            .from("animal_events")
+            .select("id, details, event_date")
+            .eq("animal_id", event.animal_id)
+            .eq("event_type", "status_change")
+            .eq("is_deleted", false)
+            .neq("id", event.id) // Exclude the current event
+            .order("event_date", { ascending: false })
+            .limit(1)
+          
+          if (fetchError) {
+            console.error("Error fetching previous status events:", fetchError)
+            throw fetchError
+          }
+          
+          // Determine the status to revert to
+          let statusToRevertTo = "active" // Default status if no previous event is found
+          let contactIdToSet: string | null = null // For adopted/foster statuses
+          
+          if (previousStatusEvents && previousStatusEvents.length > 0) {
+            // If we found a previous status event, use its new_status
+            const previousStatus = previousStatusEvents[0].details?.new_status
+            if (previousStatus) {
+              statusToRevertTo = String(previousStatus)
+              console.log(`Found previous status event, reverting to: ${statusToRevertTo}`)
+              
+              // If the status to revert to is adopted or foster, we need to set the owner_id
+              if (statusToRevertTo === "adopted" || statusToRevertTo === "foster") {
+                // Check if the previous event has a contact_id in its details
+                const contactId = previousStatusEvents[0].details?.contact_id
+                if (contactId) {
+                  contactIdToSet = String(contactId)
+                  console.log(`Setting owner_id to: ${contactIdToSet} for ${statusToRevertTo} status`)
+                }
+              }
+            }
+          } else {
+            console.log("No previous status events found, reverting to default: active")
+          }
+          
+          // Update the animal's status
+          const updateData: {
+            status: string;
+            updated_at: string;
+            owner_id?: string | null;
+          } = {
+            status: statusToRevertTo,
+            updated_at: new Date().toISOString()
+          }
+          
+          // Handle owner_id based on the new status
+          if (statusToRevertTo === "adopted" || statusToRevertTo === "foster") {
+            // Set the owner_id if we found a contact_id in the previous event
+            if (contactIdToSet) {
+              updateData.owner_id = contactIdToSet
+            }
+          } else if (
+            (event.details?.new_status === "adopted" || 
+             event.details?.new_status === "foster")
+          ) {
+            // If we're changing from adopted/foster to something else, clear the owner_id
+            updateData.owner_id = null
+          }
+          
+          const { error: updateError } = await supabase
+            .from("animals")
+            .update(updateData)
+            .eq("id", event.animal_id)
+          
+          if (updateError) {
+            console.error("Error reverting animal status:", updateError)
+            throw updateError
+          }
+          
+          console.log(`Successfully reverted animal status to: ${statusToRevertTo}`)
+        } catch (statusError) {
+          console.error("Error handling status reversion:", statusError)
+          // Continue with event deletion even if status reversion fails
+          toast.error("Failed to revert animal status, but event will be deleted", {
+            description: statusError instanceof Error ? statusError.message : "Unknown error",
+            duration: 5000, // Show for a bit longer
+          })
+          
+          // Log detailed error for diagnostics
+          if (statusError instanceof Error) {
+            console.error("Status reversion error details:", {
+              message: statusError.message,
+              stack: statusError.stack,
+            })
+          }
+        }
+      }
+      
       // Mark the event as deleted
       const { error } = await supabase
         .from("animal_events")
