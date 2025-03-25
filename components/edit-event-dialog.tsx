@@ -171,6 +171,33 @@ export function EditEventDialog({
           contact_id: data.contact_id || "",
         })
         
+        // If this is a status change event, dynamically get the previous status
+        if (data.event_type === "status_change") {
+          try {
+            // Find the previous status event
+            const { data: prevStatusEvent, error: prevStatusError } = await supabase
+              .from('animal_events')
+              .select('details, event_date')
+              .eq('animal_id', data.animal_id)
+              .eq('is_deleted', false)
+              .in('event_type', ['status_change', 'STATUS_CHANGE'])
+              .lt('event_date', data.event_date)
+              .order('event_date', { ascending: false })
+              .limit(1)
+            
+            if (!prevStatusError && prevStatusEvent && prevStatusEvent.length > 0) {
+              const dynamicPrevStatus = prevStatusEvent[0].details?.new_status || 'active'
+              console.log(`Dynamically determined previous status: ${dynamicPrevStatus}`)
+              
+              // Update the details object with the dynamically determined previous status
+              const updatedDetails = { ...data.details, previous_status: dynamicPrevStatus }
+              form.setValue('details', updatedDetails)
+            }
+          } catch (err) {
+            console.error('Error fetching previous status for edit form:', err)
+          }
+        }
+        
         // Fetch attachments for this event
         const { data: attachmentsData, error: attachmentsError } = await supabase
           .from('animal_event_attachments')
@@ -361,7 +388,7 @@ export function EditEventDialog({
           // (excluding the current event being deleted)
           const { data: previousStatusEvents, error: fetchError } = await supabase
             .from("animal_events")
-            .select("id, details, event_date")
+            .select("id, details, event_date, contact_id")
             .eq("animal_id", event.animal_id)
             .eq("event_type", "status_change")
             .eq("is_deleted", false)
@@ -387,11 +414,15 @@ export function EditEventDialog({
               
               // If the status to revert to is adopted or foster, we need to set the owner_id
               if (statusToRevertTo === "adopted" || statusToRevertTo === "foster") {
-                // Check if the previous event has a contact_id in its details
-                const contactId = previousStatusEvents[0].details?.contact_id
-                if (contactId) {
-                  contactIdToSet = String(contactId)
-                  console.log(`Setting owner_id to: ${contactIdToSet} for ${statusToRevertTo} status`)
+                // First check if the previous event has a contact_id in the dedicated column
+                if (previousStatusEvents[0].contact_id) {
+                  contactIdToSet = previousStatusEvents[0].contact_id
+                  console.log(`Setting owner_id to contact_id column value: ${contactIdToSet} for ${statusToRevertTo} status`)
+                }
+                // Then check if it has a contact_id in its details
+                else if (previousStatusEvents[0].details?.contact_id) {
+                  contactIdToSet = String(previousStatusEvents[0].details.contact_id)
+                  console.log(`Setting owner_id to details.contact_id value: ${contactIdToSet} for ${statusToRevertTo} status`)
                 }
               }
             }
@@ -476,6 +507,12 @@ export function EditEventDialog({
         const refreshEvent = new CustomEvent('refresh', { bubbles: true })
         timelineWrapper.dispatchEvent(refreshEvent)
       }
+      
+      // Dispatch a custom event to notify the timeline to refresh
+      const refreshTimelineEvent = new CustomEvent('refreshAnimalTimeline', { 
+        detail: { animalId: event.animal_id } 
+      });
+      window.dispatchEvent(refreshTimelineEvent);
       
       toast.success("Event deleted successfully")
       onOpenChange(false)
@@ -641,6 +678,12 @@ export function EditEventDialog({
         const refreshEvent = new CustomEvent('refresh', { bubbles: true });
         timelineWrapper.dispatchEvent(refreshEvent);
       }
+      
+      // Dispatch a custom event to notify the timeline to refresh
+      const refreshTimelineEvent = new CustomEvent('refreshAnimalTimeline', { 
+        detail: { animalId: data.animal_id } 
+      });
+      window.dispatchEvent(refreshTimelineEvent);
       
       toast.success("Event updated successfully")
       onOpenChange(false)

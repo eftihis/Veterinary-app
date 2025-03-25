@@ -83,9 +83,11 @@ export function AnimalTimeline({
   const [events, setEvents] = useState<TimelineEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [editingEventId, setEditingEventId] = useState<string | null>(null)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [previousWeights, setPreviousWeights] = useState<Record<string, number | null>>({})
+  const [previousStatuses, setPreviousStatuses] = useState<Record<string, string | null>>({})
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingEventId, setEditingEventId] = useState<string | null>(null)
   
   const fetchEvents = useCallback(async () => {
     try {
@@ -234,11 +236,24 @@ export function AnimalTimeline({
       })
     }
     
+    // Listen for both local refresh events and global refreshAnimalTimeline events
     const timelineWrapper = document.getElementById('animal-timeline-wrapper')
     if (timelineWrapper) {
       console.log("Adding refresh event listener to timeline wrapper")
       timelineWrapper.addEventListener('refresh', handleRefreshEvent)
     }
+    
+    // Add a global refresh event listener
+    const handleGlobalRefreshEvent = (e: Event) => {
+      const customEvent = e as CustomEvent
+      // Only refresh if this event is for this animal
+      if (customEvent.detail?.animalId === animalId) {
+        console.log(`Global timeline refresh event received for animal ${animalId}, fetching events...`)
+        fetchEvents()
+      }
+    }
+    
+    window.addEventListener('refreshAnimalTimeline', handleGlobalRefreshEvent)
     
     return () => {
       isMounted = false
@@ -246,6 +261,7 @@ export function AnimalTimeline({
         console.log("Removing refresh event listener from timeline wrapper")
         timelineWrapper.removeEventListener('refresh', handleRefreshEvent)
       }
+      window.removeEventListener('refreshAnimalTimeline', handleGlobalRefreshEvent)
     }
   }, [animalId, eventType, limit])
   
@@ -293,6 +309,54 @@ export function AnimalTimeline({
     }
     
     fetchPreviousWeights()
+  }, [events, animalId])
+  
+  // Fetch previous statuses for all status change events
+  useEffect(() => {
+    async function fetchPreviousStatuses() {
+      if (!events || events.length === 0) return
+      
+      // Find all status change events
+      const statusEvents = events.filter(e => 
+        (e.event_type === 'STATUS_CHANGE' || e.event_type === 'status_change') && 
+        !e.is_deleted
+      )
+      
+      if (statusEvents.length === 0) return
+      
+      // For each status event, find the previous status event
+      const prevStatuses: Record<string, string | null> = {}
+      
+      for (const event of statusEvents) {
+        try {
+          // Find the next oldest status change event
+          const { data, error } = await supabase
+            .from('animal_events')
+            .select('details, event_date')
+            .eq('animal_id', animalId)
+            .eq('is_deleted', false)
+            .in('event_type', ['status_change', 'STATUS_CHANGE'])
+            .lt('event_date', event.event_date)
+            .order('event_date', { ascending: false })
+            .limit(1)
+          
+          if (!error && data && data.length > 0) {
+            // Use the previous event's new_status as this event's previous_status
+            prevStatuses[event.id] = data[0].details?.new_status || null
+          } else {
+            // If no previous status event, use 'active' as the default initial status
+            prevStatuses[event.id] = 'active'
+          }
+        } catch (err) {
+          console.error("Error fetching previous status for event", event.id, err)
+          prevStatuses[event.id] = 'active' // Default to 'active' on error
+        }
+      }
+      
+      setPreviousStatuses(prevStatuses)
+    }
+    
+    fetchPreviousStatuses()
   }, [events, animalId])
   
   // Helper function to get contact name
@@ -390,7 +454,7 @@ export function AnimalTimeline({
         <div>
           <div className="flex items-center">
             <span className="text-sm font-medium">
-              {structuredDetails.previous_status || 'unknown'} <span className="mx-2">→</span> {structuredDetails.new_status || ''}
+              {previousStatuses[event.id] || 'unknown'} <span className="mx-2">→</span> {structuredDetails.new_status || ''}
             </span>
           </div>
           {(event.contact_id || structuredDetails.contact_id) && (
