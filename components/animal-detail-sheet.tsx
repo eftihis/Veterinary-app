@@ -32,6 +32,7 @@ import {
 } from "lucide-react"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { AttachmentsViewer, Attachment } from "@/components/ui/attachments-viewer"
+import { getCurrentWeight } from "@/lib/utils"
 
 // Define Contact interface for type safety
 interface Contact {
@@ -64,6 +65,9 @@ export function AnimalDetailSheet({
   const [ownerDetails, setOwnerDetails] = useState<Contact | null>(null)
   const [loadingOwner, setLoadingOwner] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [currentWeight, setCurrentWeight] = useState<number | null>(null)
+  const [lastWeightDate, setLastWeightDate] = useState<string | null>(null)
+  const [loadingWeight, setLoadingWeight] = useState(false)
   
   const fetchAnimalDetails = useCallback(async () => {
     if (!animalId) return
@@ -82,6 +86,33 @@ export function AnimalDetailSheet({
       if (error) throw error
       
       setAnimal(data)
+      
+      // Fetch current weight from events
+      setLoadingWeight(true)
+      try {
+        const { data: weightData, error: weightError } = await supabase
+          .from("animal_events")
+          .select("details, event_date")
+          .eq("animal_id", animalId)
+          .eq("event_type", "weight")
+          .eq("is_deleted", false)
+          .order("event_date", { ascending: false })
+          .limit(1)
+        
+        if (!weightError && weightData && weightData.length > 0) {
+          setCurrentWeight(weightData[0].details?.weight ?? null)
+          setLastWeightDate(weightData[0].event_date ?? null)
+        } else {
+          setCurrentWeight(null)
+          setLastWeightDate(null)
+        }
+      } catch (weightErr) {
+        console.error("Error fetching weight:", weightErr)
+        setCurrentWeight(null)
+        setLastWeightDate(null)
+      } finally {
+        setLoadingWeight(false)
+      }
       
       // If animal has an owner, fetch owner details
       if (data.owner_id) {
@@ -356,11 +387,13 @@ export function AnimalDetailSheet({
                       <div>
                         <dt className="text-muted-foreground">Weight</dt>
                         <dd className="font-medium">
-                          {animal.weight ? (
+                          {loadingWeight ? (
+                            <Skeleton className="h-4 w-16" />
+                          ) : currentWeight ? (
                             <>
-                              {animal.weight} kg 
+                              {currentWeight} kg 
                               <span className="text-xs text-muted-foreground ml-1">
-                                as of {format(parseISO(animal.updated_at), 'PP')}
+                                {lastWeightDate ? `as of ${format(parseISO(lastWeightDate), 'PP')}` : ''}
                               </span>
                             </>
                           ) : '-'}

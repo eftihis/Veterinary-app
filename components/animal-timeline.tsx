@@ -85,6 +85,7 @@ export function AnimalTimeline({
   const [error, setError] = useState<string | null>(null)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [previousWeights, setPreviousWeights] = useState<Record<string, number | null>>({})
   
   const fetchEvents = useCallback(async () => {
     try {
@@ -227,7 +228,10 @@ export function AnimalTimeline({
     // Set up event listener for refresh events with a named handler for proper cleanup
     const handleRefreshEvent = () => {
       console.log("Timeline refresh event received, fetching events...")
-      fetchEvents()
+      fetchEvents().then(() => {
+        // After events are fetched, we'll need to update previous weights
+        // This happens automatically due to the useEffect dependency on events
+      })
     }
     
     const timelineWrapper = document.getElementById('animal-timeline-wrapper')
@@ -244,6 +248,52 @@ export function AnimalTimeline({
       }
     }
   }, [animalId, eventType, limit])
+  
+  // Fetch previous weights for all weight events
+  useEffect(() => {
+    async function fetchPreviousWeights() {
+      if (!events || events.length === 0) return
+      
+      // Find all weight events
+      const weightEvents = events.filter(e => 
+        (e.event_type === 'WEIGHT_MEASUREMENT' || e.event_type === 'weight') && 
+        !e.is_deleted
+      )
+      
+      if (weightEvents.length === 0) return
+      
+      // For each weight event, find the previous weight event
+      const prevWeights: Record<string, number | null> = {}
+      
+      for (const event of weightEvents) {
+        try {
+          // Find the next oldest weight event
+          const { data, error } = await supabase
+            .from('animal_events')
+            .select('details, event_date')
+            .eq('animal_id', animalId)
+            .eq('is_deleted', false)
+            .in('event_type', ['weight', 'WEIGHT_MEASUREMENT'])
+            .lt('event_date', event.event_date)
+            .order('event_date', { ascending: false })
+            .limit(1)
+          
+          if (!error && data && data.length > 0) {
+            prevWeights[event.id] = data[0].details?.weight ?? null
+          } else {
+            prevWeights[event.id] = null
+          }
+        } catch (err) {
+          console.error("Error fetching previous weight for event", event.id, err)
+          prevWeights[event.id] = null
+        }
+      }
+      
+      setPreviousWeights(prevWeights)
+    }
+    
+    fetchPreviousWeights()
+  }, [events, animalId])
   
   // Helper function to get contact name
   const getContactName = (event: TimelineEvent): string => {
@@ -363,9 +413,10 @@ export function AnimalTimeline({
     
     // For weight measurements
     if (event_type === 'WEIGHT_MEASUREMENT' || event_type === 'weight') {
-      const weightVal = hasKey(details, 'weight') ? Number(details.weight) : 0;
-      const prevWeightVal = hasKey(details, 'previous_weight') ? Number(details.previous_weight) : null;
-      const unit = structuredDetails.unit || 'kg';
+      const weightVal = hasKey(details, 'weight') ? Number(details.weight) : 0
+      // Use our dynamically calculated previous weight instead of the stored one
+      const prevWeightVal = previousWeights[event.id] !== undefined ? previousWeights[event.id] : null
+      const unit = structuredDetails.unit || 'kg'
       
       return (
         <div>
@@ -376,6 +427,11 @@ export function AnimalTimeline({
                 <span className={`ml-2 ${weightVal > prevWeightVal ? 'text-green-500' : weightVal < prevWeightVal ? 'text-red-500' : ''}`}>
                   {weightVal > prevWeightVal ? '▲' : weightVal < prevWeightVal ? '▼' : ''}
                   {weightVal !== prevWeightVal && ` ${Math.abs(weightVal - prevWeightVal).toFixed(2)} ${unit}`}
+                  {weightVal !== prevWeightVal && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      ({((weightVal - prevWeightVal) * 100 / prevWeightVal).toFixed(1)}%)
+                    </span>
+                  )}
                 </span>
               </span>
             ) : (
@@ -557,10 +613,52 @@ export function AnimalTimeline({
     handleEditDialogOpenChange(true)
   }
   
-  // Add onEventUpdated function
+  // Add handleEventUpdated function
   const handleEventUpdated = () => {
     fetchEvents()
   }
+  
+  // Add refreshPreviousWeights function for direct calling
+  const refreshPreviousWeights = useCallback(async () => {
+    if (!events || events.length === 0) return
+    
+    // Find all weight events
+    const weightEvents = events.filter(e => 
+      (e.event_type === 'WEIGHT_MEASUREMENT' || e.event_type === 'weight') && 
+      !e.is_deleted
+    )
+    
+    if (weightEvents.length === 0) return
+    
+    // For each weight event, find the previous weight event
+    const prevWeights: Record<string, number | null> = {}
+    
+    for (const event of weightEvents) {
+      try {
+        // Find the next oldest weight event
+        const { data, error } = await supabase
+          .from('animal_events')
+          .select('details, event_date')
+          .eq('animal_id', animalId)
+          .eq('is_deleted', false)
+          .in('event_type', ['weight', 'WEIGHT_MEASUREMENT'])
+          .lt('event_date', event.event_date)
+          .order('event_date', { ascending: false })
+          .limit(1)
+        
+        if (!error && data && data.length > 0) {
+          prevWeights[event.id] = data[0].details?.weight ?? null
+        } else {
+          prevWeights[event.id] = null
+        }
+      } catch (err) {
+        console.error("Error fetching previous weight for event", event.id, err)
+        prevWeights[event.id] = null
+      }
+    }
+    
+    setPreviousWeights(prevWeights)
+  }, [events, animalId])
   
   if (loading) {
     return (

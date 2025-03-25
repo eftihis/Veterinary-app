@@ -401,37 +401,11 @@ export function EditEventDialog({
           details.weight = data.details.weight === "" ? null : parseFloat(String(data.details.weight))
           details.unit = data.details.unit || "kg"
           
-          // If weight changed, update the animal weight
-          if (event.details.weight !== details.weight) {
-            try {
-              const weightValue = details.weight === null ? null : Number(details.weight)
-              
-              if (weightValue !== null && (weightValue < 0 || weightValue > 999.99)) {
-                toast.error("Weight value is outside the allowed range (0-999.99 kg)")
-              } else {
-                const { error: updateError } = await supabase
-                  .from("animals")
-                  .update({ 
-                    weight: weightValue,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq("id", data.animal_id)
-                  
-                if (updateError) {
-                  console.error("Error updating animal weight:", updateError)
-                  toast.error("Event updated but failed to update animal's weight")
-                }
-              }
-            } catch (err) {
-              console.error("Exception updating animal weight:", err)
-              toast.error("Error occurred while updating animal's weight")
-            }
-          }
+          // Ensure event_date is properly formatted ISO string
+          // This ensures that the lt/gt queries for previous weight work correctly
+          const weightDate = data.event_date.toISOString()
           
-          // Preserve previous_weight if it exists
-          if (event.details.previous_weight) {
-            details.previous_weight = event.details.previous_weight
-          }
+          // We no longer need to preserve previous_weight since we're calculating it dynamically
           break
           
         case "vaccination":

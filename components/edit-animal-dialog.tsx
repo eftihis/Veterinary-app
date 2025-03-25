@@ -45,6 +45,116 @@ import {
 import { cn } from "@/lib/utils"
 import { CalendarIcon, Loader2 } from "lucide-react"
 import { ImageUpload } from "@/components/ui/image-upload"
+import { AddEventDialog } from "@/components/add-event-dialog"
+
+// Current weight display component
+function CurrentWeightSection({ animalId }: { animalId: string }) {
+  const [currentWeight, setCurrentWeight] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [lastWeightDate, setLastWeightDate] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchCurrentWeight() {
+      if (!animalId) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("animal_events")
+          .select("details, event_date")
+          .eq("animal_id", animalId)
+          .eq("event_type", "weight")
+          .eq("is_deleted", false)
+          .order("event_date", { ascending: false })
+          .limit(1)
+
+        if (error) {
+          console.error("Error fetching weight:", error)
+        } else {
+          setCurrentWeight(data?.[0]?.details?.weight ?? null)
+          setLastWeightDate(data?.[0]?.event_date ?? null)
+        }
+      } catch (err) {
+        console.error("Error in weight fetch:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCurrentWeight()
+  }, [animalId])
+
+  return (
+    <div className="space-y-2">
+      <FormLabel>Weight Information</FormLabel>
+      <div className="flex items-center justify-between rounded-md border p-3">
+        <div>
+          {loading ? (
+            <div className="h-5 w-20 animate-pulse rounded bg-muted"></div>
+          ) : currentWeight ? (
+            <div>
+              <div className="font-medium">{currentWeight} kg</div>
+              {lastWeightDate && (
+                <div className="text-xs text-muted-foreground">
+                  Last measured: {format(new Date(lastWeightDate), "PPP")}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No weight recorded</div>
+          )}
+        </div>
+        <AddEventDialog
+          animalId={animalId || ""}
+          onSuccess={() => {
+            // Refresh weight after adding new measurement
+            setLoading(true)
+            fetchCurrentWeight()
+          }}
+          defaultEventType="weight"
+        >
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8"
+          >
+            Add Weight
+          </Button>
+        </AddEventDialog>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Weight is tracked through the animal's timeline as measurement events
+      </p>
+    </div>
+  )
+
+  // Function to refresh weight data
+  function fetchCurrentWeight(): Promise<void> {
+    if (!animalId) return Promise.resolve();
+    
+    return supabase
+      .from("animal_events")
+      .select("details, event_date")
+      .eq("animal_id", animalId)
+      .eq("event_type", "weight")
+      .eq("is_deleted", false)
+      .order("event_date", { ascending: false })
+      .limit(1)
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching weight:", error)
+        } else {
+          setCurrentWeight(data?.[0]?.details?.weight ?? null)
+          setLastWeightDate(data?.[0]?.event_date ?? null)
+        }
+        setLoading(false)
+      })
+      .catch((err: Error) => {
+        console.error("Error in weight fetch:", err)
+        setLoading(false)
+      });
+  }
+}
 
 // Form schema for editing an animal
 const animalFormSchema = z.object({
@@ -53,7 +163,6 @@ const animalFormSchema = z.object({
   breed: z.string().optional(),
   gender: z.string().optional(),
   date_of_birth: z.date().optional(),
-  weight: z.coerce.number().optional(),
   microchip_number: z.string().optional(),
   notes: z.string().optional(),
   status: z.string().optional(),
@@ -86,7 +195,6 @@ export function EditAnimalDialog({
       type: "",
       breed: "",
       gender: "",
-      weight: undefined,
       microchip_number: "",
       notes: "",
       status: "active",
@@ -102,7 +210,6 @@ export function EditAnimalDialog({
         breed: animal.breed || "",
         gender: animal.gender || "",
         date_of_birth: animal.date_of_birth ? new Date(animal.date_of_birth) : undefined,
-        weight: animal.weight || undefined,
         microchip_number: animal.microchip_number || "",
         notes: animal.notes || "",
         status: animal.status || "active",
@@ -127,7 +234,6 @@ export function EditAnimalDialog({
           breed: data.breed || null,
           gender: data.gender || null,
           date_of_birth: data.date_of_birth ? data.date_of_birth.toISOString() : null,
-          weight: data.weight || null,
           microchip_number: data.microchip_number || null,
           notes: data.notes || null,
           status: data.status || "active",
@@ -283,26 +389,11 @@ export function EditAnimalDialog({
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Weight (kg)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.1" 
-                        placeholder="Weight in kg (optional)" 
-                        {...field}
-                        value={field.value || ""}
-                        onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+              <div className="col-span-1">
+                {animal && animal.id && (
+                  <CurrentWeightSection animalId={animal.id} />
                 )}
-              />
+              </div>
             </div>
             
             <FormField

@@ -68,6 +68,7 @@ interface AddEventDialogProps {
   showAnimalSelector?: boolean // Add a prop to control visibility of animal selector
   open?: boolean // Add open prop to control dialog from parent
   onOpenChange?: (open: boolean) => void // Add callback for open state changes
+  defaultEventType?: string // Add option to set default event type
 }
 
 export function AddEventDialog({ 
@@ -76,7 +77,8 @@ export function AddEventDialog({
   onSuccess,
   showAnimalSelector = false, // By default, don't show the selector
   open: controlledOpen,
-  onOpenChange
+  onOpenChange,
+  defaultEventType
 }: AddEventDialogProps) {
   // Get the authenticated user
   const { user } = useAuth();
@@ -157,7 +159,7 @@ export function AddEventDialog({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
       animal_id: animalId || "", // Use provided animalId or empty string
-      event_type: "",
+      event_type: defaultEventType || "",
       event_date: new Date(),
       details: {
         // Initialize all possible fields for all event types
@@ -349,7 +351,7 @@ export function AddEventDialog({
       setTimeout(() => {
         form.reset({
           animal_id: animalId || "",
-          event_type: "",
+          event_type: defaultEventType || "",
           event_date: new Date(),
           details: {
             // Initialize all possible fields for all event types
@@ -388,7 +390,7 @@ export function AddEventDialog({
         });
       }, 300); // Small delay to ensure dialog is fully closed
     }
-  }, [isOpen, form, animalId]);
+  }, [isOpen, form, animalId, defaultEventType]);
   
   const handleAttachmentAdded = (attachment: FileAttachment) => {
     setAttachments(prev => [...prev, attachment]);
@@ -474,62 +476,12 @@ export function AddEventDialog({
           details.weight = data.details.weight === "" ? null : parseFloat(String(data.details.weight))
           details.unit = "kg"
           
-          // Also update the animal's weight in the animals table
-          try {
-            const weightValue = data.details.weight === "" ? null : parseFloat(String(data.details.weight));
-            
-            // Validate weight against database limits
-            if (weightValue !== null) {
-              if (weightValue < 0 || weightValue > 999.99) {
-                console.error(`Weight value ${weightValue} is outside the valid range (0-999.99)`);
-                toast.error("Weight value is outside the allowed range (0-999.99 kg)");
-              } else {
-                // Get the current animal weight first to store as previous_weight
-                const { data: animalData, error: fetchError } = await supabase
-                  .from("animals")
-                  .select("weight")
-                  .eq("id", actualAnimalId)
-                  .single();
-                
-                if (fetchError) {
-                  console.error("Error fetching animal weight:", fetchError);
-                } else {
-                  const currentWeight = animalData?.weight;
-                  console.log(`Changing animal weight from ${currentWeight}kg to ${weightValue}kg`);
-                  
-                  // Save the current weight as previous_weight in the details object
-                  if (currentWeight !== null && currentWeight !== undefined) {
-                    details.previous_weight = currentWeight;
-                  }
-                }
-                
-                console.log(`Updating animal weight to ${weightValue}kg`);
-                
-                const { error: updateError } = await supabase
-                  .from("animals")
-                  .update({ 
-                    weight: weightValue,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq("id", actualAnimalId);
-                  
-                if (updateError) {
-                  console.error("Error updating animal weight:", updateError);
-                  
-                  // Check for numeric overflow error
-                  if (updateError.code === '22003') {
-                    toast.error("Weight value exceeds the database limit. Maximum weight is 999.99 kg.");
-                  } else {
-                    toast.error("Event added but failed to update animal's weight");
-                  }
-                }
-              }
-            }
-          } catch (updateErr) {
-            console.error("Exception updating animal weight:", updateErr);
-            toast.error("Error occurred while updating animal's weight");
-          }
+          // Ensure event_date is properly formatted ISO string
+          // This ensures that the lt/gt queries for previous weight work correctly
+          const weightDate = data.event_date.toISOString()
           
+          // No longer storing previous_weight in the event details
+          // We'll calculate it at display time by looking up the previous weight event
           break
           
         case "vaccination":

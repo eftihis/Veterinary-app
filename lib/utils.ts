@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { supabase } from "@/lib/supabase"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -82,4 +83,35 @@ export function formatEventType(eventType: string): string {
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+// Get the animal's current weight from the most recent weight event
+export async function getCurrentWeight(animalId: string): Promise<number | null> {
+  if (!animalId) return null;
+  
+  try {
+    const { data, error } = await supabase
+      .from("animal_events")
+      .select("details")
+      .eq("animal_id", animalId)
+      .eq("event_type", "weight")
+      .eq("is_deleted", false)
+      .order("event_date", { ascending: false })
+      .limit(1);
+    
+    if (error) {
+      console.error("Error fetching current weight:", error);
+      return null;
+    }
+    
+    if (!data || data.length === 0) {
+      return null;
+    }
+    
+    const weight = data[0].details?.weight;
+    return weight !== undefined && weight !== null ? Number(weight) : null;
+  } catch (err) {
+    console.error("Exception fetching current weight:", err);
+    return null;
+  }
 }
