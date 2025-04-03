@@ -19,7 +19,8 @@ import {
   ChevronDown, 
   X,
   AlertCircle,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  SlidersHorizontal
 } from "lucide-react"
 import { format, isAfter, isBefore, parseISO } from "date-fns"
 import { supabase } from "@/lib/supabase"
@@ -49,7 +50,6 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { formatColumnName } from "@/lib/utils"
-import { StatusFilter } from "@/components/status-filter"
 import { ItemFilter } from "@/components/item-filter"
 import { AnimalFilter } from "./animal-filter"
 import { ContactFilter } from "./contact-filter"
@@ -72,6 +72,16 @@ import {
 import { InvoiceDetailSheet } from "@/components/invoice-detail-sheet"
 import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
 import { Invoice } from "@/components/invoices-data-table"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import { Separator } from "@/components/ui/separator"
 
 // Define our LineItem type based on our Supabase view structure
 export type LineItem = {
@@ -117,86 +127,6 @@ const getStatusBadge = (status: string) => {
     <Badge variant="status" className={statusClass}>
       <span className="capitalize">{status}</span>
     </Badge>
-  )
-}
-
-// Date range picker component
-function DateRangePicker({ 
-  startDate, 
-  endDate, 
-  onStartDateChange, 
-  onEndDateChange,
-  onClear 
-}: { 
-  startDate: Date | undefined; 
-  endDate: Date | undefined; 
-  onStartDateChange: (date: Date | undefined) => void; 
-  onEndDateChange: (date: Date | undefined) => void;
-  onClear: () => void;
-}) {
-  return (
-    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-      <div className="grid gap-2 w-full sm:w-auto">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              id="start-date"
-              variant={"outline"}
-              className={cn(
-                "w-full sm:w-[150px] md:w-[180px] justify-start text-left font-normal",
-                !startDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, "d MMM yyyy") : <span>Start date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={startDate}
-              onSelect={onStartDateChange}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      <div className="grid gap-2 w-full sm:w-auto">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              id="end-date"
-              variant={"outline"}
-              className={cn(
-                "w-full sm:w-[150px] md:w-[180px] justify-start text-left font-normal",
-                !endDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, "d MMM yyyy") : <span>End date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={endDate}
-              onSelect={onEndDateChange}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      {(startDate || endDate) && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClear}
-        >
-          <X className="h-4 w-4" />
-          <span className="sr-only">Clear dates</span>
-        </Button>
-      )}
-    </div>
   )
 }
 
@@ -687,7 +617,7 @@ export function LineItemsDataTable({
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <div className="w-full md:w-auto relative">
             <Input
               placeholder="Search line items by invoice, patient, or item..."
@@ -707,37 +637,233 @@ export function LineItemsDataTable({
               </Button>
             )}
           </div>
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-            onClear={() => {
-              setStartDate(undefined)
-              setEndDate(undefined)
-            }}
-          />
-          <StatusFilter 
-            statusOptions={statusOptions}
-            selectedStatuses={selectedStatuses}
-            setSelectedStatuses={setSelectedStatuses}
-          />
-          <ItemFilter
-            itemOptions={itemOptions}
-            selectedItems={selectedItems}
-            setSelectedItems={setSelectedItems}
-          />
-          <AnimalFilter 
-            animalOptions={animalOptions}
-            selectedAnimals={selectedAnimals}
-            setSelectedAnimals={setSelectedAnimals}
-          />
-          <ContactFilter 
-            contactOptions={contactOptions}
-            selectedContacts={selectedContacts}
-            setSelectedContacts={setSelectedContacts}
-          />
+          
+          {/* Filter Button to Open Drawer */}
+          <Drawer>
+            <DrawerTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {(selectedStatuses.length > 0 || selectedItems.length > 0 || selectedAnimals.length > 0 || selectedContacts.length > 0 || startDate || endDate) && (
+                  <Badge className="ml-1 rounded-sm px-1.5 py-0.5 font-medium bg-secondary text-secondary-foreground">
+                    {selectedStatuses.length + selectedItems.length + selectedAnimals.length + selectedContacts.length + (startDate ? 1 : 0) + (endDate ? 1 : 0)}
+                  </Badge>
+                )}
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="max-h-[65vh] overflow-hidden">
+              <div className="mx-auto w-full max-w-4xl flex flex-col h-full">
+                <DrawerHeader className="pb-2 flex-none">
+                  <DrawerTitle>Filter Line Items</DrawerTitle>
+                  <DrawerDescription>
+                    Apply filters to narrow down your line items
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="flex-1 overflow-hidden px-6">
+                  <div className="h-full overflow-auto pr-4">
+                    <div className="grid gap-4 pb-8 pt-2 px-1">
+                      <div>
+                        <div className="mb-4 flex items-center justify-between min-h-[32px]">
+                          <h4 className="text-sm font-medium">Date Range</h4>
+                          {(startDate || endDate) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-xs"
+                              onClick={() => {
+                                setStartDate(undefined);
+                                setEndDate(undefined);
+                              }}
+                            >
+                              Clear
+                            </Button>
+                          )}
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div className="grid gap-2 w-full">
+                            <label htmlFor="start-date" className="text-sm text-muted-foreground">
+                              Start Date
+                            </label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  id="start-date"
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !startDate && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {startDate ? format(startDate, "d MMM yyyy") : <span>Select date</span>}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={startDate}
+                                  onSelect={(date) => setStartDate(date)}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          <div className="grid gap-2 w-full">
+                            <label htmlFor="end-date" className="text-sm text-muted-foreground">
+                              End Date
+                            </label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  id="end-date"
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !endDate && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {endDate ? format(endDate, "d MMM yyyy") : <span>Select date</span>}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={endDate}
+                                  onSelect={(date) => setEndDate(date)}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Separator className="my-1" />
+                      
+                      {/* Status and Items filters side by side on larger screens */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <div className="mb-4 flex items-center justify-between min-h-[32px]">
+                            <h4 className="text-sm font-medium">Status</h4>
+                            {selectedStatuses.length > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-xs"
+                                onClick={() => setSelectedStatuses([])}
+                              >
+                                Clear
+                              </Button>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2 py-1">
+                            {statusOptions.map((option) => (
+                              <Badge 
+                                key={option.value}
+                                variant={selectedStatuses.includes(option.value) ? "default" : "outline"}
+                                className="cursor-pointer focus-visible:ring-offset-2 relative z-0"
+                                onClick={() => toggleStatus(option.value)}
+                              >
+                                {option.label}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="mb-4 flex items-center justify-between min-h-[32px]">
+                            <h4 className="text-sm font-medium">Items</h4>
+                            {selectedItems.length > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-xs"
+                                onClick={() => setSelectedItems([])}
+                              >
+                                Clear
+                              </Button>
+                            )}
+                          </div>
+                          <div className="py-1">
+                            <ItemFilter
+                              itemOptions={itemOptions}
+                              selectedItems={selectedItems}
+                              setSelectedItems={setSelectedItems}
+                              triggerClassName="w-full focus-visible:ring-offset-2"
+                              variant="dropdown"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Separator className="my-1" />
+                      
+                      {/* Patient and Veterinarian filters side by side */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <div className="mb-4 flex items-center justify-between min-h-[32px]">
+                            <h4 className="text-sm font-medium">Patient</h4>
+                            {selectedAnimals.length > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-xs"
+                                onClick={() => setSelectedAnimals([])}
+                              >
+                                Clear
+                              </Button>
+                            )}
+                          </div>
+                          <div className="py-1">
+                            <AnimalFilter 
+                              variant="dropdown"
+                              animalOptions={animalOptions}
+                              selectedAnimals={selectedAnimals}
+                              setSelectedAnimals={setSelectedAnimals}
+                              triggerClassName="w-full focus-visible:ring-offset-2"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="mb-4 flex items-center justify-between min-h-[32px]">
+                            <h4 className="text-sm font-medium">Veterinarian</h4>
+                            {selectedContacts.length > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-xs"
+                                onClick={() => setSelectedContacts([])}
+                              >
+                                Clear
+                              </Button>
+                            )}
+                          </div>
+                          <div className="py-1">
+                            <ContactFilter 
+                              variant="dropdown"
+                              contactOptions={contactOptions}
+                              selectedContacts={selectedContacts}
+                              setSelectedContacts={setSelectedContacts}
+                              triggerClassName="w-full focus-visible:ring-offset-2"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <DrawerFooter className="py-3 border-t">
+                  <Button variant="outline" onClick={clearAllFilters} className="w-full focus-visible:ring-offset-2 relative z-0">
+                    Reset All Filters
+                  </Button>
+                </DrawerFooter>
+              </div>
+            </DrawerContent>
+          </Drawer>
         </div>
+        
         <div className="flex items-center gap-2 self-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -766,7 +892,7 @@ export function LineItemsDataTable({
         </div>
       </div>
       
-      {/* Active Filters */}
+      {/* Active Filters Badges */}
       {(selectedStatuses.length > 0 || selectedItems.length > 0 || selectedAnimals.length > 0 || selectedContacts.length > 0 || startDate || endDate) && (
         <div className="flex flex-wrap gap-2 pt-2">
           <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>

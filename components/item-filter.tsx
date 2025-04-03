@@ -22,18 +22,37 @@ type ItemOption = {
   label: string
 }
 
-// Props for the ItemFilter component
-interface ItemFilterProps {
+// Common props for both versions of the filter
+interface ItemFilterBaseProps {
   itemOptions: ItemOption[]
   selectedItems: string[]
   setSelectedItems: React.Dispatch<React.SetStateAction<string[]>>
 }
 
-export function ItemFilter({
+// Props for the dropdown version
+interface ItemFilterDropdownProps extends ItemFilterBaseProps {
+  triggerClassName?: string
+}
+
+// Props for the direct version
+interface ItemFilterDirectProps extends ItemFilterBaseProps {
+  className?: string
+}
+
+// Export props for the main component that combines both
+export interface ItemFilterProps extends ItemFilterBaseProps {
+  triggerClassName?: string
+  className?: string
+  variant?: "dropdown" | "direct"
+}
+
+// Dropdown version of the filter
+export function ItemFilterDropdown({
   itemOptions,
   selectedItems,
   setSelectedItems,
-}: ItemFilterProps) {
+  triggerClassName,
+}: ItemFilterDropdownProps) {
   // Keep track of dropdown open state
   const [open, setOpen] = React.useState(false)
   
@@ -60,7 +79,7 @@ export function ItemFilter({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="h-9 border-dashed flex gap-1 min-w-[120px]">
+        <Button variant="outline" className={`h-9 border-dashed flex gap-1 ${triggerClassName || ''}`}>
           <div className="flex gap-1 items-center">
             {selectedItems.length > 0 ? (
               <>
@@ -128,4 +147,113 @@ export function ItemFilter({
       </DropdownMenuContent>
     </DropdownMenu>
   )
+}
+
+// Direct version of the filter for use in drawers/sidebars
+export function ItemFilterDirect({
+  itemOptions,
+  selectedItems,
+  setSelectedItems,
+  className,
+}: ItemFilterDirectProps) {
+  // Handle item toggle
+  const handleItemToggle = (item: string, checked: boolean) => {
+    if (checked) {
+      if (!selectedItems.includes(item)) {
+        setSelectedItems(prev => [...prev, item])
+      }
+    } else {
+      setSelectedItems(prev => prev.filter(i => i !== item))
+    }
+  }
+
+  // Search state for filtering items
+  const [searchQuery, setSearchQuery] = React.useState("")
+  
+  // Filter item options based on search query
+  const filteredItemOptions = itemOptions.filter(item => 
+    item.label?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  return (
+    <div className={className}>
+      <div className="mb-4 flex items-center justify-between min-h-[32px]">
+        <div className="font-medium">Items</div>
+        {selectedItems.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-xs"
+            onClick={() => setSelectedItems([])}
+          >
+            Clear ({selectedItems.length})
+          </Button>
+        )}
+      </div>
+      <div className="space-y-3">
+        <Input 
+          placeholder="Search items..." 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="h-9"
+        />
+        <div className="max-h-[200px] overflow-y-auto space-y-1">
+          {filteredItemOptions.length > 0 ? (
+            filteredItemOptions.map((option) => (
+              <div key={option.value} className="flex items-center space-x-2 rounded-md p-2 hover:bg-accent">
+                <input
+                  type="checkbox"
+                  id={`item-${option.value}`}
+                  checked={selectedItems.includes(option.value)}
+                  onChange={(e) => handleItemToggle(option.value, e.target.checked)}
+                  className="h-4 w-4"
+                />
+                <label
+                  htmlFor={`item-${option.value}`}
+                  className="flex-1 text-sm cursor-pointer"
+                >
+                  {option.label}
+                </label>
+              </div>
+            ))
+          ) : (
+            <div className="px-2 py-2 text-sm text-muted-foreground">
+              No items found
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main export that decides which version to use
+export function ItemFilter({
+  itemOptions,
+  selectedItems,
+  setSelectedItems,
+  triggerClassName,
+  className,
+  variant = "dropdown",
+}: ItemFilterProps) {
+  // Return the appropriate version based on the variant prop
+  if (variant === "direct") {
+    return (
+      <ItemFilterDirect
+        itemOptions={itemOptions}
+        selectedItems={selectedItems}
+        setSelectedItems={setSelectedItems}
+        className={className}
+      />
+    );
+  }
+  
+  return (
+    <ItemFilterDropdown
+      itemOptions={itemOptions}
+      selectedItems={selectedItems}
+      setSelectedItems={setSelectedItems}
+      triggerClassName={triggerClassName}
+    />
+  );
 } 
