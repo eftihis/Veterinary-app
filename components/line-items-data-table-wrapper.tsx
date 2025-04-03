@@ -52,7 +52,16 @@ export default function LineItemsDataTableWrapper() {
   
   if (isLoading) {
     // Show skeleton with appropriate column count for line items table
-    return <DataTableSkeleton columnCount={7} rowCount={8} />;
+    return <DataTableSkeleton 
+      columnCount={7} 
+      rowCount={8} 
+      showFilters={true}
+      showDateFilter={true}
+      showStatusFilter={true}
+      showAnimalFilter={true}
+      showContactFilter={true}
+      showItemFilter={true}
+    />;
   }
   
   if (error) {

@@ -6,6 +6,11 @@ interface DataTableSkeletonProps {
   rowCount?: number;
   showFilters?: boolean;
   showActionsColumn?: boolean;
+  showDateFilter?: boolean;
+  showStatusFilter?: boolean; 
+  showAnimalFilter?: boolean;
+  showContactFilter?: boolean;
+  showItemFilter?: boolean;
 }
 
 export function DataTableSkeleton({
@@ -13,6 +18,11 @@ export function DataTableSkeleton({
   rowCount = 10,
   showFilters = true,
   showActionsColumn = true,
+  showDateFilter = true,
+  showStatusFilter = true,
+  showAnimalFilter = false,
+  showContactFilter = false,
+  showItemFilter = false
 }: DataTableSkeletonProps) {
   // Adjust column count if actions column is included
   const effectiveColumnCount = showActionsColumn 
@@ -25,11 +35,44 @@ export function DataTableSkeleton({
       {showFilters && (
         <div className="flex flex-col md:flex-row justify-between items-start gap-4">
           <div className="flex flex-col md:flex-row md:items-center gap-4 w-full">
+            {/* Search input */}
             <Skeleton className="h-10 w-full md:w-[350px]" />
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-2 md:mt-0">
-              <Skeleton className="h-10 w-full sm:w-[150px] md:w-[180px]" />
-              <Skeleton className="h-10 w-full sm:w-[150px] md:w-[180px]" />
-            </div>
+            
+            {/* Date filters */}
+            {showDateFilter && (
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-2 md:mt-0">
+                <Skeleton className="h-10 w-full sm:w-[150px] md:w-[180px]" />
+                <Skeleton className="h-10 w-full sm:w-[150px] md:w-[180px]" />
+              </div>
+            )}
+            
+            {/* Status filter */}
+            {showStatusFilter && (
+              <div className="hidden md:flex md:items-center">
+                <Skeleton className="h-10 w-[120px]" />
+              </div>
+            )}
+            
+            {/* Item filter */}
+            {showItemFilter && (
+              <div className="hidden md:flex md:items-center">
+                <Skeleton className="h-10 w-[120px]" />
+              </div>
+            )}
+            
+            {/* Animal filter */}
+            {showAnimalFilter && (
+              <div className="hidden md:flex md:items-center">
+                <Skeleton className="h-10 w-[120px]" />
+              </div>
+            )}
+            
+            {/* Contact filter */}
+            {showContactFilter && (
+              <div className="hidden md:flex md:items-center">
+                <Skeleton className="h-10 w-[120px]" />
+              </div>
+            )}
           </div>
           <div className="self-end mt-2 md:mt-0">
             <Skeleton className="h-10 w-[130px]" />

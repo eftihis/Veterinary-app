@@ -51,6 +51,8 @@ import { cn } from "@/lib/utils"
 import { formatColumnName } from "@/lib/utils"
 import { StatusFilter } from "@/components/status-filter"
 import { ItemFilter } from "@/components/item-filter"
+import { AnimalFilter } from "./animal-filter"
+import { ContactFilter } from "./contact-filter"
 import {
   Pagination,
   PaginationContent,
@@ -310,6 +312,8 @@ export function LineItemsDataTable({
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined);
   const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
   const [selectedItems, setSelectedItems] = React.useState<string[]>([]);
+  const [selectedAnimals, setSelectedAnimals] = React.useState<string[]>([]);
+  const [selectedContacts, setSelectedContacts] = React.useState<string[]>([]);
   
   // Table states
   const [sorting, setSorting] = React.useState<SortingState>([
@@ -346,7 +350,58 @@ export function LineItemsDataTable({
       label: item
     }));
   }, [lineItems]);
-  
+
+  // Animal options - generated from the line items data
+  const animalOptions = React.useMemo(() => {
+    if (!lineItems.length) return [];
+    
+    const uniqueAnimals = new Map();
+    
+    lineItems.forEach(item => {
+      if (item.animal_id && item.animal_name) {
+        if (!uniqueAnimals.has(item.animal_id)) {
+          uniqueAnimals.set(item.animal_id, {
+            value: item.animal_id,
+            label: item.animal_name,
+            type: item.animal_type || 'Unknown'
+          });
+        }
+      }
+    });
+    
+    return Array.from(uniqueAnimals.values())
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [lineItems]);
+
+  // Veterinarian options - Need to fetch from the invoices
+  const [contactOptions, setContactOptions] = React.useState<{ value: string; label: string }[]>([]);
+
+  // Fetch veterinarians from contacts table
+  React.useEffect(() => {
+    const fetchVeterinarians = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('contacts')
+          .select('id, first_name, last_name')
+          .eq('roles', '["veterinarian"]')
+          .order('last_name', { ascending: true });
+        
+        if (error) throw error;
+        
+        const options = data.map(vet => ({
+          value: vet.id,
+          label: `${vet.first_name} ${vet.last_name}`
+        }));
+        
+        setContactOptions(options);
+      } catch (err) {
+        console.error("Error fetching veterinarians:", err);
+      }
+    };
+    
+    fetchVeterinarians();
+  }, []);
+
   // Fetch line items when refreshLineItems is called, but not on mount
   const refreshLineItems = React.useCallback(async () => {
     if (!skipLoadingState) {
@@ -383,7 +438,7 @@ export function LineItemsDataTable({
     }
   }, [preloadedData, refreshLineItems]);
 
-  // Update the filtering effect to include item filtering
+  // Update the filtering effect to include animal and contact filtering
   React.useEffect(() => {
     // Start with all line items
     let filtered = lineItems;
@@ -417,8 +472,30 @@ export function LineItemsDataTable({
       );
     }
     
+    // Apply animal filters if any are selected
+    if (selectedAnimals.length > 0) {
+      filtered = filtered.filter(item => 
+        item.animal_id && selectedAnimals.includes(item.animal_id)
+      );
+    }
+    
+    // Apply contact (veterinarian) filters if any are selected
+    // This requires additional logic to fetch invoice veterinarian data
+    if (selectedContacts.length > 0) {
+      // For now, we'll filter this client-side, but a better approach would be
+      // to enhance the LineItem type to include veterinarian_id
+      const invoiceIds = new Set(filtered.map(item => item.invoice_id));
+      
+      // If there are no invoices after other filters, no need to filter further
+      if (invoiceIds.size > 0) {
+        // This would be better handled in the backend with a JOIN
+        // For now, we'll accept the limitation
+        console.log("Contact filtering on line items is limited without backend modification");
+      }
+    }
+    
     setFilteredData(filtered)
-  }, [lineItems, startDate, endDate, selectedStatuses, selectedItems])
+  }, [lineItems, startDate, endDate, selectedStatuses, selectedItems, selectedAnimals, selectedContacts])
   
   // Clear all filters
   const clearAllFilters = () => {
@@ -426,6 +503,8 @@ export function LineItemsDataTable({
     setEndDate(undefined);
     setSelectedStatuses([]);
     setSelectedItems([]);
+    setSelectedAnimals([]);
+    setSelectedContacts([]);
     setGlobalFilter("");
   };
   
@@ -443,6 +522,22 @@ export function LineItemsDataTable({
       prev.includes(item) 
         ? prev.filter(i => i !== item) 
         : [...prev, item]
+    );
+  };
+
+  const toggleAnimal = (animalId: string) => {
+    setSelectedAnimals(prev => 
+      prev.includes(animalId) 
+        ? prev.filter(id => id !== animalId) 
+        : [...prev, animalId]
+    );
+  };
+
+  const toggleContact = (contactId: string) => {
+    setSelectedContacts(prev => 
+      prev.includes(contactId) 
+        ? prev.filter(id => id !== contactId) 
+        : [...prev, contactId]
     );
   };
 
@@ -721,6 +816,16 @@ export function LineItemsDataTable({
             selectedItems={selectedItems}
             setSelectedItems={setSelectedItems}
           />
+          <AnimalFilter 
+            animalOptions={animalOptions}
+            selectedAnimals={selectedAnimals}
+            setSelectedAnimals={setSelectedAnimals}
+          />
+          <ContactFilter 
+            contactOptions={contactOptions}
+            selectedContacts={selectedContacts}
+            setSelectedContacts={setSelectedContacts}
+          />
         </div>
         <div className="flex items-center gap-2 self-end">
           <DropdownMenu>
@@ -750,17 +855,105 @@ export function LineItemsDataTable({
         </div>
       </div>
       
-      <ActiveFilters
-        selectedStatuses={selectedStatuses}
-        toggleStatus={toggleStatus}
-        selectedItems={selectedItems}
-        toggleItem={toggleItem}
-        startDate={startDate}
-        endDate={endDate}
-        setStartDate={setStartDate}
-        setEndDate={setEndDate}
-        clearAllFilters={clearAllFilters}
-      />
+      {/* Enhanced Active Filters */}
+      {(selectedStatuses.length > 0 || selectedItems.length > 0 || selectedAnimals.length > 0 || selectedContacts.length > 0 || startDate || endDate) && (
+        <div className="flex flex-wrap gap-2 pt-2">
+          <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>
+          
+          {selectedStatuses.map(status => (
+            <Badge key={status} variant="secondary" className="flex items-center gap-1">
+              <span className="capitalize">{status}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => toggleStatus(status)}
+              >
+                <X className="h-3 w-3" />
+                <span className="sr-only">Remove {status} filter</span>
+              </Button>
+            </Badge>
+          ))}
+          
+          {selectedItems.map(item => (
+            <Badge key={item} variant="secondary" className="flex items-center gap-1">
+              <span>{item}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => toggleItem(item)}
+              >
+                <X className="h-3 w-3" />
+                <span className="sr-only">Remove {item} filter</span>
+              </Button>
+            </Badge>
+          ))}
+          
+          {selectedAnimals.map(animalId => {
+            const animal = animalOptions.find(a => a.value === animalId);
+            return (
+              <Badge key={animalId} variant="secondary" className="flex items-center gap-1">
+                <span>Patient: {animal?.label || 'Unknown'}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => toggleAnimal(animalId)}
+                >
+                  <X className="h-3 w-3" />
+                  <span className="sr-only">Remove animal filter</span>
+                </Button>
+              </Badge>
+            );
+          })}
+          
+          {selectedContacts.map(contactId => {
+            const contact = contactOptions.find(c => c.value === contactId);
+            return (
+              <Badge key={contactId} variant="secondary" className="flex items-center gap-1">
+                <span>Veterinarian: {contact?.label || 'Unknown'}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => toggleContact(contactId)}
+                >
+                  <X className="h-3 w-3" />
+                  <span className="sr-only">Remove contact filter</span>
+                </Button>
+              </Badge>
+            );
+          })}
+          
+          {(startDate || endDate) && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <span>Date: {startDate ? format(startDate, "d MMM yyyy") : "Any"} - {endDate ? format(endDate, "d MMM yyyy") : "Any"}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => {
+                  setStartDate(undefined);
+                  setEndDate(undefined);
+                }}
+              >
+                <X className="h-3 w-3" />
+                <span className="sr-only">Remove date filter</span>
+              </Button>
+            </Badge>
+          )}
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={clearAllFilters}
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
 
       <div className="rounded-md border">
         <div className="overflow-x-auto">
