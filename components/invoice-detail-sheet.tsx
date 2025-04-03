@@ -8,8 +8,7 @@ import {
   Sheet, 
   SheetContent, 
   SheetHeader, 
-  SheetTitle,
-  SheetFooter
+  SheetTitle
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { getInvoiceById, InvoiceWithJoins } from "@/hooks/useInvoiceWithJoins"
