@@ -15,6 +15,14 @@ interface TableSkeletonProps {
    */
   showStatusFilter?: boolean
   /**
+   * Whether to show the animal filter
+   */
+  showAnimalFilter?: boolean
+  /**
+   * Whether to show the contact filter
+   */
+  showContactFilter?: boolean
+  /**
    * Number of columns to show in desktop view
    */
   columnCount?: number
@@ -24,6 +32,8 @@ export function TableSkeleton({
   rowCount = 8,
   showDateFilter = true,
   showStatusFilter = true,
+  showAnimalFilter = true,
+  showContactFilter = true,
   columnCount = 6
 }: TableSkeletonProps) {
   // This is exactly the structure from the invoices-data-table.tsx, 
@@ -44,7 +54,19 @@ export function TableSkeleton({
           )}
 
           {showStatusFilter && (
-            <div className="hidden md:block">
+            <div className="hidden md:flex md:items-center">
+              <Skeleton className="h-10 w-[120px]" />
+            </div>
+          )}
+          
+          {showAnimalFilter && (
+            <div className="hidden md:flex md:items-center">
+              <Skeleton className="h-10 w-[120px]" />
+            </div>
+          )}
+          
+          {showContactFilter && (
+            <div className="hidden md:flex md:items-center">
               <Skeleton className="h-10 w-[120px]" />
             </div>
           )}

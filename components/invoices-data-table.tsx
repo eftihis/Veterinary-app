@@ -61,6 +61,8 @@ import { formatColumnName } from "@/lib/utils"
 import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
 import { InvoiceDetailSheet } from "@/components/invoice-detail-sheet"
 import { StatusFilter } from "@/components/status-filter"
+import { ContactFilter } from "./contact-filter"
+import { AnimalFilter } from "./animal-filter"
 import {
   Pagination,
   PaginationContent,
@@ -310,6 +312,12 @@ export function InvoicesDataTable({
   // Status filter state
   const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([])
   
+  // Animal filter state
+  const [selectedAnimals, setSelectedAnimals] = React.useState<string[]>([])
+  
+  // Contact filter state
+  const [selectedContacts, setSelectedContacts] = React.useState<string[]>([])
+  
   // Date range filter state
   const [startDate, setStartDate] = React.useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined)
@@ -330,6 +338,49 @@ export function InvoicesDataTable({
     { value: "paid", label: "Paid" },
     { value: "voided", label: "Voided" }
   ]
+  
+  // Available animals and contacts for filtering
+  const animalOptions = React.useMemo(() => {
+    // Extract unique animals from invoices
+    const uniqueAnimals = new Map();
+    
+    invoices.forEach(invoice => {
+      if (invoice.animal && invoice.animal.id) {
+        if (!uniqueAnimals.has(invoice.animal.id)) {
+          uniqueAnimals.set(invoice.animal.id, {
+            value: invoice.animal.id,
+            label: invoice.animal.name,
+            type: invoice.animal.type || 'Unknown'
+          });
+        }
+      }
+    });
+    
+    // Convert map to array and sort by name
+    return Array.from(uniqueAnimals.values())
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [invoices]);
+  
+  // Available contacts (veterinarians) for filtering
+  const contactOptions = React.useMemo(() => {
+    // Extract unique contacts from invoices
+    const uniqueContacts = new Map();
+    
+    invoices.forEach(invoice => {
+      if (invoice.veterinarian && invoice.veterinarian.id) {
+        if (!uniqueContacts.has(invoice.veterinarian.id)) {
+          uniqueContacts.set(invoice.veterinarian.id, {
+            value: invoice.veterinarian.id,
+            label: `${invoice.veterinarian.first_name} ${invoice.veterinarian.last_name}`,
+          });
+        }
+      }
+    });
+    
+    // Convert map to array and sort by name
+    return Array.from(uniqueContacts.values())
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [invoices]);
 
   // Function to handle opening the edit dialog
   const handleEditInvoice = (invoice: Invoice) => {
@@ -640,14 +691,30 @@ export function InvoicesDataTable({
       );
     }
     
+    // Apply animal filters if any are selected
+    if (selectedAnimals.length > 0) {
+      filtered = filtered.filter(invoice => 
+        invoice.animal && invoice.animal.id && selectedAnimals.includes(invoice.animal.id)
+      );
+    }
+    
+    // Apply contact filters if any are selected
+    if (selectedContacts.length > 0) {
+      filtered = filtered.filter(invoice => 
+        invoice.veterinarian && invoice.veterinarian.id && selectedContacts.includes(invoice.veterinarian.id)
+      );
+    }
+    
     setFilteredData(filtered)
-  }, [invoices, startDate, endDate, selectedStatuses])
+  }, [invoices, startDate, endDate, selectedStatuses, selectedAnimals, selectedContacts])
   
   // Clear all filters
   const clearAllFilters = () => {
     setStartDate(undefined)
     setEndDate(undefined)
     setSelectedStatuses([])
+    setSelectedAnimals([])
+    setSelectedContacts([])
     setGlobalFilter("")
   }
   
@@ -1090,7 +1157,7 @@ export function InvoicesDataTable({
   })
 
   if (loading && !skipLoadingState) {
-    return <TableSkeleton rowCount={7} showDateFilter={true} showStatusFilter={true} columnCount={7} />
+    return <TableSkeleton rowCount={7} showDateFilter={true} showStatusFilter={true} showAnimalFilter={true} showContactFilter={true} columnCount={7} />
   }
   
   if (error) {
@@ -1145,6 +1212,20 @@ export function InvoicesDataTable({
             statusOptions={statusOptions}
             selectedStatuses={selectedStatuses}
             setSelectedStatuses={setSelectedStatuses}
+          />
+          
+          {/* Animal Filter */}
+          <AnimalFilter 
+            animalOptions={animalOptions}
+            selectedAnimals={selectedAnimals}
+            setSelectedAnimals={setSelectedAnimals}
+          />
+          
+          {/* Contact Filter */}
+          <ContactFilter 
+            contactOptions={contactOptions}
+            selectedContacts={selectedContacts}
+            setSelectedContacts={setSelectedContacts}
           />
         </div>
         
@@ -1261,7 +1342,7 @@ export function InvoicesDataTable({
       )}
       
       {/* Active Filters */}
-      {(selectedStatuses.length > 0 || startDate || endDate) && (
+      {(selectedStatuses.length > 0 || selectedAnimals.length > 0 || selectedContacts.length > 0 || startDate || endDate) && (
         <div className="flex flex-wrap gap-2 pt-2">
           <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>
           
@@ -1279,6 +1360,42 @@ export function InvoicesDataTable({
               </Button>
             </Badge>
           ))}
+          
+          {selectedAnimals.map(animalId => {
+            const animal = animalOptions.find(a => a.value === animalId);
+            return (
+              <Badge key={animalId} variant="secondary" className="flex items-center gap-1">
+                <span>Patient: {animal?.label || 'Unknown'}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => setSelectedAnimals(prev => prev.filter(id => id !== animalId))}
+                >
+                  <X className="h-3 w-3" />
+                  <span className="sr-only">Remove animal filter</span>
+                </Button>
+              </Badge>
+            );
+          })}
+          
+          {selectedContacts.map(contactId => {
+            const contact = contactOptions.find(c => c.value === contactId);
+            return (
+              <Badge key={contactId} variant="secondary" className="flex items-center gap-1">
+                <span>Veterinarian: {contact?.label || 'Unknown'}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => setSelectedContacts(prev => prev.filter(id => id !== contactId))}
+                >
+                  <X className="h-3 w-3" />
+                  <span className="sr-only">Remove contact filter</span>
+                </Button>
+              </Badge>
+            );
+          })}
           
           {(startDate || endDate) && (
             <Badge variant="secondary" className="flex items-center gap-1">
