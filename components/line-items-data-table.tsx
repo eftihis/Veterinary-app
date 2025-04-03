@@ -200,96 +200,6 @@ function DateRangePicker({
   )
 }
 
-// Helper component for active filters
-const ActiveFilters = ({
-  selectedStatuses,
-  toggleStatus,
-  selectedItems,
-  toggleItem,
-  startDate,
-  endDate,
-  setStartDate,
-  setEndDate,
-  clearAllFilters
-}: {
-  selectedStatuses: string[];
-  toggleStatus: (status: string) => void;
-  selectedItems: string[];
-  toggleItem: (item: string) => void;
-  startDate?: Date;
-  endDate?: Date;
-  setStartDate: (date: Date | undefined) => void;
-  setEndDate: (date: Date | undefined) => void;
-  clearAllFilters: () => void;
-}) => {
-  if (selectedStatuses.length === 0 && selectedItems.length === 0 && !startDate && !endDate) {
-    return null;
-  }
-  
-  return (
-    <div className="flex flex-wrap gap-2 pt-2">
-      <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>
-      
-      {selectedStatuses.map(status => (
-        <Badge key={status} variant="secondary" className="flex items-center gap-1">
-          <span className="capitalize">{status}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-4 w-4 p-0 hover:bg-transparent"
-            onClick={() => toggleStatus(status)}
-          >
-            <X className="h-3 w-3" />
-            <span className="sr-only">Remove {status} filter</span>
-          </Button>
-        </Badge>
-      ))}
-      
-      {selectedItems.map(item => (
-        <Badge key={item} variant="secondary" className="flex items-center gap-1">
-          <span>{item}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-4 w-4 p-0 hover:bg-transparent"
-            onClick={() => toggleItem(item)}
-          >
-            <X className="h-3 w-3" />
-            <span className="sr-only">Remove {item} filter</span>
-          </Button>
-        </Badge>
-      ))}
-      
-      {(startDate || endDate) && (
-        <Badge variant="secondary" className="flex items-center gap-1">
-          <span>Date: {startDate ? format(startDate, "d MMM yyyy") : "Any"} - {endDate ? format(endDate, "d MMM yyyy") : "Any"}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-4 w-4 p-0 hover:bg-transparent"
-            onClick={() => {
-              setStartDate(undefined);
-              setEndDate(undefined);
-            }}
-          >
-            <X className="h-3 w-3" />
-            <span className="sr-only">Remove date filter</span>
-          </Button>
-        </Badge>
-      )}
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 px-2 text-xs"
-        onClick={clearAllFilters}
-      >
-        Clear all
-      </Button>
-    </div>
-  );
-}
-
 // Update the props interface to include preloadedData
 interface LineItemsDataTableProps {
   skipLoadingState?: boolean;
@@ -855,7 +765,7 @@ export function LineItemsDataTable({
         </div>
       </div>
       
-      {/* Enhanced Active Filters */}
+      {/* Active Filters */}
       {(selectedStatuses.length > 0 || selectedItems.length > 0 || selectedAnimals.length > 0 || selectedContacts.length > 0 || startDate || endDate) && (
         <div className="flex flex-wrap gap-2 pt-2">
           <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>
@@ -954,7 +864,7 @@ export function LineItemsDataTable({
           </Button>
         </div>
       )}
-
+      
       <div className="rounded-md border">
         <div className="overflow-x-auto">
           <Table>
