@@ -218,73 +218,78 @@ function DateRangePicker({
   onClear: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid gap-2 w-full">
-        <label htmlFor="start-date" className="text-sm font-medium">
-          Start Date
-        </label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              id="start-date"
-              variant={"outline"}
-              className={cn(
-                "w-full justify-start text-left font-normal",
-                !startDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, "d MMM yyyy") : <span>Select date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={startDate}
-              onSelect={onStartDateChange}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-sm font-medium">Date Range</h4>
+        {(startDate || endDate) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-xs"
+            onClick={onClear}
+          >
+            Clear
+          </Button>
+        )}
       </div>
-      <div className="grid gap-2 w-full">
-        <label htmlFor="end-date" className="text-sm font-medium">
-          End Date
-        </label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              id="end-date"
-              variant={"outline"}
-              className={cn(
-                "w-full justify-start text-left font-normal",
-                !endDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, "d MMM yyyy") : <span>Select date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={endDate}
-              onSelect={onEndDateChange}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid gap-2 w-full">
+          <label htmlFor="start-date" className="text-sm text-muted-foreground">
+            Start Date
+          </label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                id="start-date"
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !startDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {startDate ? format(startDate, "d MMM yyyy") : <span>Select date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={startDate}
+                onSelect={(date) => onStartDateChange(date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="grid gap-2 w-full">
+          <label htmlFor="end-date" className="text-sm text-muted-foreground">
+            End Date
+          </label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                id="end-date"
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !endDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {endDate ? format(endDate, "d MMM yyyy") : <span>Select date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={endDate}
+                onSelect={(date) => onEndDateChange(date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
-      {(startDate || endDate) && (
-        <Button
-          variant="outline"
-          className="mt-2"
-          onClick={onClear}
-        >
-          <X className="h-4 w-4 mr-2" />
-          Clear Date Filter
-        </Button>
-      )}
     </div>
   )
 }
@@ -1236,7 +1241,7 @@ export function InvoicesDataTable({
                 )}
               </Button>
             </DrawerTrigger>
-            <DrawerContent>
+            <DrawerContent className="max-h-[85vh] overflow-hidden">
               <div className="mx-auto w-full max-w-4xl">
                 <DrawerHeader>
                   <DrawerTitle>Filter Invoices</DrawerTitle>
@@ -1244,10 +1249,9 @@ export function InvoicesDataTable({
                     Apply filters to narrow down your invoice list
                   </DrawerDescription>
                 </DrawerHeader>
-                <ScrollArea className="p-6 pt-0">
+                <ScrollArea className="p-6 pt-0 h-[calc(85vh-180px)]">
                   <div className="grid gap-6 py-4">
                     <div>
-                      <h4 className="mb-4 text-sm font-medium">Date Range</h4>
                       <DateRangePicker 
                         startDate={startDate}
                         endDate={endDate}
@@ -1263,8 +1267,8 @@ export function InvoicesDataTable({
                     <Separator />
                     
                     <div>
-                      <h4 className="mb-4 text-sm font-medium flex items-center justify-between">
-                        Status
+                      <div className="mb-4 flex items-center justify-between">
+                        <h4 className="text-sm font-medium">Status</h4>
                         {selectedStatuses.length > 0 && (
                           <Button
                             variant="ghost"
@@ -1272,10 +1276,10 @@ export function InvoicesDataTable({
                             className="h-8 px-2 text-xs"
                             onClick={() => setSelectedStatuses([])}
                           >
-                            Clear ({selectedStatuses.length})
+                            Clear
                           </Button>
                         )}
-                      </h4>
+                      </div>
                       <div className="flex flex-wrap gap-2">
                         {statusOptions.map((option) => (
                           <Badge 
@@ -1292,25 +1296,25 @@ export function InvoicesDataTable({
                     
                     <Separator />
                     
-                    <div>
-                      <h4 className="mb-4 text-sm font-medium">Patient</h4>
-                      <AnimalFilter 
-                        animalOptions={animalOptions}
-                        selectedAnimals={selectedAnimals}
-                        setSelectedAnimals={setSelectedAnimals}
-                        variant="direct"
-                      />
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div>
-                      <ContactFilter 
-                        variant="direct"
-                        contactOptions={contactOptions}
-                        selectedContacts={selectedContacts}
-                        setSelectedContacts={setSelectedContacts}
-                      />
+                    {/* Place Patient and Veterinarians filters side by side */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <AnimalFilter 
+                          variant="direct"
+                          animalOptions={animalOptions}
+                          selectedAnimals={selectedAnimals}
+                          setSelectedAnimals={setSelectedAnimals}
+                        />
+                      </div>
+                      
+                      <div>
+                        <ContactFilter 
+                          variant="direct"
+                          contactOptions={contactOptions}
+                          selectedContacts={selectedContacts}
+                          setSelectedContacts={setSelectedContacts}
+                        />
+                      </div>
                     </div>
                   </div>
                 </ScrollArea>
