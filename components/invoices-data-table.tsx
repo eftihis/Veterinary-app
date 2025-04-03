@@ -1247,7 +1247,7 @@ export function InvoicesDataTable({
                     Apply filters to narrow down your invoice list
                   </DrawerDescription>
                 </DrawerHeader>
-                <ScrollArea className="px-6 h-[calc(65vh-140px)]">
+                <ScrollArea className="px-6 h-[calc(50vh-140px)]">
                   <div className="grid gap-4 pb-8 pt-2 px-1">
                     <div>
                       <DateRangePicker 
@@ -1320,7 +1320,6 @@ export function InvoicesDataTable({
                     </div>
                     
                     {/* Add a larger padding div to provide spacing at the bottom for focus states */}
-                    <div className="h-4"></div>
                   </div>
                 </ScrollArea>
                 <DrawerFooter className="py-3 border-t">
