@@ -1241,16 +1241,16 @@ export function InvoicesDataTable({
                 )}
               </Button>
             </DrawerTrigger>
-            <DrawerContent className="max-h-[85vh] overflow-hidden">
+            <DrawerContent className="max-h-[65vh] overflow-hidden">
               <div className="mx-auto w-full max-w-4xl">
-                <DrawerHeader>
+                <DrawerHeader className="pb-2">
                   <DrawerTitle>Filter Invoices</DrawerTitle>
                   <DrawerDescription>
                     Apply filters to narrow down your invoice list
                   </DrawerDescription>
                 </DrawerHeader>
-                <ScrollArea className="p-6 pt-0 h-[calc(85vh-180px)]">
-                  <div className="grid gap-6 py-4">
+                <ScrollArea className="px-6 h-[calc(65vh-140px)]">
+                  <div className="grid gap-4 pb-4">
                     <div>
                       <DateRangePicker 
                         startDate={startDate}
@@ -1318,13 +1318,10 @@ export function InvoicesDataTable({
                     </div>
                   </div>
                 </ScrollArea>
-                <DrawerFooter className="flex flex-row gap-3 pt-2">
-                  <Button variant="outline" onClick={clearAllFilters}>
-                    Reset All
+                <DrawerFooter className="py-3 border-t">
+                  <Button variant="outline" onClick={clearAllFilters} className="w-full">
+                    Reset All Filters
                   </Button>
-                  <DrawerClose asChild>
-                    <Button>Apply Filters</Button>
-                  </DrawerClose>
                 </DrawerFooter>
               </div>
             </DrawerContent>
