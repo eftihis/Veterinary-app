@@ -1249,7 +1249,7 @@ export function InvoicesDataTable({
                     Apply filters to narrow down your invoice list
                   </DrawerDescription>
                 </DrawerHeader>
-                <ScrollArea className="px-6 h-[calc(65vh-140px)]">
+                <ScrollArea className="px-6">
                   <div className="grid gap-4 pb-4">
                     <div>
                       <DateRangePicker 
@@ -1285,7 +1285,7 @@ export function InvoicesDataTable({
                           <Badge 
                             key={option.value}
                             variant={selectedStatuses.includes(option.value) ? "default" : "outline"}
-                            className="cursor-pointer"
+                            className="cursor-pointer focus-visible:ring-offset-2"
                             onClick={() => toggleStatus(option.value)}
                           >
                             {option.label}
@@ -1296,30 +1296,37 @@ export function InvoicesDataTable({
                     
                     <Separator />
                     
-                    {/* Place Patient and Veterinarians filters side by side */}
-                    <div className="grid md:grid-cols-2 gap-6">
+                    {/* Use dropdown filters for both animal and contact, placed side by side */}
+                    <div className="grid md:grid-cols-2 gap-4">
                       <div>
+                        <h4 className="mb-2 text-sm font-medium">Patient</h4>
                         <AnimalFilter 
-                          variant="direct"
+                          variant="dropdown"
                           animalOptions={animalOptions}
                           selectedAnimals={selectedAnimals}
                           setSelectedAnimals={setSelectedAnimals}
+                          triggerClassName="w-full"
                         />
                       </div>
                       
                       <div>
+                        <h4 className="mb-2 text-sm font-medium">Veterinarian</h4>
                         <ContactFilter 
-                          variant="direct"
+                          variant="dropdown"
                           contactOptions={contactOptions}
                           selectedContacts={selectedContacts}
                           setSelectedContacts={setSelectedContacts}
+                          triggerClassName="w-full"
                         />
                       </div>
                     </div>
+                    
+                    {/* Add a small empty div to provide some spacing at the bottom for focus states */}
+                    <div className="h-2"></div>
                   </div>
                 </ScrollArea>
                 <DrawerFooter className="py-3 border-t">
-                  <Button variant="outline" onClick={clearAllFilters} className="w-full">
+                  <Button variant="outline" onClick={clearAllFilters} className="w-full focus-visible:ring-offset-2">
                     Reset All Filters
                   </Button>
                 </DrawerFooter>
