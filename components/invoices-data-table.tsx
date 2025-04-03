@@ -61,7 +61,6 @@ import { cn } from "@/lib/utils"
 import { formatColumnName } from "@/lib/utils"
 import { EditInvoiceDialog } from "@/components/edit-invoice-dialog"
 import { InvoiceDetailSheet } from "@/components/invoice-detail-sheet"
-import { StatusFilter } from "@/components/status-filter"
 import { ContactFilter } from "./contact-filter"
 import { AnimalFilter } from "./animal-filter"
 import {
@@ -83,7 +82,6 @@ import {
 import { TableSkeleton } from "@/components/skeletons/table-skeleton"
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
@@ -219,7 +217,7 @@ function DateRangePicker({
 }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 min-h-[32px]">
         <h4 className="text-sm font-medium">Date Range</h4>
         {(startDate || endDate) && (
           <Button
@@ -1267,7 +1265,7 @@ export function InvoicesDataTable({
                     <Separator />
                     
                     <div>
-                      <div className="mb-4 flex items-center justify-between">
+                      <div className="mb-4 flex items-center justify-between min-h-[32px]">
                         <h4 className="text-sm font-medium">Status</h4>
                         {selectedStatuses.length > 0 && (
                           <Button

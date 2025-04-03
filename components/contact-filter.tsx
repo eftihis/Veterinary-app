@@ -6,7 +6,6 @@ import { ChevronDown, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -212,7 +211,7 @@ export function ContactFilterDirect({
 
   return (
     <div className={className}>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between min-h-[32px]">
         <div className="font-medium">Veterinarians</div>
         {selectedContacts.length > 0 && (
           <Button
