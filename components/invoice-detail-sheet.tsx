@@ -536,7 +536,7 @@ export function InvoiceDetailSheet({
       <SheetContent className="flex flex-col p-0 sm:max-w-xl">
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto p-6">
-          <SheetHeader className="pb-4">
+          <SheetHeader className="pb-4 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <SheetTitle className="text-xl sm:text-2xl font-bold flex items-center">

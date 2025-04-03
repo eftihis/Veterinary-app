@@ -91,7 +91,7 @@ export function ContactDetailSheet({
       <SheetContent className="flex flex-col p-0 sm:max-w-xl">
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto p-6">
-          <SheetHeader className="pb-4">
+          <SheetHeader className="pb-4 mb-6">
             <SheetTitle className="text-2xl font-bold flex items-center">
               {loading ? (
                 <Skeleton className="h-8 w-48" />
