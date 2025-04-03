@@ -89,7 +89,6 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 
 // Define our Invoice type based on our Supabase table structure
@@ -1239,7 +1238,7 @@ export function InvoicesDataTable({
                 )}
               </Button>
             </DrawerTrigger>
-            <DrawerContent className="max-h-[65vh] overflow-hidden">
+            <DrawerContent className="max-h-[65vh]">
               <div className="mx-auto w-full max-w-4xl">
                 <DrawerHeader className="pb-2">
                   <DrawerTitle>Filter Invoices</DrawerTitle>
@@ -1247,7 +1246,7 @@ export function InvoicesDataTable({
                     Apply filters to narrow down your invoice list
                   </DrawerDescription>
                 </DrawerHeader>
-                <ScrollArea className="px-6 h-[calc(50vh-140px)]">
+                <div className="relative px-6 overflow-auto" style={{ maxHeight: "calc(65vh - 140px)" }}>
                   <div className="grid gap-4 pb-8 pt-2 px-1">
                     <div>
                       <DateRangePicker 
@@ -1321,7 +1320,7 @@ export function InvoicesDataTable({
                     
                     {/* Add a larger padding div to provide spacing at the bottom for focus states */}
                   </div>
-                </ScrollArea>
+                </div>
                 <DrawerFooter className="py-3 border-t">
                   <Button variant="outline" onClick={clearAllFilters} className="w-full focus-visible:ring-offset-2 relative z-0">
                     Reset All Filters
