@@ -290,10 +290,11 @@ export function LineItemsDataTable({
   React.useEffect(() => {
     const fetchVeterinarians = async () => {
       try {
+        // Use contains operator for array column instead of equality
         const { data, error } = await supabase
           .from('contacts')
           .select('id, first_name, last_name')
-          .eq('roles', '["veterinarian"]')
+          .contains('roles', ['veterinarian'])  // Use contains for array search
           .order('last_name', { ascending: true });
         
         if (error) throw error;
