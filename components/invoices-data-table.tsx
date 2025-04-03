@@ -25,6 +25,7 @@ import {
   X,
   Check,
   PencilIcon,
+  SlidersHorizontal,
 } from "lucide-react"
 import { format, isAfter, isBefore, parseISO } from "date-fns"
 import { supabase } from "@/lib/supabase"
@@ -80,6 +81,18 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { TableSkeleton } from "@/components/skeletons/table-skeleton"
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 
 // Define our Invoice type based on our Supabase table structure
 export type Invoice = {
@@ -205,20 +218,23 @@ function DateRangePicker({
   onClear: () => void;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-      <div className="grid gap-2 w-full sm:w-auto">
+    <div className="flex flex-col gap-4">
+      <div className="grid gap-2 w-full">
+        <label htmlFor="start-date" className="text-sm font-medium">
+          Start Date
+        </label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
               id="start-date"
               variant={"outline"}
               className={cn(
-                "w-full sm:w-[150px] md:w-[180px] justify-start text-left font-normal",
+                "w-full justify-start text-left font-normal",
                 !startDate && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, "d MMM yyyy") : <span>Start date</span>}
+              {startDate ? format(startDate, "d MMM yyyy") : <span>Select date</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -231,19 +247,22 @@ function DateRangePicker({
           </PopoverContent>
         </Popover>
       </div>
-      <div className="grid gap-2 w-full sm:w-auto">
+      <div className="grid gap-2 w-full">
+        <label htmlFor="end-date" className="text-sm font-medium">
+          End Date
+        </label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
               id="end-date"
               variant={"outline"}
               className={cn(
-                "w-full sm:w-[150px] md:w-[180px] justify-start text-left font-normal",
+                "w-full justify-start text-left font-normal",
                 !endDate && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, "d MMM yyyy") : <span>End date</span>}
+              {endDate ? format(endDate, "d MMM yyyy") : <span>Select date</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -258,11 +277,12 @@ function DateRangePicker({
       </div>
       {(startDate || endDate) && (
         <Button
-          variant="ghost"
-          size="icon"
+          variant="outline"
+          className="mt-2"
           onClick={onClear}
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4 mr-2" />
+          Clear Date Filter
         </Button>
       )}
     </div>
@@ -1156,6 +1176,9 @@ export function InvoicesDataTable({
     },
   })
 
+  // Add filter drawer state
+  const [filterDrawerOpen, setFilterDrawerOpen] = React.useState(false)
+
   if (loading && !skipLoadingState) {
     return <TableSkeleton rowCount={7} showDateFilter={true} showStatusFilter={true} showAnimalFilter={true} showContactFilter={true} columnCount={7} />
   }
@@ -1179,7 +1202,7 @@ export function InvoicesDataTable({
   return (
     <div className="space-y-4 w-full p-1">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <div className="w-full md:w-auto relative">
             <Input
               placeholder="Search invoices by number, reference, patient, or veterinarian..."
@@ -1199,34 +1222,109 @@ export function InvoicesDataTable({
               </Button>
             )}
           </div>
-          <DateRangePicker 
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-            onClear={clearAllFilters}
-          />
           
-          {/* Status Filter */}
-          <StatusFilter
-            statusOptions={statusOptions}
-            selectedStatuses={selectedStatuses}
-            setSelectedStatuses={setSelectedStatuses}
-          />
-          
-          {/* Animal Filter */}
-          <AnimalFilter 
-            animalOptions={animalOptions}
-            selectedAnimals={selectedAnimals}
-            setSelectedAnimals={setSelectedAnimals}
-          />
-          
-          {/* Contact Filter */}
-          <ContactFilter 
-            contactOptions={contactOptions}
-            selectedContacts={selectedContacts}
-            setSelectedContacts={setSelectedContacts}
-          />
+          {/* Filter Button to Open Drawer */}
+          <Drawer open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
+            <DrawerTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {(selectedStatuses.length > 0 || selectedAnimals.length > 0 || selectedContacts.length > 0 || startDate || endDate) && (
+                  <Badge className="ml-1 rounded-sm px-1.5 py-0.5 font-medium bg-secondary text-secondary-foreground">
+                    {selectedStatuses.length + selectedAnimals.length + selectedContacts.length + (startDate ? 1 : 0) + (endDate ? 1 : 0)}
+                  </Badge>
+                )}
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <div className="mx-auto w-full max-w-4xl">
+                <DrawerHeader>
+                  <DrawerTitle>Filter Invoices</DrawerTitle>
+                  <DrawerDescription>
+                    Apply filters to narrow down your invoice list
+                  </DrawerDescription>
+                </DrawerHeader>
+                <ScrollArea className="p-6 pt-0">
+                  <div className="grid gap-6 py-4">
+                    <div>
+                      <h4 className="mb-4 text-sm font-medium">Date Range</h4>
+                      <DateRangePicker 
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        onClear={() => {
+                          setStartDate(undefined);
+                          setEndDate(undefined);
+                        }}
+                      />
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div>
+                      <h4 className="mb-4 text-sm font-medium flex items-center justify-between">
+                        Status
+                        {selectedStatuses.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-xs"
+                            onClick={() => setSelectedStatuses([])}
+                          >
+                            Clear ({selectedStatuses.length})
+                          </Button>
+                        )}
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {statusOptions.map((option) => (
+                          <Badge 
+                            key={option.value}
+                            variant={selectedStatuses.includes(option.value) ? "default" : "outline"}
+                            className="cursor-pointer"
+                            onClick={() => toggleStatus(option.value)}
+                          >
+                            {option.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div>
+                      <h4 className="mb-4 text-sm font-medium">Patient</h4>
+                      <AnimalFilter 
+                        animalOptions={animalOptions}
+                        selectedAnimals={selectedAnimals}
+                        setSelectedAnimals={setSelectedAnimals}
+                        variant="direct"
+                      />
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div>
+                      <ContactFilter 
+                        variant="direct"
+                        contactOptions={contactOptions}
+                        selectedContacts={selectedContacts}
+                        setSelectedContacts={setSelectedContacts}
+                      />
+                    </div>
+                  </div>
+                </ScrollArea>
+                <DrawerFooter className="flex flex-row gap-3 pt-2">
+                  <Button variant="outline" onClick={clearAllFilters}>
+                    Reset All
+                  </Button>
+                  <DrawerClose asChild>
+                    <Button>Apply Filters</Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </div>
+            </DrawerContent>
+          </Drawer>
         </div>
         
         <div className="flex items-center gap-2 self-end">
@@ -1335,13 +1433,8 @@ export function InvoicesDataTable({
           </DropdownMenu>
         </div>
       </div>
-      {filteredData.length !== invoices.length && (
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredData.length} of {invoices.length} invoices based on filters.
-        </div>
-      )}
       
-      {/* Active Filters */}
+      {/* Active Filters Badges */}
       {(selectedStatuses.length > 0 || selectedAnimals.length > 0 || selectedContacts.length > 0 || startDate || endDate) && (
         <div className="flex flex-wrap gap-2 pt-2">
           <div className="text-sm text-muted-foreground mr-2 pt-1">Active filters:</div>
