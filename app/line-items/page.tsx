@@ -1,3 +1,5 @@
+"use client"
+
 import LineItemsDataTableWrapper from "@/components/line-items-data-table-wrapper"
 import {
   Breadcrumb,
