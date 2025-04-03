@@ -636,14 +636,14 @@ export function InvoiceDetailSheet({
         )}
         
         {/* Attachments Section */}
-        <Card>
-          <CardHeader className="py-4">
+        <Card className="mx-1 mt-4 sm:mt-6">
+          <CardHeader className="py-4 px-5">
             <CardTitle className="text-sm sm:text-base font-medium flex items-center">
               <Paperclip className="sm:inline-block h-4 w-4 mr-2" />
               Attachments
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 sm:px-5 pt-0 pb-4">
+          <CardContent className="py-4 px-5 pt-0">
             {loadingAttachments ? (
               <div className="flex justify-center items-center py-4">
                 <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
@@ -662,7 +662,7 @@ export function InvoiceDetailSheet({
           </CardContent>
         </Card>
         
-        <SheetFooter className="px-6 -mx-6 border-t pt-4 border-border bottom-0 left-0 rigth-0 sticky md:static bg-background rounded-b-lg">
+        <SheetFooter className="px-6 -mx-6 border-t pt-4 mt-6 border-border sticky bottom-0 left-0 right-0 bg-background rounded-b-lg">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

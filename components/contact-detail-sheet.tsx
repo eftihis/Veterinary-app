@@ -277,7 +277,7 @@ export function ContactDetailSheet({
           </div>
         ) : null}
         
-        <SheetFooter className="flex justify-between mt-6 pt-4 border-t">
+        <SheetFooter className="flex justify-between mt-6 pt-4 border-t sticky bottom-0 left-0 right-0 bg-background px-6 -mx-6 rounded-b-lg">
           <div className="flex gap-2">
             <Button
               variant="outline"
