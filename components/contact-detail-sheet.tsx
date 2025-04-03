@@ -9,7 +9,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetFooter,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -106,9 +105,6 @@ export function ContactDetailSheet({
             
             {!loading && contact && (
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant={contact.is_active ? "outline" : "secondary"}>
-                  {contact.is_active ? "Active" : "Inactive"}
-                </Badge>
                 {contact.roles && contact.roles.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {contact.roles.map((role) => (
