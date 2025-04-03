@@ -161,7 +161,7 @@ export function QuickActionButton() {
 
   return (
     <>
-      <div className="fixed bottom-8 right-8 z-[100]">
+      <div className="fixed bottom-8 right-8 z-50">
         <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button 

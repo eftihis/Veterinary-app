@@ -282,14 +282,6 @@ export function ContactDetailSheet({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onOpenChange(false)}
-              className="w-full"
-            >
-              Close
-            </Button>
-            
-            <Button
-              size="sm"
               onClick={handleEdit}
               className="w-full flex items-center justify-center"
               disabled={loading || !contact || !onEdit}
