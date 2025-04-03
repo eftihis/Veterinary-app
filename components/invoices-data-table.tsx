@@ -1247,8 +1247,8 @@ export function InvoicesDataTable({
                     Apply filters to narrow down your invoice list
                   </DrawerDescription>
                 </DrawerHeader>
-                <ScrollArea className="px-6">
-                  <div className="grid gap-4 pb-4">
+                <ScrollArea className="px-6 h-[calc(65vh-140px)]">
+                  <div className="grid gap-4 pb-8 pt-2 px-1">
                     <div>
                       <DateRangePicker 
                         startDate={startDate}
@@ -1262,7 +1262,7 @@ export function InvoicesDataTable({
                       />
                     </div>
                     
-                    <Separator />
+                    <Separator className="my-1" />
                     
                     <div>
                       <div className="mb-4 flex items-center justify-between min-h-[32px]">
@@ -1278,12 +1278,12 @@ export function InvoicesDataTable({
                           </Button>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 py-1">
                         {statusOptions.map((option) => (
                           <Badge 
                             key={option.value}
                             variant={selectedStatuses.includes(option.value) ? "default" : "outline"}
-                            className="cursor-pointer focus-visible:ring-offset-2"
+                            className="cursor-pointer focus-visible:ring-offset-2 relative z-0"
                             onClick={() => toggleStatus(option.value)}
                           >
                             {option.label}
@@ -1292,39 +1292,39 @@ export function InvoicesDataTable({
                       </div>
                     </div>
                     
-                    <Separator />
+                    <Separator className="my-1" />
                     
                     {/* Use dropdown filters for both animal and contact, placed side by side */}
                     <div className="grid md:grid-cols-2 gap-4">
-                      <div>
+                      <div className="py-1">
                         <h4 className="mb-2 text-sm font-medium">Patient</h4>
                         <AnimalFilter 
                           variant="dropdown"
                           animalOptions={animalOptions}
                           selectedAnimals={selectedAnimals}
                           setSelectedAnimals={setSelectedAnimals}
-                          triggerClassName="w-full"
+                          triggerClassName="w-full focus-visible:ring-offset-2"
                         />
                       </div>
                       
-                      <div>
+                      <div className="py-1">
                         <h4 className="mb-2 text-sm font-medium">Veterinarian</h4>
                         <ContactFilter 
                           variant="dropdown"
                           contactOptions={contactOptions}
                           selectedContacts={selectedContacts}
                           setSelectedContacts={setSelectedContacts}
-                          triggerClassName="w-full"
+                          triggerClassName="w-full focus-visible:ring-offset-2"
                         />
                       </div>
                     </div>
                     
-                    {/* Add a small empty div to provide some spacing at the bottom for focus states */}
-                    <div className="h-2"></div>
+                    {/* Add a larger padding div to provide spacing at the bottom for focus states */}
+                    <div className="h-4"></div>
                   </div>
                 </ScrollArea>
                 <DrawerFooter className="py-3 border-t">
-                  <Button variant="outline" onClick={clearAllFilters} className="w-full focus-visible:ring-offset-2">
+                  <Button variant="outline" onClick={clearAllFilters} className="w-full focus-visible:ring-offset-2 relative z-0">
                     Reset All Filters
                   </Button>
                 </DrawerFooter>
