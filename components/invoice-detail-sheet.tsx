@@ -669,21 +669,22 @@ export function InvoiceDetailSheet({
           <div className="flex flex-col gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => onOpenChange(false)}
               className="w-full"
             >
               Close
             </Button>
             
-            {invoice && !loading && onEdit && (
-              <Button
-                onClick={handleEdit}
-                className="w-full"
-              >
-                <FileEdit className="h-4 w-4 mr-2" />
-                Edit Invoice
-              </Button>
-            )}
+            <Button
+              size="sm"
+              onClick={handleEdit}
+              className="w-full flex items-center justify-center"
+              disabled={loading || !invoice || !onEdit}
+            >
+              <FileEdit className="h-4 w-4 mr-2" />
+              Edit Invoice
+            </Button>
           </div>
         </div>
       </SheetContent>

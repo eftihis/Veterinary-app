@@ -555,16 +555,15 @@ export function AnimalDetailSheet({
               Close
             </Button>
             
-            {animal && !loading && (
-              <Button
-                size="sm"
-                onClick={handleEdit}
-                className="w-full flex items-center justify-center"
-              >
-                <FileEdit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            )}
+            <Button
+              size="sm"
+              onClick={handleEdit}
+              className="w-full flex items-center justify-center"
+              disabled={loading || !animal || !onEdit}
+            >
+              <FileEdit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
           </div>
         </div>
       </SheetContent>

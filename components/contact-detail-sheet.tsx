@@ -288,16 +288,15 @@ export function ContactDetailSheet({
               Close
             </Button>
             
-            {contact && !loading && (
-              <Button
-                size="sm"
-                onClick={handleEdit}
-                className="w-full flex items-center justify-center"
-              >
-                <FileEdit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            )}
+            <Button
+              size="sm"
+              onClick={handleEdit}
+              className="w-full flex items-center justify-center"
+              disabled={loading || !contact || !onEdit}
+            >
+              <FileEdit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
           </div>
         </div>
       </SheetContent>
