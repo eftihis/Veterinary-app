@@ -215,355 +215,359 @@ export function AnimalDetailSheet({
   
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-xl overflow-y-auto p-6">
-        <SheetHeader className="pb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <SheetTitle className="text-2xl font-bold flex items-center">
-              {!loading && animal && getAnimalTypeIcon(animal.type)}
-              {loading ? <Skeleton className="h-8 w-48" /> : animal?.name}
-            </SheetTitle>
+      <SheetContent className="flex flex-col p-0 sm:max-w-xl">
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <SheetHeader className="pb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <SheetTitle className="text-2xl font-bold flex items-center">
+                {!loading && animal && getAnimalTypeIcon(animal.type)}
+                {loading ? <Skeleton className="h-8 w-48" /> : animal?.name}
+              </SheetTitle>
+              
+              {!loading && animal && (
+                <Badge variant="outline" className="capitalize">
+                  {animal.status || (animal.is_deceased ? 'Deceased' : 'Active')}
+                </Badge>
+              )}
+            </div>
             
             {!loading && animal && (
-              <Badge variant="outline" className="capitalize">
-                {animal.status || (animal.is_deceased ? 'Deceased' : 'Active')}
-              </Badge>
+              <p className="text-xs text-muted-foreground mt-1">
+                Created {format(parseISO(animal.created_at), 'PP')} • Updated {format(parseISO(animal.updated_at), 'PP')}
+              </p>
             )}
-          </div>
+          </SheetHeader>
           
-          {!loading && animal && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Created {format(parseISO(animal.created_at), 'PP')} • Updated {format(parseISO(animal.updated_at), 'PP')}
-            </p>
-          )}
-        </SheetHeader>
-        
-        {loading ? (
-          <div className="space-y-6 px-1">
-            <Tabs defaultValue="overview">
-              <TabsList className="grid grid-cols-2">
-                <TabsTrigger value="overview" disabled>
-                  <Skeleton className="h-4 w-16" />
-                </TabsTrigger>
-                <TabsTrigger value="timeline" disabled>
-                  <Skeleton className="h-4 w-16" />
-                </TabsTrigger>
-              </TabsList>
-              
-              <div className="space-y-5 mt-4">
-                {/* Image Placeholder (optional) */}
-                <Card className="overflow-hidden p-0">
-                  <CardContent className="p-0">
-                    <AspectRatio ratio={4 / 3}>
-                      <Skeleton className="h-full w-full" />
-                    </AspectRatio>
-                  </CardContent>
-                </Card>
+          {loading ? (
+            <div className="space-y-6 px-1">
+              <Tabs defaultValue="overview">
+                <TabsList className="grid grid-cols-2">
+                  <TabsTrigger value="overview" disabled>
+                    <Skeleton className="h-4 w-16" />
+                  </TabsTrigger>
+                  <TabsTrigger value="timeline" disabled>
+                    <Skeleton className="h-4 w-16" />
+                  </TabsTrigger>
+                </TabsList>
                 
-                {/* Basic Information Skeleton */}
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-4 w-4" />
-                      <Skeleton className="h-5 w-32" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i}>
-                          <Skeleton className="h-3 w-16 mb-1" />
-                          <Skeleton className="h-4 w-24" />
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                {/* Attachments Skeleton */}
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-4 w-4" />
-                      <Skeleton className="h-5 w-28" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    <Skeleton className="h-20 w-full rounded-md" />
-                  </CardContent>
-                </Card>
-                
-                {/* Notes Skeleton */}
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <Skeleton className="h-5 w-16" />
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-3/4" />
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                {/* Owner Information Skeleton */}
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-4 w-4" />
-                      <Skeleton className="h-5 w-36" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    <div className="space-y-2">
-                      <div>
-                        <Skeleton className="h-3 w-12 mb-1" />
-                        <Skeleton className="h-4 w-40" />
-                      </div>
-                      <div>
-                        <Skeleton className="h-3 w-12 mb-1" />
-                        <Skeleton className="h-4 w-48" />
-                      </div>
-                      <div>
-                        <Skeleton className="h-3 w-12 mb-1" />
-                        <Skeleton className="h-4 w-32" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </Tabs>
-          </div>
-        ) : error ? (
-          <div className="rounded-md bg-destructive/10 p-5 mx-1">
-            <div className="flex items-center">
-              <AlertCircle className="h-4 w-4 text-destructive mr-2" />
-              <p className="text-sm text-destructive">Failed to load animal details</p>
-            </div>
-            <Button 
-              onClick={fetchAnimalDetails} 
-              variant="outline" 
-              size="sm"
-              className="mt-2"
-            >
-              Retry
-            </Button>
-          </div>
-        ) : animal ? (
-          <div className="space-y-6 px-1">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid grid-cols-2">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="timeline">Timeline</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="overview" className="space-y-5 mt-4">
-                {animal.image_url && (
+                <div className="space-y-5 mt-4">
+                  {/* Image Placeholder (optional) */}
                   <Card className="overflow-hidden p-0">
                     <CardContent className="p-0">
                       <AspectRatio ratio={4 / 3}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
-                          src={animal.image_url} 
-                          alt={`Photo of ${animal.name}`}
-                          className="object-cover w-full h-full"
-                        />
+                        <Skeleton className="h-full w-full" />
                       </AspectRatio>
                     </CardContent>
                   </Card>
-                )}
-                
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <CardTitle className="text-base font-medium flex items-center">
-                      <Clipboard className="h-4 w-4 mr-2" />
-                      Basic Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                      <div>
-                        <dt className="text-muted-foreground">Type</dt>
-                        <dd className="font-medium capitalize">{animal.type}</dd>
+                  
+                  {/* Basic Information Skeleton */}
+                  <Card className="overflow-hidden">
+                    <CardHeader className="py-4 px-5">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-5 w-32" />
                       </div>
-                      
-                      <div>
-                        <dt className="text-muted-foreground">Breed</dt>
-                        <dd className="font-medium">{animal.breed || '-'}</dd>
-                      </div>
-                      
-                      <div>
-                        <dt className="text-muted-foreground">Gender</dt>
-                        <dd className="font-medium capitalize">{animal.gender || '-'}</dd>
-                      </div>
-                      
-                      <div>
-                        <dt className="text-muted-foreground">Weight</dt>
-                        <dd className="font-medium">
-                          {loadingWeight ? (
-                            <Skeleton className="h-4 w-16" />
-                          ) : currentWeight ? (
-                            <>
-                              {currentWeight} kg 
-                              <span className="text-xs text-muted-foreground ml-1">
-                                {lastWeightDate ? `as of ${format(parseISO(lastWeightDate), 'PP')}` : ''}
-                              </span>
-                            </>
-                          ) : '-'}
-                        </dd>
-                      </div>
-                      
-                      <div>
-                        <dt className="text-muted-foreground">Age</dt>
-                        <dd className="font-medium">
-                          {animal.date_of_birth ? (
-                            (() => {
-                              const birthDate = parseISO(animal.date_of_birth)
-                              const now = new Date()
-                              const years = differenceInYears(now, birthDate)
-                              const months = differenceInMonths(now, birthDate) % 12
-                              
-                              if (years > 0) {
-                                return months > 0 
-                                  ? `${years} ${years === 1 ? 'year' : 'years'}, ${months} ${months === 1 ? 'month' : 'months'}`
-                                  : `${years} ${years === 1 ? 'year' : 'years'}`
-                              } else {
-                                return `${months} ${months === 1 ? 'month' : 'months'}`
-                              }
-                            })()
-                          ) : '-'}
-                        </dd>
-                      </div>
-                      
-                      <div>
-                        <dt className="text-muted-foreground">Microchip</dt>
-                        <dd className="font-medium truncate">{animal.microchip_number || '-'}</dd>
-                      </div>
-                    </dl>
-                  </CardContent>
-                </Card>
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <CardTitle className="text-base font-medium flex items-center">
-                      <User className="h-4 w-4 mr-2" />
-                      Owner Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    {animal.owner_id ? (
-                      loadingOwner ? (
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-4 w-1/2" />
-                        </div>
-                      ) : ownerDetails ? (
-                        <div className="text-sm space-y-2">
-                          <div>
-                            <dt className="text-muted-foreground">Name</dt>
-                            <dd className="font-medium">
-                              {ownerDetails.first_name} {ownerDetails.last_name}
-                            </dd>
+                    </CardHeader>
+                    <CardContent className="py-4 px-5 pt-0">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                          <div key={i}>
+                            <Skeleton className="h-3 w-16 mb-1" />
+                            <Skeleton className="h-4 w-24" />
                           </div>
-                          {ownerDetails.email && (
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Attachments Skeleton */}
+                  <Card className="overflow-hidden">
+                    <CardHeader className="py-4 px-5">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-5 w-28" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="py-4 px-5 pt-0">
+                      <Skeleton className="h-20 w-full rounded-md" />
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Notes Skeleton */}
+                  <Card className="overflow-hidden">
+                    <CardHeader className="py-4 px-5">
+                      <Skeleton className="h-5 w-16" />
+                    </CardHeader>
+                    <CardContent className="py-4 px-5 pt-0">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Owner Information Skeleton */}
+                  <Card className="overflow-hidden">
+                    <CardHeader className="py-4 px-5">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-5 w-36" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="py-4 px-5 pt-0">
+                      <div className="space-y-2">
+                        <div>
+                          <Skeleton className="h-3 w-12 mb-1" />
+                          <Skeleton className="h-4 w-40" />
+                        </div>
+                        <div>
+                          <Skeleton className="h-3 w-12 mb-1" />
+                          <Skeleton className="h-4 w-48" />
+                        </div>
+                        <div>
+                          <Skeleton className="h-3 w-12 mb-1" />
+                          <Skeleton className="h-4 w-32" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </Tabs>
+            </div>
+          ) : error ? (
+            <div className="rounded-md bg-destructive/10 p-5 mx-1">
+              <div className="flex items-center">
+                <AlertCircle className="h-4 w-4 text-destructive mr-2" />
+                <p className="text-sm text-destructive">Failed to load animal details</p>
+              </div>
+              <Button 
+                onClick={fetchAnimalDetails} 
+                variant="outline" 
+                size="sm"
+                className="mt-2"
+              >
+                Retry
+              </Button>
+            </div>
+          ) : animal ? (
+            <div className="space-y-6 px-1">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid grid-cols-2">
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="overview" className="space-y-5 mt-4">
+                  {animal.image_url && (
+                    <Card className="overflow-hidden p-0">
+                      <CardContent className="p-0">
+                        <AspectRatio ratio={4 / 3}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={animal.image_url} 
+                            alt={`Photo of ${animal.name}`}
+                            className="object-cover w-full h-full"
+                          />
+                        </AspectRatio>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  <Card className="overflow-hidden">
+                    <CardHeader className="py-4 px-5">
+                      <CardTitle className="text-base font-medium flex items-center">
+                        <Clipboard className="h-4 w-4 mr-2" />
+                        Basic Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-4 px-5 pt-0">
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <div>
+                          <dt className="text-muted-foreground">Type</dt>
+                          <dd className="font-medium capitalize">{animal.type}</dd>
+                        </div>
+                        
+                        <div>
+                          <dt className="text-muted-foreground">Breed</dt>
+                          <dd className="font-medium">{animal.breed || '-'}</dd>
+                        </div>
+                        
+                        <div>
+                          <dt className="text-muted-foreground">Gender</dt>
+                          <dd className="font-medium capitalize">{animal.gender || '-'}</dd>
+                        </div>
+                        
+                        <div>
+                          <dt className="text-muted-foreground">Weight</dt>
+                          <dd className="font-medium">
+                            {loadingWeight ? (
+                              <Skeleton className="h-4 w-16" />
+                            ) : currentWeight ? (
+                              <>
+                                {currentWeight} kg 
+                                <span className="text-xs text-muted-foreground ml-1">
+                                  {lastWeightDate ? `as of ${format(parseISO(lastWeightDate), 'PP')}` : ''}
+                                </span>
+                              </>
+                            ) : '-'}
+                          </dd>
+                        </div>
+                        
+                        <div>
+                          <dt className="text-muted-foreground">Age</dt>
+                          <dd className="font-medium">
+                            {animal.date_of_birth ? (
+                              (() => {
+                                const birthDate = parseISO(animal.date_of_birth)
+                                const now = new Date()
+                                const years = differenceInYears(now, birthDate)
+                                const months = differenceInMonths(now, birthDate) % 12
+                                
+                                if (years > 0) {
+                                  return months > 0 
+                                    ? `${years} ${years === 1 ? 'year' : 'years'}, ${months} ${months === 1 ? 'month' : 'months'}`
+                                    : `${years} ${years === 1 ? 'year' : 'years'}`
+                                } else {
+                                  return `${months} ${months === 1 ? 'month' : 'months'}`
+                                }
+                              })()
+                            ) : '-'}
+                          </dd>
+                        </div>
+                        
+                        <div>
+                          <dt className="text-muted-foreground">Microchip</dt>
+                          <dd className="font-medium truncate">{animal.microchip_number || '-'}</dd>
+                        </div>
+                      </dl>
+                    </CardContent>
+                  </Card>
+                  <Card className="overflow-hidden">
+                    <CardHeader className="py-4 px-5">
+                      <CardTitle className="text-base font-medium flex items-center">
+                        <User className="h-4 w-4 mr-2" />
+                        Owner Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-4 px-5 pt-0">
+                      {animal.owner_id ? (
+                        loadingOwner ? (
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                          </div>
+                        ) : ownerDetails ? (
+                          <div className="text-sm space-y-2">
                             <div>
-                              <dt className="text-muted-foreground">Email</dt>
-                              <dd className="font-medium">{ownerDetails.email}</dd>
-                            </div>
-                          )}
-                          {ownerDetails.phone && (
-                            <div>
-                              <dt className="text-muted-foreground">Phone</dt>
-                              <dd className="font-medium">{ownerDetails.phone}</dd>
-                            </div>
-                          )}
-                          {ownerDetails.roles && ownerDetails.roles.length > 0 && (
-                            <div>
-                              <dt className="text-muted-foreground">Role</dt>
-                              <dd className="font-medium capitalize">
-                                {ownerDetails.roles.join(', ')}
+                              <dt className="text-muted-foreground">Name</dt>
+                              <dd className="font-medium">
+                                {ownerDetails.first_name} {ownerDetails.last_name}
                               </dd>
                             </div>
-                          )}
-                        </div>
+                            {ownerDetails.email && (
+                              <div>
+                                <dt className="text-muted-foreground">Email</dt>
+                                <dd className="font-medium">{ownerDetails.email}</dd>
+                              </div>
+                            )}
+                            {ownerDetails.phone && (
+                              <div>
+                                <dt className="text-muted-foreground">Phone</dt>
+                                <dd className="font-medium">{ownerDetails.phone}</dd>
+                              </div>
+                            )}
+                            {ownerDetails.roles && ownerDetails.roles.length > 0 && (
+                              <div>
+                                <dt className="text-muted-foreground">Role</dt>
+                                <dd className="font-medium capitalize">
+                                  {ownerDetails.roles.join(', ')}
+                                </dd>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-orange-500">
+                            Owner ID exists but details could not be loaded
+                          </p>
+                        )
                       ) : (
-                        <p className="text-sm text-orange-500">
-                          Owner ID exists but details could not be loaded
-                        </p>
-                      )
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic">No owner information available</p>
-                    )}
-                  </CardContent>
-                </Card>
+                        <p className="text-sm text-muted-foreground italic">No owner information available</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="overflow-hidden">
+                    <CardHeader className="py-4 px-5">
+                      <CardTitle className="text-base font-medium flex items-center">
+                        <Paperclip className="h-4 w-4 mr-2" />
+                        Attachments
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-4 px-5 pt-0">
+                      {attachments.length > 0 ? (
+                        <AttachmentsViewer 
+                          attachments={attachments}
+                          showTitle={false}
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">No attachments available</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="overflow-hidden">
+                    <CardHeader className="py-4 px-5">
+                      <CardTitle className="text-base font-medium">Notes</CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-4 px-5 pt-0">
+                      {animal.notes ? (
+                        <p className="text-sm whitespace-pre-wrap">{animal.notes}</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">No notes available</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
                 
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <CardTitle className="text-base font-medium flex items-center">
-                      <Paperclip className="h-4 w-4 mr-2" />
-                      Attachments
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    {attachments.length > 0 ? (
-                      <AttachmentsViewer 
-                        attachments={attachments}
-                        showTitle={false}
-                      />
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic">No attachments available</p>
-                    )}
-                  </CardContent>
-                </Card>
-                
-                <Card className="overflow-hidden">
-                  <CardHeader className="py-4 px-5">
-                    <CardTitle className="text-base font-medium">Notes</CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-4 px-5 pt-0">
-                    {animal.notes ? (
-                      <p className="text-sm whitespace-pre-wrap">{animal.notes}</p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic">No notes available</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="timeline" className="mt-4">
-                <div className="px-1">
-                  <AnimalTimeline 
-                    animalId={animal.id}
-                    showAddButton={true}
-                  />
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        ) : null}
+                <TabsContent value="timeline" className="mt-4">
+                  <div className="px-1">
+                    <AnimalTimeline 
+                      animalId={animal.id}
+                      showAddButton={true}
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          ) : null}
+        </div>
         
-        <SheetFooter className="flex justify-between mt-6 pt-4 border-t sticky bottom-0 left-0 right-0 bg-background px-6 -mx-6 rounded-b-lg">
-          <div className="flex gap-2">
+        {/* Fixed footer that doesn't scroll */}
+        <div className="border-t border-border pt-4 px-6 pb-4 bg-background">
+          <div className="flex flex-col gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="flex-1"
+              className="w-full"
             >
               Close
             </Button>
+            
+            {animal && !loading && (
+              <Button
+                size="sm"
+                onClick={handleEdit}
+                className="w-full flex items-center justify-center"
+              >
+                <FileEdit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
           </div>
-          
-          {animal && !loading && (
-            <Button
-              size="sm"
-              onClick={handleEdit}
-              className="flex items-center"
-            >
-              <FileEdit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          )}
-        </SheetFooter>
+        </div>
       </SheetContent>
     </Sheet>
   )

@@ -667,7 +667,7 @@ export function InvoiceDetailSheet({
         
         {/* Fixed footer that doesn't scroll */}
         <div className="border-t border-border pt-4 px-6 pb-4 bg-background">
-          <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
