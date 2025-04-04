@@ -203,7 +203,16 @@ export default function InvoicesDataTableWrapper({
   
   if (isLoading) {
     // Show skeleton with appropriate column count for invoices table
-    return <DataTableSkeleton columnCount={7} rowCount={8} />;
+    return <DataTableSkeleton 
+      columnCount={7} 
+      rowCount={8} 
+      showFilters={true}
+      showDateFilter={true}
+      showStatusFilter={true}
+      showAnimalFilter={true}
+      showContactFilter={false}
+      showItemFilter={false}
+    />;
   }
   
   if (error) {

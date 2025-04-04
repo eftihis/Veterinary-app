@@ -77,7 +77,16 @@ export function AnimalsDataTableWrapper({
   
   if (loading) {
     // Show skeleton with appropriate column count for animals table
-    return <DataTableSkeleton columnCount={6} rowCount={8} />
+    return <DataTableSkeleton 
+      columnCount={6} 
+      rowCount={8}
+      showFilters={true}
+      showDateFilter={false}
+      showStatusFilter={false}
+      showAnimalFilter={true}
+      showContactFilter={true}
+      showItemFilter={false}
+    />
   }
   
   if (error) {

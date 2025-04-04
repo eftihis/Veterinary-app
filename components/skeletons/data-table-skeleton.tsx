@@ -6,11 +6,6 @@ interface DataTableSkeletonProps {
   rowCount?: number;
   showFilters?: boolean;
   showActionsColumn?: boolean;
-  showDateFilter?: boolean;
-  showStatusFilter?: boolean; 
-  showAnimalFilter?: boolean;
-  showContactFilter?: boolean;
-  showItemFilter?: boolean;
 }
 
 export function DataTableSkeleton({
@@ -18,85 +13,47 @@ export function DataTableSkeleton({
   rowCount = 10,
   showFilters = true,
   showActionsColumn = true,
-  showDateFilter = true,
-  showStatusFilter = true,
-  showAnimalFilter = false,
-  showContactFilter = false,
-  showItemFilter = false
 }: DataTableSkeletonProps) {
-  // Adjust column count if actions column is included
-  const effectiveColumnCount = showActionsColumn 
-    ? columnCount + 1 
-    : columnCount;
-
   return (
     <div className="space-y-4 w-full">
-      {/* Table filters skeleton */}
+      {/* Simplified table filters row */}
       {showFilters && (
-        <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-4 w-full">
-            {/* Search input */}
-            <Skeleton className="h-10 w-full md:w-[350px]" />
+        <div className="flex flex-col gap-4 w-full">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Search input */}
+              <Skeleton className="h-9 w-[350px]" />
+              {/* Filter button */}
+              <Skeleton className="h-9 w-[80px]" />
+            </div>
             
-            {/* Date filters */}
-            {showDateFilter && (
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-2 md:mt-0">
-                <Skeleton className="h-10 w-full sm:w-[150px] md:w-[180px]" />
-                <Skeleton className="h-10 w-full sm:w-[150px] md:w-[180px]" />
-              </div>
-            )}
-            
-            {/* Status filter */}
-            {showStatusFilter && (
-              <div className="hidden md:flex md:items-center">
-                <Skeleton className="h-10 w-[120px]" />
-              </div>
-            )}
-            
-            {/* Item filter */}
-            {showItemFilter && (
-              <div className="hidden md:flex md:items-center">
-                <Skeleton className="h-10 w-[120px]" />
-              </div>
-            )}
-            
-            {/* Animal filter */}
-            {showAnimalFilter && (
-              <div className="hidden md:flex md:items-center">
-                <Skeleton className="h-10 w-[120px]" />
-              </div>
-            )}
-            
-            {/* Contact filter */}
-            {showContactFilter && (
-              <div className="hidden md:flex md:items-center">
-                <Skeleton className="h-10 w-[120px]" />
-              </div>
-            )}
-          </div>
-          <div className="self-end mt-2 md:mt-0">
-            <Skeleton className="h-10 w-[130px]" />
+            <div className="flex items-center gap-5">
+              {/* Columns visibility toggle */}
+              <Skeleton className="h-9 w-[120px]" />
+            </div>
           </div>
         </div>
       )}
 
       {/* Table skeleton */}
-      <div className="overflow-x-auto">
-        <div className="rounded-md border w-full min-w-full overflow-hidden">
+      <div className="rounded-md border overflow-hidden">
+        <div className="w-full overflow-auto">
           {/* Table header skeleton */}
-          <div className="bg-muted/50 border-b">
-            <div className="flex p-4 gap-2">
-              {Array.from({ length: effectiveColumnCount }).map((_, i) => (
+          <div className="bg-muted/50">
+            <div className="flex p-4 gap-4">
+              {/* Checkbox column */}
+              <Skeleton className="h-4 w-4 rounded" />
+              
+              {/* Data columns */}
+              {Array.from({ length: columnCount }).map((_, i) => (
                 <Skeleton 
                   key={`header-${i}`} 
-                  className={`h-6 ${
+                  className={`h-5 ${
                     i === 0 
-                      ? 'w-6' 
-                      : i === effectiveColumnCount - 1 && showActionsColumn 
-                        ? 'w-10 ml-auto' 
-                        : i === 1 
-                          ? 'w-32 flex-1' 
-                          : 'w-24 flex-1'
+                      ? 'w-[180px] flex-1' 
+                      : i === columnCount - 1 && showActionsColumn 
+                        ? 'w-16 ml-auto' 
+                        : 'w-32 flex-1'
                   } ${
                     i > 4 
                       ? 'hidden lg:block' 
@@ -108,6 +65,11 @@ export function DataTableSkeleton({
                   }`} 
                 />
               ))}
+              
+              {/* Actions column */}
+              {showActionsColumn && (
+                <Skeleton className="h-5 w-10 ml-auto" />
+              )}
             </div>
           </div>
 
@@ -116,65 +78,59 @@ export function DataTableSkeleton({
             {Array.from({ length: rowCount }).map((_, rowIndex) => (
               <div 
                 key={`row-${rowIndex}`} 
-                className="flex p-4 border-b items-center gap-2"
+                className="flex p-4 border-t items-center gap-4"
               >
-                {Array.from({ length: effectiveColumnCount }).map((_, colIndex) => {
-                  // Determine if this is the actions column
-                  const isActionsColumn = 
-                    showActionsColumn && 
-                    colIndex === effectiveColumnCount - 1;
-                  
+                {/* Checkbox */}
+                <Skeleton className="h-4 w-4 rounded" />
+                
+                {/* Data cells */}
+                {Array.from({ length: columnCount }).map((_, colIndex) => {
                   // Different styling for different columns
-                  const isFirstColumn = colIndex === 0;
+                  let width = 'w-32 flex-1';
+                  
+                  if (colIndex === 0) {
+                    width = 'w-[180px] flex-1';
+                  } else if (colIndex === 1) {
+                    width = 'w-40 flex-1';
+                  } else if (colIndex === columnCount - 1) {
+                    width = 'w-24 flex-1';
+                  }
+                  
+                  const visibility = 
+                    colIndex > 4 
+                      ? 'hidden lg:block' 
+                      : colIndex > 2 
+                        ? 'hidden md:block' 
+                        : colIndex === 2 
+                          ? 'hidden sm:block' 
+                          : '';
                   
                   return (
                     <Skeleton 
                       key={`cell-${rowIndex}-${colIndex}`}
-                      className={`h-5 ${
-                        isActionsColumn
-                          ? 'w-10 ml-auto'
-                          : isFirstColumn
-                            ? 'w-5'
-                            : colIndex === 1
-                              ? 'w-32 flex-1'
-                              : colIndex === effectiveColumnCount - 2
-                                ? 'w-16 flex-1'
-                                : 'w-24 flex-1'
-                      } ${
-                        colIndex > 4 
-                          ? 'hidden lg:block' 
-                          : colIndex > 2 
-                            ? 'hidden md:block' 
-                            : colIndex === 2 
-                              ? 'hidden sm:block' 
-                              : ''
-                      }`} 
+                      className={`h-5 ${width} ${visibility}`} 
                     />
                   );
                 })}
+                
+                {/* Actions column */}
+                {showActionsColumn && (
+                  <Skeleton className="h-8 w-8 rounded-full ml-auto" />
+                )}
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Pagination skeleton */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* Simplified pagination skeleton */}
+      <div className="flex items-center justify-between py-2">
         <Skeleton className="h-5 w-36" />
         
-        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:gap-6 w-full sm:w-auto">
-          <div className="flex items-center gap-2 w-full justify-between sm:w-auto sm:justify-start">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-9 w-[70px]" />
-          </div>
-          
-          <div className="flex items-center gap-2 w-full justify-between sm:w-auto sm:justify-start">
-            <Skeleton className="h-9 w-9" />
-            <Skeleton className="h-9 w-9 hidden sm:block" />
-            <Skeleton className="h-9 w-9 hidden sm:block" />
-            <Skeleton className="h-9 w-9 hidden sm:block" />
-            <Skeleton className="h-9 w-9" />
-          </div>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-9 w-9" />
+          <Skeleton className="h-9 w-9" />
+          <Skeleton className="h-9 w-9" />
         </div>
       </div>
     </div>

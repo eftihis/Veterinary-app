@@ -74,7 +74,16 @@ export function ContactsDataTableWrapper({
   
   if (loading) {
     // Show skeleton with appropriate column count for contacts table
-    return <DataTableSkeleton columnCount={7} rowCount={8} />
+    return <DataTableSkeleton 
+      columnCount={7} 
+      rowCount={8}
+      showFilters={true}
+      showDateFilter={false}
+      showStatusFilter={false}
+      showAnimalFilter={false}
+      showContactFilter={false}
+      showItemFilter={false}
+    />
   }
   
   if (error) {
