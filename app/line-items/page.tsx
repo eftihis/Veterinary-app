@@ -13,11 +13,26 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import DashboardLayout from "../dashboard-layout"
+import { DataTableSkeleton } from "@/components/skeletons/data-table-skeleton"
 
 // Use dynamic import to avoid SSR issues
 const LineItemsDataTableWrapper = dynamic(
   () => import("@/components/line-items-data-table-wrapper"),
-  { ssr: false, loading: () => <p>Loading line items...</p> }
+  { 
+    ssr: false, 
+    loading: () => (
+      <DataTableSkeleton 
+        columnCount={7} 
+        rowCount={8} 
+        showFilters={true}
+        showDateFilter={true}
+        showStatusFilter={true}
+        showAnimalFilter={true}
+        showContactFilter={true}
+        showItemFilter={true}
+      />
+    )
+  }
 )
 
 export default function LineItemsPage() {
