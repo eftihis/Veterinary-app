@@ -1,6 +1,7 @@
 "use client"
 
-import LineItemsDataTableWrapper from "@/components/line-items-data-table-wrapper"
+import React from "react"
+import dynamic from "next/dynamic"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,6 +13,12 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import DashboardLayout from "../dashboard-layout"
+
+// Use dynamic import to avoid SSR issues
+const LineItemsDataTableWrapper = dynamic(
+  () => import("@/components/line-items-data-table-wrapper"),
+  { ssr: false, loading: () => <p>Loading line items...</p> }
+)
 
 export default function LineItemsPage() {
   return (
