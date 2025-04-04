@@ -81,11 +81,7 @@ export function AnimalsDataTableWrapper({
       columnCount={6} 
       rowCount={8}
       showFilters={true}
-      showDateFilter={false}
-      showStatusFilter={false}
-      showAnimalFilter={true}
-      showContactFilter={true}
-      showItemFilter={false}
+      showActionsColumn={true}
     />
   }
   
