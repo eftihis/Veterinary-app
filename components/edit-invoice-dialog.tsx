@@ -189,7 +189,7 @@ export function EditInvoiceDialog({
           
           {loading ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="h-12 w-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin"></div>
             </div>
           ) : fullInvoiceData ? (
             <div className="overflow-y-auto pr-1">
